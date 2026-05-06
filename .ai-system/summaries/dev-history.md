@@ -115,3 +115,24 @@ Finished the remaining sprint cleanup by adding a sample employee CSV file and a
 
 **Next Sprint Focus:**
 No immediate functional work remains from the current sprint; start the next sprint from product feedback or design refinements.
+
+## 2026-05-06 — Responsive UI Polish
+
+**Summary:**
+Refined the app shell for smaller screens and reduced the desktop-to-mobile gap in the editor workflow. The header now collapses export/theme actions into a mobile dropdown, the employee panel reads in the requested form/list/action order, the preview opens as a dismissible overlay on mobile, and exports no longer carry preview-only title or developer credit text.
+
+**Completed:**
+
+- Make header export/theme actions collapse on mobile
+- Reorder employee panel into form, list, and compact actions
+- Add mobile-friendly action strip with icon-first controls
+- Add preview overlay for mobile with scrollable sheet container
+- Remove exported title and developer credit copy from final files
+- Add true crop interaction for employee photos
+
+**Key Changes:**
+
+- The employee workflow is now more compact on mobile, while the print preview stays page-shaped and scrollable rather than forcing a long page scroll.
+
+**Next Sprint Focus:**
+Collect feedback on the revised workflow and decide whether the next iteration should focus on multi-template support, QR/signature enhancements, or more advanced image editing.

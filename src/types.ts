@@ -37,12 +37,20 @@ export interface UserData {
   imageUrl: string | null;
   issueDate: string;
   imageTransform: EmployeeImageTransform;
+  imageCrop: EmployeeImageCrop;
 }
 
 export interface EmployeeImageTransform {
   scale: number;
   offsetX: number;
   offsetY: number;
+}
+
+export interface EmployeeImageCrop {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface TemplateConfig {

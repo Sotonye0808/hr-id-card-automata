@@ -123,3 +123,50 @@ Add a sample CSV template and automated checks for the persistence/export path.
 
 **Notes / Blockers:**
 None. The implementation stays local-first and does not add new runtime dependencies.
+
+## Session 5 — 2026-05-06
+
+**Completed:**
+
+- Planned the next UX polish pass for mobile and desktop responsiveness.
+- Added concrete sprint tasks for collapsing header actions on mobile, reordering the employee panel, showing the preview as an overlay on mobile, removing export-only credit/title text, and adding true crop interaction.
+- Updated the design system and project context to reflect the current compact, paper-first interface direction.
+
+**Files Modified:**
+
+- .ai-system/planning/task-queue.md — added responsive UX backlog items
+- .ai-system/planning/project-plan.md — added polish-phase checklist items
+- .ai-system/agents/design-system.md — documented mobile action and preview patterns
+- .ai-system/agents/project-context.md — updated active sprint focus
+
+**Next Task:**
+Implement the responsive UI polish in src/App.tsx, src/components/DataEntry.tsx, src/components/IDCard.tsx, and supporting styles.
+
+**Notes / Blockers:**
+None. The requested changes are now broken into implementation-sized tasks.
+
+## Session 6 — 2026-05-06
+
+**Completed:**
+
+- Implemented the responsive UI polish pass for the HR workflow.
+- Added a mobile header menu for theme and export actions, reordered the employee panel, introduced an icon-led action strip, and added a dismissible mobile preview overlay.
+- Threaded crop state through the employee store, preview, and exports, and removed preview-only title/developer credit copy from exported PDF and DOCX output.
+
+**Files Modified:**
+
+- src/App.tsx — responsive shell, mobile menu, overlay preview, export cleanup
+- src/components/DataEntry.tsx — crop controls
+- src/components/IDCard.tsx — crop-aware preview rendering
+- src/lib/employeeStore.ts — crop defaults and crop-aware rendering helper
+- src/types.ts — crop state added to employee data
+- src/index.css — mobile action and menu styles
+- .ai-system/planning/task-queue.md — marked responsive UX items complete
+- .ai-system/planning/project-plan.md — marked polish checklist complete
+- .ai-system/summaries/dev-history.md — added responsive polish summary
+
+**Next Task:**
+Validate the revised UI in the browser and gather feedback on whether the mobile overlay and icon-first action strip need further simplification.
+
+**Notes / Blockers:**
+None. The latest build and smoke verification both passed.

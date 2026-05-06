@@ -44,6 +44,11 @@
 - [ ] Performance audit and optimisation
 - [ ] Accessibility audit
 - [ ] Error states and loading states complete
+- [x] Mobile header actions collapse into a compact menu
+- [x] Employee panel follows form → batch list → action strip order
+- [x] Mobile preview opens as a dismissible overlay
+- [x] Export output excludes preview-only credit/title text
+- [x] Photo crop interaction available alongside transform controls
 
 ---
 

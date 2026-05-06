@@ -18,6 +18,10 @@ import {
   Sparkles,
   CheckCircle2,
   Clock3,
+  Menu,
+  ChevronDown,
+  Eye,
+  X,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import {
@@ -138,6 +142,8 @@ export default function App() {
 
     return localStorage.getItem(THEME_KEY) === "dark";
   });
+  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -334,27 +340,13 @@ export default function App() {
         doc.addPage();
       }
 
-      const baseTop = 18;
+      const baseTop = 12;
 
       doc.setDrawColor(17, 24, 39);
       doc.setLineWidth(0.4);
       doc.rect(margin, margin, contentWidth, pageHeight - margin * 2);
 
-      doc.setTextColor(15, 71, 97);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(20);
-      doc.text("ID CARDS TO BE PRINTED", margin + 2, baseTop);
-
-      doc.setTextColor(33, 41, 55);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text(
-        "Printable sheet generated from the configured HR template.",
-        margin + 2,
-        baseTop + 7,
-      );
-
-      const columnY = baseTop + 16;
+      const columnY = baseTop + 8;
       const tableHeight = 18;
       const columns = [64, 32, contentWidth - 96];
       const cells = [
@@ -384,6 +376,7 @@ export default function App() {
             employee.imageTransform,
             Math.round((contentWidth - 2) * 8),
             Math.round((imageHeight - 2) * 8),
+            employee.imageCrop,
           );
 
           doc.addImage(
@@ -421,14 +414,6 @@ export default function App() {
         `Issue Date: ${employee.issueDate}`,
         margin + 2,
         imageTop + imageHeight + 8,
-      );
-      doc.text(
-        `Built by S.D.`,
-        pageWidth - margin - 28,
-        imageTop + imageHeight + 8,
-        {
-          align: "right",
-        },
       );
 
       if (index < employees.length - 1) {
@@ -478,25 +463,6 @@ export default function App() {
 
     for (const [index, employee] of employees.entries()) {
       children.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: "ID CARDS TO BE PRINTED",
-              bold: true,
-              color: "0F4761",
-              size: 28,
-            }),
-          ],
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: "Printable sheet generated from the configured HR template.",
-              size: 18,
-              color: "334155",
-            }),
-          ],
-        }),
         new Table({
           width: { size: 100, type: WidthType.PERCENTAGE },
           rows: [
@@ -533,6 +499,7 @@ export default function App() {
             employee.imageTransform,
             1400,
             980,
+            employee.imageCrop,
           );
 
           children.push(
@@ -566,10 +533,6 @@ export default function App() {
               size: 16,
             }),
           ],
-        }),
-        new Paragraph({
-          children: [new TextRun({ text: "Built by S.D.", size: 16 })],
-          alignment: AlignmentType.RIGHT,
         }),
       );
 
@@ -635,7 +598,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="hidden items-center gap-2 md:flex">
             <button
               className="secondary-button"
               onClick={() => setIsDarkTheme((current) => !current)}
@@ -652,6 +615,63 @@ export default function App() {
               <FileText size={16} />
               Export DOCX
             </button>
+          </div>
+
+          <div className="relative flex items-center gap-2 md:hidden">
+            <button
+              className="secondary-button"
+              onClick={() => setIsPreviewOpen(true)}>
+              <Eye size={16} />
+              Preview
+            </button>
+            <button
+              className="secondary-button"
+              onClick={() => setIsHeaderMenuOpen((current) => !current)}
+              aria-controls="mobile-header-menu"
+              aria-label="Open export and theme menu">
+              <Menu size={16} />
+              More
+              <ChevronDown size={14} />
+            </button>
+            {isHeaderMenuOpen ? (
+              <div
+                id="mobile-header-menu"
+                className="absolute right-0 top-full z-40 mt-2 w-56 rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-2 shadow-2xl">
+                <button
+                  className="mobile-menu-button"
+                  onClick={() => {
+                    setIsHeaderMenuOpen(false);
+                    setIsDarkTheme((current) => !current);
+                  }}>
+                  <span className="flex items-center gap-2">
+                    {isDarkTheme ? <Sun size={16} /> : <Moon size={16} />}
+                    {isDarkTheme ? "Light theme" : "Dark theme"}
+                  </span>
+                </button>
+                <button
+                  className="mobile-menu-button"
+                  onClick={() => {
+                    setIsHeaderMenuOpen(false);
+                    void exportPdf();
+                  }}>
+                  <span className="flex items-center gap-2">
+                    <Download size={16} />
+                    Export PDF
+                  </span>
+                </button>
+                <button
+                  className="mobile-menu-button"
+                  onClick={() => {
+                    setIsHeaderMenuOpen(false);
+                    void exportDocx();
+                  }}>
+                  <span className="flex items-center gap-2">
+                    <FileText size={16} />
+                    Export DOCX
+                  </span>
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </header>
@@ -689,36 +709,11 @@ export default function App() {
           <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
             {activeTab === "employees" && (
               <>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                  <button className="secondary-button" onClick={addEmployee}>
-                    <Plus size={14} />
-                    Add row
-                  </button>
-                  <button
-                    className="secondary-button"
-                    onClick={duplicateEmployee}
-                    disabled={!selectedEmployee}>
-                    <Copy size={14} />
-                    Duplicate
-                  </button>
-                  <button
-                    className="secondary-button"
-                    onClick={removeEmployee}
-                    disabled={employees.length <= 1}>
-                    <Trash2 size={14} />
-                    Remove
-                  </button>
-                  <button className="secondary-button" onClick={openCsvPicker}>
-                    <Upload size={14} />
-                    Import CSV
-                  </button>
-                  <a
-                    className="secondary-button"
-                    href="/sample-employee-batch.csv"
-                    download>
-                    <FileText size={14} />
-                    Sample CSV
-                  </a>
+                <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
+                  <DataEntry
+                    data={selectedEmployee}
+                    onChange={updateSelectedEmployee}
+                  />
                 </div>
 
                 <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
@@ -736,7 +731,8 @@ export default function App() {
                   </div>
                   <p className="mb-3 text-xs text-[var(--muted)]">
                     CSV headers supported: fullName, department, role, idNumber,
-                    issueDate, imageUrl, imageScale, imageOffsetX, imageOffsetY.
+                    issueDate, imageUrl, imageScale, imageOffsetX, imageOffsetY,
+                    imageCropX, imageCropY, imageCropWidth, imageCropHeight.
                   </p>
 
                   <div className="max-h-[260px] overflow-y-auto rounded-2xl border border-[var(--border)]">
@@ -764,10 +760,68 @@ export default function App() {
                 </div>
 
                 <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
-                  <DataEntry
-                    data={selectedEmployee}
-                    onChange={updateSelectedEmployee}
-                  />
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="eyebrow">Actions</p>
+                      <p className="text-sm text-[var(--muted)]">
+                        Quick batch tools with icon-first controls on mobile.
+                      </p>
+                    </div>
+                    <span className="cell-label">5</span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-2 md:flex md:flex-wrap">
+                    {[
+                      {
+                        label: "Add row",
+                        icon: Plus,
+                        onClick: addEmployee,
+                        disabled: false,
+                      },
+                      {
+                        label: "Duplicate",
+                        icon: Copy,
+                        onClick: duplicateEmployee,
+                        disabled: !selectedEmployee,
+                      },
+                      {
+                        label: "Remove",
+                        icon: Trash2,
+                        onClick: removeEmployee,
+                        disabled: employees.length <= 1,
+                      },
+                      {
+                        label: "Import CSV",
+                        icon: Upload,
+                        onClick: openCsvPicker,
+                        disabled: false,
+                      },
+                      {
+                        label: "Sample CSV",
+                        icon: FileText,
+                        onClick: () =>
+                          window.open(
+                            "/sample-employee-batch.csv",
+                            "_blank",
+                            "noopener,noreferrer",
+                          ),
+                        disabled: false,
+                      },
+                    ].map((action) => (
+                      <button
+                        key={action.label}
+                        className="icon-action-button"
+                        onClick={action.onClick}
+                        disabled={action.disabled}
+                        type="button"
+                        title={action.label}
+                        aria-label={action.label}>
+                        <action.icon size={22} />
+                        <span className="icon-action-label">
+                          {action.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
@@ -791,7 +845,7 @@ export default function App() {
                   </h2>
                   <p className="mt-1 text-sm text-[var(--muted)]">
                     PDF and DOCX exports follow the sample document structure:
-                    title, table row, image block, and credit footer.
+                    table row, image block, and issue date footer.
                   </p>
                 </div>
 
@@ -860,7 +914,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className="panel flex min-h-0 flex-col border border-[var(--border)] p-4 shadow-xl">
+        <section className="panel hidden min-h-0 flex-col border border-[var(--border)] p-4 shadow-xl lg:flex">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="eyebrow">Live preview</p>
@@ -876,7 +930,9 @@ export default function App() {
 
           <div className="min-h-0 flex-1 overflow-auto rounded-[28px] border border-[var(--border)] bg-[var(--paper-bg)] p-4 shadow-inner">
             {selectedEmployee ? (
-              <IDCard config={template} data={selectedEmployee} />
+              <div className="mx-auto w-[920px] max-w-none">
+                <IDCard config={template} data={selectedEmployee} />
+              </div>
             ) : (
               <div className="flex h-full min-h-[520px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)]">
                 Add an employee to preview the sheet here.
@@ -907,6 +963,76 @@ export default function App() {
             </div>
           </div>
         </section>
+
+        {isPreviewOpen ? (
+          <div
+            className="fixed inset-0 z-50 bg-black/55 p-3 lg:hidden"
+            role="presentation"
+            onClick={() => setIsPreviewOpen(false)}>
+            <div
+              className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--bg)] shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Mobile preview"
+              onClick={(event) => event.stopPropagation()}>
+              <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-4">
+                <div>
+                  <p className="eyebrow">Live preview</p>
+                  <h2 className="mt-1 text-lg font-black text-[var(--text)]">
+                    Batch sheet preview
+                  </h2>
+                </div>
+                <button
+                  className="secondary-button"
+                  onClick={() => setIsPreviewOpen(false)}
+                  aria-label="Close preview">
+                  <X size={16} />
+                  Close
+                </button>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-auto bg-[var(--paper-bg)] p-4">
+                <div className="overflow-hidden rounded-[28px] border border-[var(--border)] bg-white p-3 shadow-inner">
+                  {selectedEmployee ? (
+                    <div className="mx-auto w-[920px] max-w-none">
+                      <IDCard config={template} data={selectedEmployee} />
+                    </div>
+                  ) : (
+                    <div className="flex h-full min-h-[480px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)]">
+                      Add an employee to preview the sheet here.
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {employees.map((employee, index) => (
+                    <div
+                      key={employee.id}
+                      className="rounded-[22px] border border-[var(--border)] bg-white p-4 shadow-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-bold text-[var(--paper-text)]">
+                          {employee.fullName}
+                        </p>
+                        {index === selectedIndex ? (
+                          <CheckCircle2
+                            size={16}
+                            className="text-emerald-600"
+                          />
+                        ) : null}
+                      </div>
+                      <p className="mt-2 text-xs text-[var(--paper-muted)]">
+                        {employee.idNumber}
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--paper-text)]">
+                        {employee.department || "Department"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </main>
 
       <footer className="border-t border-[var(--border)] bg-[var(--bg)]">
@@ -917,7 +1043,7 @@ export default function App() {
           <div className="font-semibold">
             Built by{" "}
             <a
-              href="https://github.com/sd"
+              href="https://sotonye-dagogo.is-a.dev"
               target="_blank"
               rel="noreferrer noopener"
               className="underline">

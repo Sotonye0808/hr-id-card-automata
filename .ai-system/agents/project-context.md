@@ -31,7 +31,7 @@ This project converts simple employee data into printable ID cards using a JSON-
 
 Phase: Active Development
 
-Active sprint focus: Align default template to the sample and polish exports + docs
+Active sprint focus: Refine the responsive workflow, reduce mobile clutter, preserve the printable preview, and clean up export copy
 
 ---
 

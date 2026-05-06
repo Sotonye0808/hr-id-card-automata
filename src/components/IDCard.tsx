@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Database, ImageOff } from "lucide-react";
 import { CardConfig, UserData } from "../types";
+import { renderTransformedImage } from "../lib/employeeStore";
 
 interface IDCardProps {
   config: CardConfig;
@@ -32,31 +33,48 @@ export default function IDCard({ config, data }: IDCardProps) {
     THEME_CLASSES[config.colors.primary] ?? THEME_CLASSES["#242424"];
   const fontClass = FONT_CLASSES[config.font] ?? FONT_CLASSES["font-sans"];
   const combinedRole = [data.department, data.role].filter(Boolean).join(" • ");
-  const photoStageRef = useRef<HTMLDivElement>(null);
+  const [renderedImageUrl, setRenderedImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const element = photoStageRef.current;
+    let active = true;
 
-    if (!element) {
-      return;
+    if (!data.imageUrl) {
+      setRenderedImageUrl(null);
+      return () => {
+        active = false;
+      };
     }
 
-    element.style.setProperty(
-      "--image-scale",
-      String(data.imageTransform.scale),
-    );
-    element.style.setProperty(
-      "--image-offset-x",
-      String(data.imageTransform.offsetX),
-    );
-    element.style.setProperty(
-      "--image-offset-y",
-      String(data.imageTransform.offsetY),
-    );
+    renderTransformedImage(
+      data.imageUrl,
+      data.imageTransform,
+      1200,
+      840,
+      data.imageCrop,
+    )
+      .then((imageUrl) => {
+        if (active) {
+          setRenderedImageUrl(imageUrl);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setRenderedImageUrl(data.imageUrl);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [
+    data.imageCrop.height,
+    data.imageCrop.width,
+    data.imageCrop.x,
+    data.imageCrop.y,
     data.imageTransform.offsetX,
     data.imageTransform.offsetY,
     data.imageTransform.scale,
+    data.imageUrl,
   ]);
 
   return (
@@ -90,10 +108,10 @@ export default function IDCard({ config, data }: IDCardProps) {
 
         <div className="sheet-layout">
           <div className="sheet-photo">
-            <div className="sheet-photo-stage" ref={photoStageRef}>
-              {data.imageUrl ? (
+            <div className="sheet-photo-stage">
+              {renderedImageUrl ? (
                 <img
-                  src={data.imageUrl}
+                  src={renderedImageUrl}
                   alt={`${data.fullName} preview`}
                   className="sheet-photo-image"
                 />
@@ -129,7 +147,7 @@ export default function IDCard({ config, data }: IDCardProps) {
             <div className="sheet-card-block">
               <p className="sheet-label">Built by S.D.</p>
               <a
-                href="https://github.com/sd"
+                href="https://sotonye-dagogo.is-a.dev"
                 target="_blank"
                 rel="noreferrer noopener"
                 className="sheet-link">

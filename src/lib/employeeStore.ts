@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EmployeeImageTransform, EmployeeRecord } from "../types";
+import {
+    EmployeeImageCrop,
+    EmployeeImageTransform,
+    EmployeeRecord,
+} from "../types";
 
 export interface PersistedBatchState {
     selectedIndex: number;
@@ -24,6 +28,15 @@ export function createDefaultImageTransform(): EmployeeImageTransform {
         scale: 1,
         offsetX: 0,
         offsetY: 0,
+    };
+}
+
+export function createDefaultImageCrop(): EmployeeImageCrop {
+    return {
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100,
     };
 }
 
@@ -54,6 +67,10 @@ export function createEmployeeRecord(
             ...createDefaultImageTransform(),
             ...(seed.imageTransform ?? {}),
         },
+        imageCrop: {
+            ...createDefaultImageCrop(),
+            ...(seed.imageCrop ?? {}),
+        },
     };
 }
 
@@ -69,6 +86,9 @@ export function duplicateEmployeeRecord(
         idNumber: `${seed.idNumber}-${String(index + 1).padStart(2, "0")}`,
         imageTransform: {
             ...seed.imageTransform,
+        },
+        imageCrop: {
+            ...seed.imageCrop,
         },
     };
 }
@@ -193,6 +213,34 @@ export function parseEmployeeCsv(text: string): Partial<EmployeeRecord>[] {
                     record.imageTransform = {
                         ...(record.imageTransform ?? createDefaultImageTransform()),
                         offsetY: Number.parseFloat(cell) || 0,
+                    };
+                    break;
+                case "imagecropx":
+                case "cropx":
+                    record.imageCrop = {
+                        ...(record.imageCrop ?? createDefaultImageCrop()),
+                        x: Number.parseFloat(cell) || 0,
+                    };
+                    break;
+                case "imagecropy":
+                case "cropy":
+                    record.imageCrop = {
+                        ...(record.imageCrop ?? createDefaultImageCrop()),
+                        y: Number.parseFloat(cell) || 0,
+                    };
+                    break;
+                case "imagecropwidth":
+                case "cropwidth":
+                    record.imageCrop = {
+                        ...(record.imageCrop ?? createDefaultImageCrop()),
+                        width: Number.parseFloat(cell) || 100,
+                    };
+                    break;
+                case "imagecropheight":
+                case "cropheight":
+                    record.imageCrop = {
+                        ...(record.imageCrop ?? createDefaultImageCrop()),
+                        height: Number.parseFloat(cell) || 100,
                     };
                     break;
                 default:
@@ -382,6 +430,7 @@ export async function renderTransformedImage(
     transform: EmployeeImageTransform,
     width: number,
     height: number,
+    crop?: EmployeeImageCrop,
 ) {
     return new Promise<string>((resolve, reject) => {
         const image = new Image();
@@ -397,20 +446,36 @@ export async function renderTransformedImage(
                 return;
             }
 
+            const cropX = (Math.max(0, Math.min(crop?.x ?? 0, 100)) / 100) * image.naturalWidth;
+            const cropY = (Math.max(0, Math.min(crop?.y ?? 0, 100)) / 100) * image.naturalHeight;
+            const cropWidth = (Math.max(1, Math.min(crop?.width ?? 100, 100)) / 100) * image.naturalWidth;
+            const cropHeight = (Math.max(1, Math.min(crop?.height ?? 100, 100)) / 100) * image.naturalHeight;
+            const boundedCropWidth = Math.max(1, Math.min(cropWidth, image.naturalWidth - cropX));
+            const boundedCropHeight = Math.max(1, Math.min(cropHeight, image.naturalHeight - cropY));
             const coverScale = Math.max(
-                width / image.naturalWidth,
-                height / image.naturalHeight,
+                width / boundedCropWidth,
+                height / boundedCropHeight,
             );
             const scale = coverScale * transform.scale;
-            const drawWidth = image.naturalWidth * scale;
-            const drawHeight = image.naturalHeight * scale;
+            const drawWidth = boundedCropWidth * scale;
+            const drawHeight = boundedCropHeight * scale;
             const offsetX = (transform.offsetX / 100) * width;
             const offsetY = (transform.offsetY / 100) * height;
             const drawX = (width - drawWidth) / 2 + offsetX;
             const drawY = (height - drawHeight) / 2 + offsetY;
 
             context.clearRect(0, 0, width, height);
-            context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+            context.drawImage(
+                image,
+                cropX,
+                cropY,
+                boundedCropWidth,
+                boundedCropHeight,
+                drawX,
+                drawY,
+                drawWidth,
+                drawHeight,
+            );
             resolve(canvas.toDataURL("image/png"));
         };
         image.onerror = () => reject(new Error("Unable to load image for export"));

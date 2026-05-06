@@ -15,6 +15,7 @@ import {
   MoveHorizontal,
   RotateCcw,
   ZoomIn,
+  Crop,
 } from "lucide-react";
 import { UserData } from "../types";
 
@@ -42,6 +43,34 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
     onChange({
       ...data,
       imageTransform: { ...data.imageTransform, [key]: value },
+    });
+  };
+
+  const updateCrop = (key: keyof UserData["imageCrop"], value: number) => {
+    const nextCrop = {
+      ...data.imageCrop,
+      [key]: value,
+    };
+
+    if (key === "width") {
+      nextCrop.x = Math.min(nextCrop.x, 100 - value);
+    }
+
+    if (key === "height") {
+      nextCrop.y = Math.min(nextCrop.y, 100 - value);
+    }
+
+    if (key === "x") {
+      nextCrop.x = Math.min(value, 100 - nextCrop.width);
+    }
+
+    if (key === "y") {
+      nextCrop.y = Math.min(value, 100 - nextCrop.height);
+    }
+
+    onChange({
+      ...data,
+      imageCrop: nextCrop,
     });
   };
 
@@ -258,6 +287,83 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
                       control.key === "scale"
                         ? Number.parseFloat(event.target.value)
                         : Number.parseInt(event.target.value, 10),
+                    )
+                  }
+                  aria-label={control.label}
+                  title={control.label}
+                  className="w-full accent-blue-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+                <Crop size={10} /> Crop Window
+              </label>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    ...data,
+                    imageCrop: { x: 0, y: 0, width: 100, height: 100 },
+                  })
+                }
+                className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors flex items-center gap-1">
+                <RotateCcw size={10} /> Reset
+              </button>
+            </div>
+
+            {[
+              {
+                label: "Crop X",
+                key: "x" as const,
+                min: 0,
+                max: 100 - data.imageCrop.width,
+                step: 1,
+                value: data.imageCrop.x,
+              },
+              {
+                label: "Crop Y",
+                key: "y" as const,
+                min: 0,
+                max: 100 - data.imageCrop.height,
+                step: 1,
+                value: data.imageCrop.y,
+              },
+              {
+                label: "Crop Width",
+                key: "width" as const,
+                min: 20,
+                max: 100 - data.imageCrop.x,
+                step: 1,
+                value: data.imageCrop.width,
+              },
+              {
+                label: "Crop Height",
+                key: "height" as const,
+                min: 20,
+                max: 100 - data.imageCrop.y,
+                step: 1,
+                value: data.imageCrop.height,
+              },
+            ].map((control) => (
+              <div key={control.label} className="space-y-1.5">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  <span>{control.label}</span>
+                  <span>{control.value}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={control.min}
+                  max={control.max}
+                  step={control.step}
+                  value={control.value}
+                  onChange={(event) =>
+                    updateCrop(
+                      control.key,
+                      Number.parseInt(event.target.value, 10),
                     )
                   }
                   aria-label={control.label}

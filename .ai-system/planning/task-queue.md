@@ -22,6 +22,12 @@
 
 - [x] Add CSV template guidance and sample file
 - [x] Add automated checks for persistence and export flow
+- [x] Make header export/theme actions collapse on mobile
+- [x] Reorder employee panel into form, list, and compact actions
+- [x] Add mobile-friendly action strip with icon-first controls
+- [x] Add preview overlay for mobile with scrollable sheet container
+- [x] Remove exported title and developer credit copy from final files
+- [x] Add true crop interaction for employee photos
 
 ---
 
