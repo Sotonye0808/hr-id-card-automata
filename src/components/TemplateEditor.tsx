@@ -89,28 +89,28 @@ export default function TemplateEditor({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-          <Settings size={12} className="text-blue-400" />
+        <h2 className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.2em] flex items-center gap-2">
+          <Settings size={12} className="text-[var(--accent)]" />
           Template Engine
         </h2>
         <button
           onClick={onReset}
-          className="p-1 hover:bg-slate-800 rounded text-slate-500 hover:text-blue-400 transition-colors"
+          className="p-1 hover:bg-[var(--accent-soft)] rounded text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
           title="Reset to Default">
           <RotateCcw size={12} />
         </button>
       </div>
 
-      <div className="flex gap-1 p-1 bg-slate-950 rounded-lg mb-4 border border-slate-800/50">
+      <div className="flex gap-1 p-1 bg-[var(--bg)] rounded-lg mb-4 border border-[var(--border)]/50">
         <button
           onClick={() => setActiveTab("design")}
-          className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${activeTab === "design" ? "bg-slate-800 text-blue-400 shadow-sm" : "text-slate-500 hover:text-slate-300"}`}>
+          className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${activeTab === "design" ? "bg-[var(--accent-soft)] text-[var(--accent)] shadow-sm" : "text-[var(--muted)] hover:text-[var(--text)]"}`}>
           <Palette size={12} />
           Design
         </button>
         <button
           onClick={() => setActiveTab("layout")}
-          className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${activeTab === "layout" ? "bg-slate-800 text-blue-400 shadow-sm" : "text-slate-500 hover:text-slate-300"}`}>
+          className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${activeTab === "layout" ? "bg-[var(--accent-soft)] text-[var(--accent)] shadow-sm" : "text-[var(--muted)] hover:text-[var(--text)]"}`}>
           <Move size={12} />
           Layout
         </button>
@@ -120,7 +120,7 @@ export default function TemplateEditor({
         {activeTab === "design" ? (
           <div className="space-y-6">
             <div className="space-y-3">
-              <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
                 <Type size={12} /> Typography
               </label>
               <div className="grid grid-cols-1 gap-2">
@@ -128,7 +128,7 @@ export default function TemplateEditor({
                   <button
                     key={f.id}
                     onClick={() => onChange({ ...config, font: f.id })}
-                    className={`text-left px-3 py-2 rounded-lg border text-xs transition-all ${config.font === f.id ? "bg-blue-600/10 border-blue-500/50 text-blue-400" : "bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700"}`}>
+                    className={`text-left px-3 py-2 rounded-lg border text-xs transition-all ${config.font === f.id ? "bg-[var(--accent-soft)] border-[var(--accent)]/50 text-[var(--accent)]" : "bg-[var(--bg)] border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]/40"}`}>
                     {f.name}
                   </button>
                 ))}
@@ -136,7 +136,7 @@ export default function TemplateEditor({
             </div>
 
             <div className="space-y-3">
-              <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
                 <Palette size={12} /> Presets
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -144,17 +144,17 @@ export default function TemplateEditor({
                   <button
                     key={p.name}
                     onClick={() => onChange({ ...config, colors: p })}
-                    className={`text-left p-2 rounded-lg border text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 transition-all ${config.colors.primary === p.primary ? "border-blue-500 bg-blue-500/10 text-white" : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"}`}>
+                    className={`text-left p-2 rounded-lg border text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 transition-all ${config.colors.primary === p.primary ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--text)]" : "bg-[var(--bg)] border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]/40"}`}>
                     <div
-                      className={`w-3 h-3 rounded-full ${PALETTE_DOTS[p.name] ?? "bg-slate-400"}`}></div>
+                      className={`w-3 h-3 rounded-full ${PALETTE_DOTS[p.name] ?? "bg-[var(--muted)]"}`}></div>
                     {p.name}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-3 border-t border-slate-800 pt-4">
-              <label className="text-[10px] font-bold text-slate-500 uppercase">
+            <div className="space-y-3 border-t border-[var(--border)] pt-4">
+              <label className="text-[10px] font-bold text-[var(--muted)] uppercase">
                 Palette controls
               </label>
               <div className="space-y-2">
@@ -166,7 +166,7 @@ export default function TemplateEditor({
                   <div
                     key={item.key}
                     className="flex items-center justify-between gap-4">
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-[var(--muted)]">
                       {item.label}
                     </span>
                     <input
@@ -199,8 +199,8 @@ export default function TemplateEditor({
             ).map(([key, value]) => (
               <div
                 key={key}
-                className="space-y-3 p-3 bg-slate-900/40 rounded-xl border border-slate-800">
-                <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest block mb-2">
+                className="space-y-3 p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
+                <label className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest block mb-2">
                   {key} control
                 </label>
                 <div className="space-y-4">
@@ -210,7 +210,7 @@ export default function TemplateEditor({
                     { label: "SCALE / SIZE", key: "size", max: 120 },
                   ].map((field) => (
                     <div key={field.key}>
-                      <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+                      <div className="flex justify-between text-[10px] text-[var(--muted)] mb-1">
                         <span>{field.label}</span>
                         <span>{value[field.key]}px</span>
                       </div>
@@ -228,7 +228,7 @@ export default function TemplateEditor({
                         }
                         aria-label={`${key} ${field.label}`}
                         title={`${key} ${field.label}`}
-                        className="w-full accent-blue-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                        className="w-full accent-[var(--accent)] h-1 bg-[var(--border)] rounded-lg appearance-none cursor-pointer"
                       />
                     </div>
                   ))}

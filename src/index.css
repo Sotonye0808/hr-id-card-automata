@@ -406,6 +406,13 @@
   }
 }
 
+@media (max-width: 767px) {
+  .icon-action-label {
+    font-size: 0.56rem;
+    letter-spacing: 0.1em;
+  }
+}
+
 .eyebrow {
   font-size: 0.72rem;
   font-weight: 800;

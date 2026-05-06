@@ -992,7 +992,7 @@ export default function App() {
               </div>
 
               <div className="min-h-0 flex-1 overflow-auto bg-[var(--paper-bg)] p-4">
-                <div className="overflow-hidden rounded-[28px] border border-[var(--border)] bg-white p-3 shadow-inner">
+                <div className="overflow-auto rounded-[28px] border border-[var(--border)] bg-white p-3 shadow-inner">
                   {selectedEmployee ? (
                     <div className="mx-auto w-[920px] max-w-none">
                       <IDCard config={template} data={selectedEmployee} />

@@ -452,11 +452,15 @@ export async function renderTransformedImage(
             const cropHeight = (Math.max(1, Math.min(crop?.height ?? 100, 100)) / 100) * image.naturalHeight;
             const boundedCropWidth = Math.max(1, Math.min(cropWidth, image.naturalWidth - cropX));
             const boundedCropHeight = Math.max(1, Math.min(cropHeight, image.naturalHeight - cropY));
-            const coverScale = Math.max(
-                width / boundedCropWidth,
-                height / boundedCropHeight,
-            );
-            const scale = coverScale * transform.scale;
+            const isFullCrop =
+                cropX === 0 &&
+                cropY === 0 &&
+                boundedCropWidth >= image.naturalWidth &&
+                boundedCropHeight >= image.naturalHeight;
+            const baseScale = isFullCrop
+                ? Math.min(width / image.naturalWidth, height / image.naturalHeight)
+                : Math.max(width / boundedCropWidth, height / boundedCropHeight);
+            const scale = baseScale * transform.scale;
             const drawWidth = boundedCropWidth * scale;
             const drawHeight = boundedCropHeight * scale;
             const offsetX = (transform.offsetX / 100) * width;

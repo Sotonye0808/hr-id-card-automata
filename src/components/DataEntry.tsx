@@ -52,6 +52,14 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
       [key]: value,
     };
 
+    if (key === "x" && nextCrop.width === 100) {
+      nextCrop.width = 95;
+    }
+
+    if (key === "y" && nextCrop.height === 100) {
+      nextCrop.height = 95;
+    }
+
     if (key === "width") {
       nextCrop.x = Math.min(nextCrop.x, 100 - value);
     }
@@ -77,8 +85,8 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-          <UserCircle size={12} className="text-blue-400" />
+        <h2 className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.2em] flex items-center gap-2">
+          <UserCircle size={12} className="text-[var(--accent)]" />
           Employee Entry
         </h2>
       </div>
@@ -86,12 +94,12 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
       <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-5">
         {/* Profile Image Upload */}
         <div className="space-y-3">
-          <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+          <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
             <ImageIcon size={12} /> Profile Media
           </label>
           <div className="relative group">
             <div
-              className={`w-full aspect-square md:aspect-video rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-3 ${data.imageUrl ? "border-blue-500/50 bg-blue-500/5" : "border-slate-800 bg-slate-900/50 hover:border-slate-700"}`}>
+              className={`w-full aspect-square md:aspect-video rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-3 ${data.imageUrl ? "border-[var(--accent)]/50 bg-[var(--accent-soft)]" : "border-[var(--border)] bg-[var(--bg)] hover:border-[var(--accent)]/40"}`}>
               {data.imageUrl ? (
                 <div className="relative w-full h-full flex items-center justify-center p-4">
                   <img
@@ -109,14 +117,14 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
                 </div>
               ) : (
                 <>
-                  <div className="p-3 bg-slate-800 rounded-full text-slate-400">
+                  <div className="p-3 bg-[var(--accent-soft)] rounded-full text-[var(--accent)]">
                     <Upload size={24} />
                   </div>
                   <div className="text-center">
-                    <p className="text-xs font-bold text-slate-300">
+                    <p className="text-xs font-bold text-[var(--text)]">
                       Drop profile image here
                     </p>
-                    <p className="text-[10px] text-slate-500 mt-1">
+                    <p className="text-[10px] text-[var(--muted)] mt-1">
                       PNG, JPG up to 2MB
                     </p>
                   </div>
@@ -137,7 +145,7 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
         {/* Text Inputs */}
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+            <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
               <UserCircle size={10} /> Full Legal Name
             </label>
             <input
@@ -147,12 +155,12 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
               placeholder="e.g. Alexandru Sterling"
               aria-label="Full legal name"
               title="Full legal name"
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+            <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
               <Briefcase size={10} /> Professional Role
             </label>
             <input
@@ -162,12 +170,12 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
               placeholder="e.g. Systems Architect"
               aria-label="Professional role"
               title="Professional role"
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+            <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
               <Building2 size={10} /> Department
             </label>
             <input
@@ -179,13 +187,13 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
               placeholder="e.g. Communications"
               aria-label="Department"
               title="Department"
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
                 <Hash size={10} /> Serial ID
               </label>
               <input
@@ -197,11 +205,11 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
                 placeholder="AIS-01"
                 aria-label="Employee ID"
                 title="Employee ID"
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] font-mono focus:outline-none focus:border-[var(--accent)] transition-colors"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
                 <Calendar size={10} /> Date Issued
               </label>
               <input
@@ -212,14 +220,14 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
                 }
                 aria-label="Date issued"
                 title="Date issued"
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
               />
             </div>
           </div>
 
-          <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+          <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
             <div className="flex items-center justify-between gap-3">
-              <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
                 <MoveHorizontal size={10} /> Image Position
               </label>
               <button
@@ -230,7 +238,7 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
                     imageTransform: { scale: 1, offsetX: 0, offsetY: 0 },
                   })
                 }
-                className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors flex items-center gap-1">
+                className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1">
                 <RotateCcw size={10} /> Reset
               </button>
             </div>
@@ -265,7 +273,7 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
               },
             ].map((control) => (
               <div key={control.label} className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
                   <span className="flex items-center gap-1.5">
                     <control.icon size={10} /> {control.label}
                   </span>
@@ -291,15 +299,15 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
                   }
                   aria-label={control.label}
                   title={control.label}
-                  className="w-full accent-blue-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                  className="w-full accent-[var(--accent)] h-1 bg-[var(--border)] rounded-lg appearance-none cursor-pointer"
                 />
               </div>
             ))}
           </div>
 
-          <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+          <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
             <div className="flex items-center justify-between gap-3">
-              <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
                 <Crop size={10} /> Crop Window
               </label>
               <button
@@ -310,7 +318,7 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
                     imageCrop: { x: 0, y: 0, width: 100, height: 100 },
                   })
                 }
-                className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors flex items-center gap-1">
+                className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1">
                 <RotateCcw size={10} /> Reset
               </button>
             </div>
@@ -320,7 +328,7 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
                 label: "Crop X",
                 key: "x" as const,
                 min: 0,
-                max: 100 - data.imageCrop.width,
+                max: Math.max(5, 100 - data.imageCrop.width),
                 step: 1,
                 value: data.imageCrop.x,
               },
@@ -328,7 +336,7 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
                 label: "Crop Y",
                 key: "y" as const,
                 min: 0,
-                max: 100 - data.imageCrop.height,
+                max: Math.max(5, 100 - data.imageCrop.height),
                 step: 1,
                 value: data.imageCrop.y,
               },
@@ -350,7 +358,7 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
               },
             ].map((control) => (
               <div key={control.label} className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
                   <span>{control.label}</span>
                   <span>{control.value}%</span>
                 </div>
@@ -368,7 +376,7 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
                   }
                   aria-label={control.label}
                   title={control.label}
-                  className="w-full accent-blue-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                  className="w-full accent-[var(--accent)] h-1 bg-[var(--border)] rounded-lg appearance-none cursor-pointer"
                 />
               </div>
             ))}
