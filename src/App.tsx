@@ -3,274 +3,929 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
-import { 
-  Settings, 
-  Layout, 
-  UserCircle, 
-  Moon, 
-  Plus, 
-  Clock,
-  Menu,
-  CreditCard
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { CardConfig, UserData } from './types';
-import IDCard from './components/IDCard';
-import TemplateEditor from './components/TemplateEditor';
-import DataEntry from './components/DataEntry';
-import ActivityBoard from './components/ActivityBoard';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import {
+  Plus,
+  Copy,
+  Trash2,
+  Download,
+  FileText,
+  Upload,
+  Moon,
+  Sun,
+  BadgePlus,
+  Users,
+  Sparkles,
+  CheckCircle2,
+  Clock3,
+} from "lucide-react";
+import { jsPDF } from "jspdf";
+import {
+  AlignmentType,
+  Document,
+  ImageRun,
+  Packer,
+  PageBreak,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  WidthType,
+} from "docx";
+import { CardConfig, EmployeeRecord, ExportProgress, UserData } from "./types";
+import DataEntry from "./components/DataEntry";
+import TemplateEditor from "./components/TemplateEditor";
+import IDCard from "./components/IDCard.tsx";
+import {
+  createEmployeeRecord,
+  duplicateEmployeeRecord,
+  loadPersistedBatch,
+  parseEmployeeCsv,
+  renderTransformedImage,
+  savePersistedBatch,
+} from "./lib/employeeStore";
 
-const DEFAULT_PALETTE = { 
-  name: 'Midnight', 
-  primary: '#3B82F6', 
-  secondary: '#1E293B', 
-  text: '#FFFFFF', 
-  accent: '#60A5FA' 
-};
+type WorkspaceTab = "employees" | "template" | "export";
 
-const INITIAL_CONFIG: CardConfig = {
-  font: 'font-sans',
-  colors: DEFAULT_PALETTE,
+const THEME_KEY = "hr-id-card-automata.theme";
+const TEMPLATE_KEY = "hr-id-card-automata.template";
+
+const DEFAULT_TEMPLATE: CardConfig = {
+  font: "font-sans",
+  colors: {
+    primary: "#242424",
+    secondary: "#FFFFFF",
+    text: "#111827",
+    accent: "#0f4761",
+  },
   elements: {
-    avatar: { x: 24, y: 24, size: 80, rounded: 12 },
-    title: { x: 120, y: 24, size: 24, weight: 'black' },
-    subtitle: { x: 120, y: 52, size: 12, weight: 'medium' },
-    badge: { x: 120, y: 74, size: 10, weight: 'bold' }
+    avatar: { x: 16, y: 16, size: 110, rounded: 4 },
+    title: { x: 240, y: 24, size: 20, weight: "black" },
+    subtitle: { x: 240, y: 54, size: 12, weight: "medium" },
+    badge: { x: 16, y: 140, size: 10, weight: "bold" },
+  },
+};
+
+const SAMPLE_EMPLOYEES: EmployeeRecord[] = [
+  createEmployeeRecord(
+    {
+      fullName: "Abraham Bamidele",
+      department: "Communications",
+      role: "Lead Graphics Designer (Senior Officer 3)",
+      idNumber: "COMMS021",
+      imageUrl: null,
+      issueDate: new Date().toISOString().split("T")[0],
+    },
+    0,
+  ),
+  createEmployeeRecord(
+    {
+      fullName: "Esther Adaigbe",
+      department: "Finance",
+      role: "Team Lead Supervisor 2",
+      idNumber: "FIN0831",
+      imageUrl: null,
+      issueDate: new Date().toISOString().split("T")[0],
+    },
+    1,
+  ),
+  createEmployeeRecord(
+    {
+      fullName: "Deborah",
+      department: "Creative Services",
+      role: "Copywriting & creative lead. Senior officer 1",
+      idNumber: "FIN0831",
+      imageUrl: null,
+      issueDate: new Date().toISOString().split("T")[0],
+    },
+    2,
+  ),
+];
+
+function nextFrame() {
+  return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+function dataUrlToBytes(dataUrl: string) {
+  const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
   }
-};
 
-const INITIAL_USER_DATA: UserData = {
-  fullName: 'Alexandru Sterling',
-  role: 'Systems Architect',
-  idNumber: 'STX-99420-G',
-  imageUrl: null,
-  issueDate: new Date().toISOString().split('T')[0]
-};
-
-type AppTab = 'identity' | 'template' | 'activity';
+  return bytes;
+}
 
 export default function App() {
-  const [config, setConfig] = useState<CardConfig>(INITIAL_CONFIG);
-  const [userData, setUserData] = useState<UserData>(INITIAL_USER_DATA);
-  const [activeTab, setActiveTab] = useState<AppTab>('identity');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("employees");
+  const [template, setTemplate] = useState<CardConfig>(DEFAULT_TEMPLATE);
+  const [employees, setEmployees] =
+    useState<EmployeeRecord[]>(SAMPLE_EMPLOYEES);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [progress, setProgress] = useState<ExportProgress>({
+    phase: "Ready",
+    percent: 0,
+    status: "idle",
+  });
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
 
-  const resetConfig = () => setConfig(INITIAL_CONFIG);
+    return localStorage.getItem(THEME_KEY) === "dark";
+  });
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
-  const NavigationItems = [
-    { id: 'identity', label: 'Identity Profile', icon: <UserCircle size={18} />, color: 'blue' },
-    { id: 'template', label: 'Template Engine', icon: <Settings size={18} />, color: 'purple' },
-    { id: 'activity', label: 'Activity Journal', icon: <Layout size={18} />, color: 'emerald' },
-  ];
+  useEffect(() => {
+    const theme = isDarkTheme ? "dark" : "light";
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(THEME_KEY, theme);
+  }, [isDarkTheme]);
+
+  useEffect(() => {
+    const savedTemplate = localStorage.getItem(TEMPLATE_KEY);
+
+    if (!savedTemplate) {
+      return;
+    }
+
+    try {
+      setTemplate(JSON.parse(savedTemplate) as CardConfig);
+    } catch {
+      localStorage.removeItem(TEMPLATE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(TEMPLATE_KEY, JSON.stringify(template));
+  }, [template]);
+
+  useEffect(() => {
+    let active = true;
+
+    loadPersistedBatch()
+      .then((savedBatch) => {
+        if (!active) {
+          return;
+        }
+
+        if (savedBatch) {
+          setEmployees(savedBatch.employees);
+          setSelectedIndex(savedBatch.selectedIndex);
+        }
+
+        setIsHydrated(true);
+      })
+      .catch(() => {
+        if (active) {
+          setIsHydrated(true);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    savePersistedBatch({ employees, selectedIndex }).catch(() => {
+      setProgress({
+        phase: "Saving batch failed",
+        percent: 0,
+        status: "error",
+      });
+    });
+  }, [employees, isHydrated, selectedIndex]);
+
+  const selectedEmployee = employees[selectedIndex] ?? employees[0];
+  const queuedCount = employees.length;
+
+  const updateSelectedEmployee = (next: UserData) => {
+    setEmployees((current) =>
+      current.map((employee, index) =>
+        index === selectedIndex ? { ...employee, ...next } : employee,
+      ),
+    );
+  };
+
+  const addEmployee = () => {
+    const nextIndex = employees.length;
+    setEmployees((current) => [
+      ...current,
+      createEmployeeRecord({}, current.length),
+    ]);
+    setSelectedIndex(nextIndex);
+    setActiveTab("employees");
+  };
+
+  const duplicateEmployee = () => {
+    if (!selectedEmployee) {
+      return;
+    }
+
+    const nextIndex = employees.length;
+    setEmployees((current) => [
+      ...current,
+      duplicateEmployeeRecord(selectedEmployee, current.length),
+    ]);
+    setSelectedIndex(nextIndex);
+  };
+
+  const removeEmployee = () => {
+    if (employees.length === 1) {
+      return;
+    }
+
+    setEmployees((current) =>
+      current.filter((_, index) => index !== selectedIndex),
+    );
+    setSelectedIndex((current) => Math.max(0, current - 1));
+  };
+
+  const resetSampleBatch = () => {
+    setEmployees(SAMPLE_EMPLOYEES);
+    setSelectedIndex(0);
+    setActiveTab("employees");
+  };
+
+  const openCsvPicker = () => {
+    csvInputRef.current?.click();
+  };
+
+  const handleCsvImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const importedRows = parseEmployeeCsv(text);
+
+      if (importedRows.length === 0) {
+        setProgress({
+          phase: "No CSV rows found",
+          percent: 0,
+          status: "error",
+        });
+        return;
+      }
+
+      const importedEmployees = importedRows.map((row, index) =>
+        createEmployeeRecord(row, index),
+      );
+
+      setEmployees(importedEmployees);
+      setSelectedIndex(0);
+      setActiveTab("employees");
+      setProgress({
+        phase: `Imported ${importedEmployees.length} employee rows`,
+        percent: 100,
+        status: "complete",
+      });
+    } catch {
+      setProgress({
+        phase: "CSV import failed",
+        percent: 0,
+        status: "error",
+      });
+    }
+  };
+
+  const exportFileName = useMemo(() => {
+    const stamp = new Date().toISOString().split("T")[0];
+    return `hr-id-cards-${stamp}`;
+  }, []);
+
+  const exportPdf = async () => {
+    if (!employees.length) {
+      return;
+    }
+
+    setProgress({
+      phase: "Preparing PDF export",
+      percent: 10,
+      status: "working",
+    });
+    await nextFrame();
+
+    const doc = new jsPDF({
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait",
+    });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const contentWidth = pageWidth - margin * 2;
+
+    for (const [index, employee] of employees.entries()) {
+      if (index > 0) {
+        doc.addPage();
+      }
+
+      const baseTop = 18;
+
+      doc.setDrawColor(17, 24, 39);
+      doc.setLineWidth(0.4);
+      doc.rect(margin, margin, contentWidth, pageHeight - margin * 2);
+
+      doc.setTextColor(15, 71, 97);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("ID CARDS TO BE PRINTED", margin + 2, baseTop);
+
+      doc.setTextColor(33, 41, 55);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(
+        "Printable sheet generated from the configured HR template.",
+        margin + 2,
+        baseTop + 7,
+      );
+
+      const columnY = baseTop + 16;
+      const tableHeight = 18;
+      const columns = [64, 32, contentWidth - 96];
+      const cells = [
+        employee.fullName || "Employee Name",
+        employee.idNumber || "EMP-001",
+        `${employee.department || "Department"} • ${employee.role || "Role"}`,
+      ];
+
+      let currentX = margin;
+      columns.forEach((width, columnIndex) => {
+        doc.rect(currentX, columnY, width, tableHeight);
+        doc.setFontSize(columnIndex === 2 ? 10 : 11);
+        doc.setTextColor(17, 24, 39);
+        const text = doc.splitTextToSize(cells[columnIndex], width - 4);
+        doc.text(text, currentX + 2, columnY + 7);
+        currentX += width;
+      });
+
+      const imageTop = columnY + tableHeight + 8;
+      const imageHeight = 118;
+      doc.rect(margin, imageTop, contentWidth, imageHeight);
+
+      if (employee.imageUrl) {
+        try {
+          const renderedImage = await renderTransformedImage(
+            employee.imageUrl,
+            employee.imageTransform,
+            Math.round((contentWidth - 2) * 8),
+            Math.round((imageHeight - 2) * 8),
+          );
+
+          doc.addImage(
+            renderedImage,
+            "PNG",
+            margin + 1,
+            imageTop + 1,
+            contentWidth - 2,
+            imageHeight - 2,
+            undefined,
+            "FAST",
+          );
+        } catch {
+          doc.setFontSize(12);
+          doc.setTextColor(102, 112, 133);
+          doc.text(
+            "Photo could not be embedded in PDF preview.",
+            margin + 10,
+            imageTop + 58,
+          );
+        }
+      } else {
+        doc.setFontSize(12);
+        doc.setTextColor(102, 112, 133);
+        doc.text(
+          "Photo placeholder - upload an image to embed it here.",
+          margin + 10,
+          imageTop + 58,
+        );
+      }
+
+      doc.setFontSize(9);
+      doc.setTextColor(15, 118, 110);
+      doc.text(
+        `Issue Date: ${employee.issueDate}`,
+        margin + 2,
+        imageTop + imageHeight + 8,
+      );
+      doc.text(
+        `Built by S.D.`,
+        pageWidth - margin - 28,
+        imageTop + imageHeight + 8,
+        {
+          align: "right",
+        },
+      );
+
+      if (index < employees.length - 1) {
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(
+          `Batch ${index + 1} of ${employees.length}`,
+          pageWidth / 2,
+          pageHeight - 8,
+          {
+            align: "center",
+          },
+        );
+      }
+
+      setProgress({
+        phase: `Rendering PDF page ${index + 1} of ${employees.length}`,
+        percent: Math.round(((index + 1) / employees.length) * 80),
+        status: "working",
+      });
+      await nextFrame();
+    }
+
+    setProgress({ phase: "Saving PDF", percent: 85, status: "working" });
+    await nextFrame();
+    doc.save(`${exportFileName}.pdf`);
+    setProgress({
+      phase: "PDF export complete",
+      percent: 100,
+      status: "complete",
+    });
+  };
+
+  const exportDocx = async () => {
+    if (!employees.length) {
+      return;
+    }
+
+    setProgress({
+      phase: "Preparing DOCX export",
+      percent: 10,
+      status: "working",
+    });
+    await nextFrame();
+
+    const children: Array<Paragraph | Table> = [];
+
+    for (const [index, employee] of employees.entries()) {
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "ID CARDS TO BE PRINTED",
+              bold: true,
+              color: "0F4761",
+              size: 28,
+            }),
+          ],
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Printable sheet generated from the configured HR template.",
+              size: 18,
+              color: "334155",
+            }),
+          ],
+        }),
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  width: { size: 35, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph(employee.fullName || "Employee Name"),
+                  ],
+                }),
+                new TableCell({
+                  width: { size: 18, type: WidthType.PERCENTAGE },
+                  children: [new Paragraph(employee.idNumber || "EMP-001")],
+                }),
+                new TableCell({
+                  width: { size: 47, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph(
+                      `${employee.department || "Department"} • ${employee.role || "Role"}`,
+                    ),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+      );
+
+      if (employee.imageUrl) {
+        try {
+          const renderedImage = await renderTransformedImage(
+            employee.imageUrl,
+            employee.imageTransform,
+            1400,
+            980,
+          );
+
+          children.push(
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: dataUrlToBytes(renderedImage) as any,
+                  transformation: { width: 600, height: 420 },
+                } as any),
+              ],
+            }),
+          );
+        } catch {
+          children.push(
+            new Paragraph("Photo could not be embedded in DOCX export."),
+          );
+        }
+      } else {
+        children.push(
+          new Paragraph(
+            "Photo placeholder - upload an image to embed it here.",
+          ),
+        );
+      }
+
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `Issue Date: ${employee.issueDate}`,
+              size: 16,
+            }),
+          ],
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: "Built by S.D.", size: 16 })],
+          alignment: AlignmentType.RIGHT,
+        }),
+      );
+
+      if (index < employees.length - 1) {
+        children.push(new Paragraph({ children: [new PageBreak()] }));
+      }
+
+      setProgress({
+        phase: `Rendering DOCX page ${index + 1} of ${employees.length}`,
+        percent: Math.round(((index + 1) / employees.length) * 80),
+        status: "working",
+      });
+      await nextFrame();
+    }
+
+    const doc = new Document({ sections: [{ children }] });
+
+    setProgress({ phase: "Saving DOCX", percent: 85, status: "working" });
+    await nextFrame();
+    const blob = await Packer.toBlob(doc);
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${exportFileName}.docx`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    setProgress({
+      phase: "DOCX export complete",
+      percent: 100,
+      status: "complete",
+    });
+  };
+
+  const statusTone =
+    progress.status === "error"
+      ? "text-red-600"
+      : progress.status === "complete"
+        ? "text-emerald-700"
+        : "text-slate-600";
 
   return (
-    <div className="flex bg-[#0F172A] font-sans text-slate-200 h-screen overflow-hidden">
-      {/* Sidebar Navigation */}
-      <motion.aside 
-        initial={false}
-        animate={{ width: isSidebarOpen ? 240 : 80 }}
-        className="bg-[#1E293B] border-r border-slate-700 flex flex-col shrink-0 z-[60] transition-all relative shadow-2xl"
-      >
-        <div className="p-6 flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-blue-900/40 shrink-0">
-              BD
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      <header className="sticky top-0 z-30 border-b border-[var(--border)]/70 bg-[var(--bg)]/90 backdrop-blur">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+          <div className="flex items-center gap-4">
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-[var(--muted)]">
+                <BadgePlus size={12} />
+                HR ID Card Automata
+              </div>
+              <p className="mt-1 text-sm font-semibold text-[var(--text)]">
+                Batch input, sample-aligned preview, PDF/DOCX export
+              </p>
             </div>
-            {isSidebarOpen && (
-              <motion.span 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="font-black text-lg tracking-tight"
-              >
-                BentoDash
-              </motion.span>
+
+            <div className="hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 md:block">
+              <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--muted)]">
+                Batch Queue
+              </div>
+              <div className="mt-1 flex items-center gap-2 text-sm font-semibold">
+                <Users size={14} />
+                {queuedCount} employees queued
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              className="secondary-button"
+              onClick={() => setIsDarkTheme((current) => !current)}
+              title="Toggle theme"
+              aria-label="Toggle theme">
+              {isDarkTheme ? <Sun size={16} /> : <Moon size={16} />}
+              {isDarkTheme ? "Light theme" : "Dark theme"}
+            </button>
+            <button className="secondary-button" onClick={exportPdf}>
+              <Download size={16} />
+              Export PDF
+            </button>
+            <button className="primary-button" onClick={exportDocx}>
+              <FileText size={16} />
+              Export DOCX
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto grid max-w-[1600px] gap-6 px-4 py-6 lg:grid-cols-[420px_minmax(0,1fr)] lg:px-6 xl:grid-cols-[460px_minmax(0,1fr)]">
+        <section className="panel flex min-h-0 flex-col border border-[var(--border)] p-4 shadow-xl">
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            title="Import employee CSV"
+            aria-label="Import employee CSV"
+            onChange={handleCsvImport}
+          />
+
+          <div className="segment">
+            {(["employees", "template", "export"] as const).map((tab) => (
+              <button
+                key={tab}
+                className={
+                  tab === activeTab ? "segment-active" : "segment-inactive"
+                }
+                onClick={() => setActiveTab(tab)}
+                type="button">
+                {tab === "employees"
+                  ? "Employees"
+                  : tab === "template"
+                    ? "Template"
+                    : "Export"}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+            {activeTab === "employees" && (
+              <>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  <button className="secondary-button" onClick={addEmployee}>
+                    <Plus size={14} />
+                    Add row
+                  </button>
+                  <button
+                    className="secondary-button"
+                    onClick={duplicateEmployee}
+                    disabled={!selectedEmployee}>
+                    <Copy size={14} />
+                    Duplicate
+                  </button>
+                  <button
+                    className="secondary-button"
+                    onClick={removeEmployee}
+                    disabled={employees.length <= 1}>
+                    <Trash2 size={14} />
+                    Remove
+                  </button>
+                  <button className="secondary-button" onClick={openCsvPicker}>
+                    <Upload size={14} />
+                    Import CSV
+                  </button>
+                  <a
+                    className="secondary-button"
+                    href="/sample-employee-batch.csv"
+                    download>
+                    <FileText size={14} />
+                    Sample CSV
+                  </a>
+                </div>
+
+                <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="eyebrow">Batch list</p>
+                      <p className="text-sm text-[var(--muted)]">
+                        Select a row to edit a single employee, or keep adding
+                        rows for a batch export.
+                      </p>
+                    </div>
+                    <button className="mini-button" onClick={resetSampleBatch}>
+                      Reset sample
+                    </button>
+                  </div>
+                  <p className="mb-3 text-xs text-[var(--muted)]">
+                    CSV headers supported: fullName, department, role, idNumber,
+                    issueDate, imageUrl, imageScale, imageOffsetX, imageOffsetY.
+                  </p>
+
+                  <div className="max-h-[260px] overflow-y-auto rounded-2xl border border-[var(--border)]">
+                    {employees.map((employee, index) => (
+                      <button
+                        key={employee.id}
+                        className={`w-full border-b border-[var(--border)] px-3 py-3 text-left transition last:border-b-0 ${index === selectedIndex ? "bg-[var(--accent-soft)]" : "bg-transparent hover:bg-black/5"}`}
+                        onClick={() => setSelectedIndex(index)}
+                        type="button">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-[var(--text)]">
+                              {employee.fullName || "Untitled employee"}
+                            </p>
+                            <p className="text-xs text-[var(--muted)]">
+                              {employee.idNumber} ·{" "}
+                              {employee.department || "No department"}
+                            </p>
+                          </div>
+                          <span className="cell-label">{index + 1}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
+                  <DataEntry
+                    data={selectedEmployee}
+                    onChange={updateSelectedEmployee}
+                  />
+                </div>
+              </>
+            )}
+
+            {activeTab === "template" && (
+              <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
+                <TemplateEditor
+                  config={template}
+                  onChange={setTemplate}
+                  onReset={() => setTemplate(DEFAULT_TEMPLATE)}
+                />
+              </div>
+            )}
+
+            {activeTab === "export" && (
+              <div className="space-y-4 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4">
+                <div>
+                  <p className="eyebrow">Export status</p>
+                  <h2 className="mt-2 text-xl font-bold text-[var(--text)]">
+                    Generate one file for all selected employees
+                  </h2>
+                  <p className="mt-1 text-sm text-[var(--muted)]">
+                    PDF and DOCX exports follow the sample document structure:
+                    title, table row, image block, and credit footer.
+                  </p>
+                </div>
+
+                <div className="rounded-[22px] border border-[var(--border)] bg-[var(--bg)] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">{progress.phase}</p>
+                      <p className={`text-xs ${statusTone}`}>
+                        {progress.status.toUpperCase()}
+                      </p>
+                    </div>
+                    <div className="text-right text-sm font-bold">
+                      {progress.percent}%
+                    </div>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/10">
+                    <progress
+                      className="app-progress w-full"
+                      value={progress.percent}
+                      max={100}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button className="primary-button" onClick={exportPdf}>
+                    <Download size={16} />
+                    Export PDF
+                  </button>
+                  <button className="secondary-button" onClick={exportDocx}>
+                    <FileText size={16} />
+                    Export DOCX
+                  </button>
+                </div>
+
+                <div className="rounded-[22px] border border-[var(--border)] bg-[var(--bg)] p-4 text-sm text-[var(--muted)]">
+                  <div className="flex items-start gap-2">
+                    <Sparkles
+                      size={16}
+                      className="mt-0.5 text-[var(--accent)]"
+                    />
+                    <p>
+                      The output uses the current employee batch, so if you add
+                      multiple rows they will be exported into the same PDF/DOCX
+                      file with page breaks between records.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[22px] border border-[var(--border)] bg-[var(--bg)] p-4">
+                    <p className="cell-label">Selected employee</p>
+                    <p className="mt-2 font-semibold text-[var(--text)]">
+                      {selectedEmployee?.fullName || "None selected"}
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-[var(--border)] bg-[var(--bg)] p-4">
+                    <p className="cell-label">Queued records</p>
+                    <p className="mt-2 font-semibold text-[var(--text)]">
+                      {employees.length}
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-1 hover:bg-slate-700 rounded text-slate-400 lg:hidden"
-          >
-            <Menu size={16} />
-          </button>
-        </div>
+        </section>
 
-        <nav className="flex-1 px-4 space-y-2">
-          {NavigationItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id as AppTab)}
-              className={`w-full flex items-center gap-4 px-3 py-3 rounded-xl transition-all group relative ${
-                activeTab === item.id 
-                  ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-inner shadow-blue-900/10' 
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent'
-              }`}
-            >
-              <div className={`shrink-0 transition-transform group-active:scale-90 ${activeTab === item.id ? 'text-blue-400' : 'text-slate-500'}`}>
-                {item.icon}
-              </div>
-              {isSidebarOpen && (
-                <motion.span 
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="text-xs font-black uppercase tracking-widest whitespace-nowrap"
-                >
-                  {item.label}
-                </motion.span>
-              )}
-              {activeTab === item.id && (
-                <div className="absolute right-0 w-1.5 h-6 bg-blue-500 rounded-l-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
-              )}
-            </button>
-          ))}
-        </nav>
-
-        <div className="p-4 mt-auto border-t border-slate-700/50">
-          <button className={`w-full flex items-center gap-4 px-3 py-3 text-slate-500 hover:text-white transition-all`}>
-            <Moon size={18} />
-            {isSidebarOpen && <span className="text-xs font-bold uppercase tracking-wider">DarkMode</span>}
-          </button>
-        </div>
-      </motion.aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#0F172A] relative">
-        {/* Dynamic Header */}
-        <header className="h-16 border-b border-slate-700/50 flex items-center justify-between px-8 bg-[#0F172A]/80 backdrop-blur sticky top-0 z-50">
-          <div className="flex items-center gap-4">
-            <div className="p-2 bg-blue-600/10 rounded-lg text-blue-400">
-              <CreditCard size={18} />
+        <section className="panel flex min-h-0 flex-col border border-[var(--border)] p-4 shadow-xl">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="eyebrow">Live preview</p>
+              <h2 className="mt-1 text-2xl font-black text-[var(--text)]">
+                Sample-aligned document sheet
+              </h2>
             </div>
-            <div className="hidden sm:block">
-              <h1 className="text-sm font-black uppercase tracking-widest text-slate-400">Workspace</h1>
-              <p className="text-[11px] text-slate-600 font-mono">BentoDash v2.5.0-ALPHA-MODULAR</p>
+            <div className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-xs font-semibold text-[var(--muted)]">
+              <Clock3 size={14} />
+              {employees.length} item batch
             </div>
           </div>
-          <div className="flex items-center gap-3">
-             <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full">
-                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-[10px] text-green-400 font-bold uppercase tracking-widest">Active</span>
+
+          <div className="min-h-0 flex-1 overflow-auto rounded-[28px] border border-[var(--border)] bg-[var(--paper-bg)] p-4 shadow-inner">
+            {selectedEmployee ? (
+              <IDCard config={template} data={selectedEmployee} />
+            ) : (
+              <div className="flex h-full min-h-[520px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)]">
+                Add an employee to preview the sheet here.
               </div>
-              <button className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest rounded-lg shadow-lg shadow-blue-900/40 transition-all active:scale-95">
-                <Plus size={14} />
-                <span>Deploy Template</span>
-              </button>
-          </div>
-        </header>
+            )}
 
-        {/* Dynamic Body */}
-        <div className="flex-1 flex flex-col lg:flex-row p-6 gap-6 min-h-0">
-          {/* Left Panel: Tab Content */}
-          <section className="w-full lg:w-[380px] shrink-0 bg-[#1E293B] rounded-2xl border border-slate-700 p-5 flex flex-col shadow-2xl relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-50"></div>
-             <AnimatePresence mode="wait">
-                {activeTab === 'identity' && (
-                  <motion.div key="identity" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="h-full">
-                    <DataEntry data={userData} onChange={setUserData} />
-                  </motion.div>
-                )}
-                {activeTab === 'template' && (
-                  <motion.div key="template" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="h-full">
-                    <TemplateEditor config={config} onChange={setConfig} onReset={resetConfig} />
-                  </motion.div>
-                )}
-                {activeTab === 'activity' && (
-                  <motion.div key="activity" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="h-full">
-                    <ActivityBoard />
-                  </motion.div>
-                )}
-             </AnimatePresence>
-          </section>
-
-          {/* Right Panel: Live Visualization */}
-          <section className="flex-1 min-w-0 bg-[#1E293B] rounded-2xl border border-slate-700 flex flex-col shadow-2xl relative overflow-hidden">
-            <div className="absolute top-4 left-4 z-10 flex gap-2">
-              <span className="bg-blue-600/20 text-blue-400 border border-blue-600/30 text-[9px] px-2 py-1 rounded font-black uppercase tracking-widest">
-                System Visualization
-              </span>
-              <span className="text-slate-500 text-[10px] uppercase font-bold flex items-center gap-1">
-                <Clock size={12} /> Live Sync
-              </span>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {employees.map((employee, index) => (
+                <div
+                  key={employee.id}
+                  className="rounded-[22px] border border-[var(--border)] bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold text-[var(--paper-text)]">
+                      {employee.fullName}
+                    </p>
+                    {index === selectedIndex ? (
+                      <CheckCircle2 size={16} className="text-emerald-600" />
+                    ) : null}
+                  </div>
+                  <p className="mt-2 text-xs text-[var(--paper-muted)]">
+                    {employee.idNumber}
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--paper-text)]">
+                    {employee.department || "Department"}
+                  </p>
+                </div>
+              ))}
             </div>
-            
-            <div className="flex-1 flex items-center justify-center bg-[#0B111E] overflow-hidden p-4">
-              <IDCard config={config} data={userData} />
-            </div>
-
-            <div className="p-4 bg-slate-900/50 border-t border-slate-700 flex flex-wrap justify-between items-center gap-4">
-              <div className="flex gap-6 text-[10px] text-slate-500 font-mono">
-                <span className="flex items-center gap-1.5">
-                  <span className="text-blue-400 font-bold whitespace-nowrap">VIEWPORT_X:</span> 1920px
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="text-blue-400 font-bold whitespace-nowrap">OBJECT_ID:</span> {userData.idNumber}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <button className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-[9px] font-black uppercase tracking-widest text-slate-300 rounded-lg border border-slate-700 transition-all active:scale-95">
-                  Raw Metadata
-                </button>
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-[9px] font-black uppercase tracking-widest text-white rounded-lg shadow-lg shadow-blue-900/20 transition-all active:scale-95">
-                  Push To Mainframe
-                </button>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        {/* Status Bar */}
-        <footer className="h-10 border-t border-slate-700/50 bg-[#1E293B] flex items-center justify-between px-8 text-[10px] text-slate-500 shrink-0">
-          <div className="flex gap-6">
-            <span className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-              LocalStorage: <strong className="text-slate-300">Enabled</strong>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-              Engine Status: <strong className="text-slate-300">Optimal</strong>
-            </span>
           </div>
-          <div className="font-mono opacity-50 uppercase tracking-widest">
-            {new Date().toLocaleTimeString()} || AIS_NODE_0X72
-          </div>
-        </footer>
+        </section>
       </main>
 
-      {/* Global Component Styles */}
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-          height: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #334155;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #475569;
-        }
-        input[type="range"] {
-          background: #1e293b;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 12px;
-          height: 12px;
-          background: #3b82f6;
-          cursor: pointer;
-          border-radius: 50%;
-          border: 2px solid #1e293b;
-          box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator {
-          filter: invert(0.5);
-          cursor: pointer;
-        }
-      `}</style>
+      <footer className="border-t border-[var(--border)] bg-[var(--bg)]">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-2 px-4 py-4 text-sm text-[var(--muted)] lg:flex-row lg:items-center lg:justify-between lg:px-6">
+          <div>
+            Ready for offline use, local template storage, and batch export.
+          </div>
+          <div className="font-semibold">
+            Built by{" "}
+            <a
+              href="https://github.com/sd"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="underline">
+              S.D.
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

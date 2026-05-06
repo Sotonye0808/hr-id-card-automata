@@ -3,121 +3,150 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Activity, Database } from 'lucide-react';
-import { CardConfig, UserData } from '../types';
+import { useEffect, useRef } from "react";
+import { Database, ImageOff } from "lucide-react";
+import { CardConfig, UserData } from "../types";
 
 interface IDCardProps {
   config: CardConfig;
   data: UserData;
 }
 
+const FONT_CLASSES: Record<string, string> = {
+  "font-sans": "sheet-font-sans",
+  "font-tech": "sheet-font-tech",
+  "font-mono": "sheet-font-mono",
+  "font-serif": "sheet-font-serif",
+};
+
+const THEME_CLASSES: Record<string, string> = {
+  "#242424": "sheet-theme-paper",
+  "#3B82F6": "sheet-theme-midnight",
+  "#10B981": "sheet-theme-emerald",
+  "#EF4444": "sheet-theme-vulcan",
+  "#8B5CF6": "sheet-theme-amethyst",
+};
+
 export default function IDCard({ config, data }: IDCardProps) {
+  const themeClass =
+    THEME_CLASSES[config.colors.primary] ?? THEME_CLASSES["#242424"];
+  const fontClass = FONT_CLASSES[config.font] ?? FONT_CLASSES["font-sans"];
+  const combinedRole = [data.department, data.role].filter(Boolean).join(" • ");
+  const photoStageRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = photoStageRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    element.style.setProperty(
+      "--image-scale",
+      String(data.imageTransform.scale),
+    );
+    element.style.setProperty(
+      "--image-offset-x",
+      String(data.imageTransform.offsetX),
+    );
+    element.style.setProperty(
+      "--image-offset-y",
+      String(data.imageTransform.offsetY),
+    );
+  }, [
+    data.imageTransform.offsetX,
+    data.imageTransform.offsetY,
+    data.imageTransform.scale,
+  ]);
+
   return (
-    <div 
-      className="w-full max-w-[480px] aspect-[1.6/1] rounded-3xl shadow-2xl border flex flex-col justify-between relative overflow-hidden transition-all duration-500"
-      style={{ 
-        backgroundColor: config.colors.secondary,
-        borderColor: `${config.colors.primary}40`,
-        fontFamily: `var(--${config.font})`
-      }}
-    >
-      {/* Animated Glow */}
-      <div 
-        className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl opacity-20 pointer-events-none transition-colors duration-700"
-        style={{ backgroundColor: config.colors.accent }}
-      ></div>
-      
-      <div className="relative h-full w-full">
-        {/* Avatar / User Image */}
-        <div 
-          className="absolute bg-slate-800 overflow-hidden flex items-center justify-center border border-white/10"
-          style={{ 
-            left: config.elements.avatar.x, 
-            top: config.elements.avatar.y, 
-            width: config.elements.avatar.size, 
-            height: config.elements.avatar.size,
-            borderRadius: config.elements.avatar.rounded || 0
-          }}
-        >
-          {data.imageUrl ? (
-            <img src={data.imageUrl} alt="User Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-          ) : (
-            <Activity size={config.elements.avatar.size * 0.5} style={{ color: config.colors.primary }} className="animate-pulse" />
-          )}
-          <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: config.colors.primary }}></div>
+    <article className={`sheet-frame ${themeClass} ${fontClass}`}>
+      <div className="sheet-inner">
+        <div className="space-y-2">
+          <p className="sheet-eyebrow">ID CARDS TO BE PRINTED</p>
+          <h3 className="sheet-title">{data.fullName || "Employee Name"}</h3>
+          <p className="sheet-copy">
+            Printable sheet generated from the current HR template.
+          </p>
         </div>
 
-        {/* Title / Name */}
-        <h3 
-          className="absolute leading-none tracking-tight transition-all"
-          style={{ 
-            left: config.elements.title.x, 
-            top: config.elements.title.y, 
-            fontSize: config.elements.title.size,
-            color: config.colors.text,
-            fontWeight: config.elements.title.weight === 'black' ? 900 : 700
-          }}
-        >
-          {data.fullName || "John Doe"}
-        </h3>
+        <table className="sheet-table">
+          <tbody>
+            <tr>
+              <td className="sheet-cell sheet-cell-name">
+                <p className="sheet-name">{data.fullName || "Employee Name"}</p>
+              </td>
+              <td className="sheet-cell sheet-cell-id">
+                <p className="sheet-id">{data.idNumber || "EMP-001"}</p>
+              </td>
+              <td className="sheet-cell sheet-cell-role">
+                <p className="sheet-role">
+                  {combinedRole || "Department • Role"}
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        {/* Subtitle / Role */}
-        <p 
-          className="absolute uppercase tracking-[0.2em] transition-all opacity-80"
-          style={{ 
-            left: config.elements.subtitle.x, 
-            top: config.elements.subtitle.y, 
-            fontSize: config.elements.subtitle.size,
-            color: config.colors.primary,
-            fontWeight: 500
-          }}
-        >
-          {data.role || "Operational Identity"}
-        </p>
+        <div className="sheet-layout">
+          <div className="sheet-photo">
+            <div className="sheet-photo-stage" ref={photoStageRef}>
+              {data.imageUrl ? (
+                <img
+                  src={data.imageUrl}
+                  alt={`${data.fullName} preview`}
+                  className="sheet-photo-image"
+                />
+              ) : (
+                <div className="sheet-photo-placeholder">
+                  <div className="sheet-photo-icon">
+                    <ImageOff size={42} />
+                  </div>
+                  <div>
+                    <p className="sheet-photo-title">Photo placeholder</p>
+                    <p className="sheet-photo-copy">
+                      Upload an employee photo to preview the print layout.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-        {/* Badge/Info */}
-        <div 
-           className="absolute flex items-center gap-1.5 transition-all"
-           style={{ 
-             left: config.elements.badge.x, 
-             top: config.elements.badge.y
-           }}
-        >
-          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span 
-            className="font-bold uppercase tracking-wider opacity-60"
-            style={{ 
-              fontSize: config.elements.badge.size,
-              color: config.colors.text
-            }}
-          >
-            Verified Identity
+          <div className="sheet-aside">
+            <div className="sheet-card-block">
+              <p className="sheet-label">Issue Date</p>
+              <p className="sheet-value">{data.issueDate || "YYYY-MM-DD"}</p>
+            </div>
+
+            <div className="sheet-card-block">
+              <p className="sheet-label">Department</p>
+              <p className="sheet-value">
+                {data.department || "Department name"}
+              </p>
+            </div>
+
+            <div className="sheet-card-block">
+              <p className="sheet-label">Built by S.D.</p>
+              <a
+                href="https://github.com/sd"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="sheet-link">
+                View developer profile
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="sheet-footer">
+          <span className="font-mono">{data.idNumber || "EMP-001"}</span>
+          <span className="sheet-footer-badge">
+            <Database size={12} />
+            Printable sample alignment
           </span>
         </div>
-
-        {/* QR / ID Symbol */}
-        <div 
-          className="absolute w-16 h-16 bg-white/5 p-1 rounded-xl border border-white/10 backdrop-blur flex items-center justify-center"
-          style={{ right: 24, top: 24 }}
-        >
-          <Database size={24} style={{ color: config.colors.accent }} />
-        </div>
       </div>
-
-      {/* Card Footer */}
-      <div 
-        className="h-20 flex justify-between items-end p-8 border-t"
-        style={{ borderColor: `${config.colors.text}10` }}
-      >
-        <div className="space-y-1">
-          <p className="text-[9px] uppercase font-black tracking-widest opacity-40" style={{ color: config.colors.text }}>Issue Date</p>
-          <p className="text-xs font-mono tracking-tighter" style={{ color: config.colors.text }}>{data.issueDate}</p>
-        </div>
-        <div className="text-right space-y-1">
-          <p className="text-[9px] uppercase font-black tracking-widest opacity-40" style={{ color: config.colors.text }}>Serial Number</p>
-          <p className="text-xs font-mono" style={{ color: config.colors.primary }}>{data.idNumber}</p>
-        </div>
-      </div>
-    </div>
+    </article>
   );
 }

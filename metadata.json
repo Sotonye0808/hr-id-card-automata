@@ -1,6 +1,6 @@
 {
-  "name": "BentoDash",
-  "description": "A high-precision technical dashboard with a bento grid layout and real-time data visualization.",
+  "name": "hr-id-card-automata",
+  "description": "Progressive Web App to generate HR ID cards from employee data. Local-first, template-driven, exportable to PDF and DOCX.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }
