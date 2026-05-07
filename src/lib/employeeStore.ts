@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as XLSX from "xlsx";
 import {
     EmployeeImageCrop,
     EmployeeImageTransform,
@@ -423,6 +424,298 @@ export async function savePersistedBatch(state: PersistedBatchState) {
     );
 
     database.close();
+}
+
+/**
+ * Parse XLSX buffer/file into rows of string values
+ */
+export function parseEmployeeXlsx(buffer: ArrayBuffer): Partial<EmployeeRecord>[] {
+    try {
+        const workbook = XLSX.read(buffer, { type: "array" });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+        if (!worksheet) {
+            return [];
+        }
+
+        // Get the data as an array of arrays
+        const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, {
+            header: 1,
+            defval: "",
+        }) as Array<string[]>;
+
+        if (rows.length === 0) {
+            return [];
+        }
+
+        // Process like CSV: first row is headers, rest are data
+        const [headerRow, ...dataRows] = rows;
+        const headers = headerRow.map(normalizeHeader);
+
+        return dataRows.map((row) => {
+            const record: Partial<EmployeeRecord> = {};
+
+            row.forEach((cell, index) => {
+                const header = headers[index];
+                const cellValue = String(cell ?? "").trim();
+
+                switch (header) {
+                    case "fullname":
+                    case "name":
+                    case "employeename":
+                        record.fullName = cellValue;
+                        break;
+                    case "department":
+                    case "dept":
+                    case "grade":
+                    case "designation":
+                        record.department = cellValue;
+                        break;
+                    case "role":
+                    case "jobtitle":
+                    case "position":
+                        record.role = cellValue;
+                        break;
+                    case "idnumber":
+                    case "employeeid":
+                    case "id":
+                    case "serial":
+                    case "code":
+                        record.idNumber = cellValue;
+                        break;
+                    case "issuedate":
+                    case "date":
+                    case "issue":
+                        record.issueDate = cellValue;
+                        break;
+                    case "imageurl":
+                    case "image":
+                    case "photo":
+                        record.imageUrl = cellValue || null;
+                        break;
+                    case "imagescale":
+                        record.imageTransform = {
+                            ...(record.imageTransform ?? createDefaultImageTransform()),
+                            scale: Number.parseFloat(cellValue) || 1,
+                        };
+                        break;
+                    case "imageoffsetx":
+                        record.imageTransform = {
+                            ...(record.imageTransform ?? createDefaultImageTransform()),
+                            offsetX: Number.parseFloat(cellValue) || 0,
+                        };
+                        break;
+                    case "imageoffsety":
+                        record.imageTransform = {
+                            ...(record.imageTransform ?? createDefaultImageTransform()),
+                            offsetY: Number.parseFloat(cellValue) || 0,
+                        };
+                        break;
+                    case "imagecropx":
+                    case "cropx":
+                        record.imageCrop = {
+                            ...(record.imageCrop ?? createDefaultImageCrop()),
+                            x: Number.parseFloat(cellValue) || 0,
+                        };
+                        break;
+                    case "imagecropy":
+                    case "cropy":
+                        record.imageCrop = {
+                            ...(record.imageCrop ?? createDefaultImageCrop()),
+                            y: Number.parseFloat(cellValue) || 0,
+                        };
+                        break;
+                    case "imagecropwidth":
+                    case "cropwidth":
+                        record.imageCrop = {
+                            ...(record.imageCrop ?? createDefaultImageCrop()),
+                            width: Number.parseFloat(cellValue) || 100,
+                        };
+                        break;
+                    case "imagecropheight":
+                    case "cropheight":
+                        record.imageCrop = {
+                            ...(record.imageCrop ?? createDefaultImageCrop()),
+                            height: Number.parseFloat(cellValue) || 100,
+                        };
+                        break;
+                    default:
+                        break;
+                }
+            });
+
+            return record;
+        });
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Parse tab-separated or comma-separated clipboard paste text (common from spreadsheet apps)
+ */
+export function parseClipboardText(text: string): Partial<EmployeeRecord>[] {
+    const trimmedText = text.trim();
+
+    if (!trimmedText) {
+        return [];
+    }
+
+    // Check if it's likely tab-separated (typical for spreadsheet pastes)
+    const lines = trimmedText.split(/\r?\n/);
+    const firstLine = lines[0] ?? "";
+    const isTabSeparated = firstLine.includes("\t");
+
+    if (isTabSeparated) {
+        // Parse as tab-separated values
+        const rows = lines.map((line) => line.split("\t"));
+        return parseRowsWithHeaders(rows);
+    }
+
+    // Otherwise, parse as delimited text (CSV)
+    const rows = parseDelimitedText(trimmedText);
+    return parseRowsWithHeaders(rows);
+}
+
+/**
+ * Generic row parser with header normalization
+ */
+function parseRowsWithHeaders(rows: string[][]): Partial<EmployeeRecord>[] {
+    if (rows.length === 0) {
+        return [];
+    }
+
+    const [headerRow, ...dataRows] = rows;
+    const headers = headerRow.map(normalizeHeader);
+
+    return dataRows.map((row) => {
+        const record: Partial<EmployeeRecord> = {};
+
+        row.forEach((cell, index) => {
+            const header = headers[index];
+            const cellValue = String(cell ?? "").trim();
+
+            switch (header) {
+                case "fullname":
+                case "name":
+                case "employeename":
+                    record.fullName = cellValue;
+                    break;
+                case "department":
+                case "dept":
+                case "grade":
+                case "designation":
+                    record.department = cellValue;
+                    break;
+                case "role":
+                case "jobtitle":
+                case "position":
+                    record.role = cellValue;
+                    break;
+                case "idnumber":
+                case "employeeid":
+                case "id":
+                case "serial":
+                case "code":
+                    record.idNumber = cellValue;
+                    break;
+                case "issuedate":
+                case "date":
+                case "issue":
+                    record.issueDate = cellValue;
+                    break;
+                case "imageurl":
+                case "image":
+                case "photo":
+                    record.imageUrl = cellValue || null;
+                    break;
+                case "imagescale":
+                    record.imageTransform = {
+                        ...(record.imageTransform ?? createDefaultImageTransform()),
+                        scale: Number.parseFloat(cellValue) || 1,
+                    };
+                    break;
+                case "imageoffsetx":
+                    record.imageTransform = {
+                        ...(record.imageTransform ?? createDefaultImageTransform()),
+                        offsetX: Number.parseFloat(cellValue) || 0,
+                    };
+                    break;
+                case "imageoffsety":
+                    record.imageTransform = {
+                        ...(record.imageTransform ?? createDefaultImageTransform()),
+                        offsetY: Number.parseFloat(cellValue) || 0,
+                    };
+                    break;
+                case "imagecropx":
+                case "cropx":
+                    record.imageCrop = {
+                        ...(record.imageCrop ?? createDefaultImageCrop()),
+                        x: Number.parseFloat(cellValue) || 0,
+                    };
+                    break;
+                case "imagecropy":
+                case "cropy":
+                    record.imageCrop = {
+                        ...(record.imageCrop ?? createDefaultImageCrop()),
+                        y: Number.parseFloat(cellValue) || 0,
+                    };
+                    break;
+                case "imagecropwidth":
+                case "cropwidth":
+                    record.imageCrop = {
+                        ...(record.imageCrop ?? createDefaultImageCrop()),
+                        width: Number.parseFloat(cellValue) || 100,
+                    };
+                    break;
+                case "imagecropheight":
+                case "cropheight":
+                    record.imageCrop = {
+                        ...(record.imageCrop ?? createDefaultImageCrop()),
+                        height: Number.parseFloat(cellValue) || 100,
+                    };
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        return record;
+    });
+}
+
+/**
+ * Detect field mappings from raw headers to template fields
+ */
+export interface FieldMapping {
+    sourceHeader: string;
+    targetField: string;
+}
+
+export function detectFieldMappings(
+    headers: string[],
+): FieldMapping[] {
+    const normalizedHeaders = headers.map(normalizeHeader);
+
+    const mappings: FieldMapping[] = [];
+    const targetFields = ["fullName", "department", "role", "idNumber", "issueDate"];
+
+    for (const targetField of targetFields) {
+        const detected = normalizedHeaders.find((header) => {
+            const target = normalizeHeader(targetField);
+            // Exact match or close partial match
+            return header === target || header.includes(target) || target.includes(header);
+        });
+
+        if (detected) {
+            mappings.push({
+                sourceHeader: detected,
+                targetField,
+            });
+        }
+    }
+
+    return mappings;
 }
 
 export async function renderTransformedImage(

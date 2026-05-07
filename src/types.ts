@@ -81,3 +81,9 @@ export interface ExportProgress {
   percent: number;
   status: "idle" | "working" | "complete" | "error";
 }
+
+export interface RawImportRow {
+  rowIndex: number;
+  values: string[];
+  selected: boolean;
+}

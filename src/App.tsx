@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Eye,
   X,
+  Clipboard,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import {
@@ -41,11 +42,14 @@ import { CardConfig, EmployeeRecord, ExportProgress, UserData } from "./types";
 import DataEntry from "./components/DataEntry";
 import TemplateEditor from "./components/TemplateEditor";
 import IDCard from "./components/IDCard.tsx";
+import ImportWizard from "./components/ImportWizard";
 import {
   createEmployeeRecord,
   duplicateEmployeeRecord,
   loadPersistedBatch,
   parseEmployeeCsv,
+  parseEmployeeXlsx,
+  parseClipboardText,
   renderTransformedImage,
   savePersistedBatch,
 } from "./lib/employeeStore";
@@ -144,6 +148,10 @@ export default function App() {
   });
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [importWizardState, setImportWizardState] = useState<{
+    headers: string[];
+    rawRows: string[][];
+  } | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -275,17 +283,165 @@ export default function App() {
     }
 
     try {
-      const text = await file.text();
-      const importedRows = parseEmployeeCsv(text);
+      const isXlsx = file.name.toLowerCase().endsWith(".xlsx");
+      const isCsv = file.name.toLowerCase().endsWith(".csv");
 
-      if (importedRows.length === 0) {
+      let rawRows: string[][] = [];
+      let headers: string[] = [];
+
+      if (isXlsx) {
+        const buffer = await file.arrayBuffer();
+        const importedRows = parseEmployeeXlsx(buffer);
+
+        if (importedRows.length === 0) {
+          setProgress({
+            phase: "No XLSX rows found",
+            percent: 0,
+            status: "error",
+          });
+          return;
+        }
+
+        // Extract headers from first row if it looks like a header row
+        // For now, assume first row is headers
+        headers = Object.keys(importedRows[0] || {});
+        rawRows = importedRows.map((row) =>
+          headers.map((header) => String(row[header as keyof typeof row] ?? "")),
+        );
+      } else if (isCsv) {
+        const text = await file.text();
+        // Parse CSV to get raw rows with headers
+        const lines = text.trim().split(/\r?\n/);
+        const csvRows = lines.map((line) => {
+          // Simple split for now - use the same parser as parseEmployeeCsv
+          const cells: string[] = [];
+          let current = "";
+          let inQuotes = false;
+
+          for (let i = 0; i < line.length; i += 1) {
+            const char = line[i];
+            if (char === '"' && line[i + 1] === '"') {
+              current += '"';
+              i += 1;
+            } else if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === "," && !inQuotes) {
+              cells.push(current.trim());
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+
+          cells.push(current.trim());
+          return cells;
+        });
+
+        if (csvRows.length === 0) {
+          setProgress({
+            phase: "No CSV rows found",
+            percent: 0,
+            status: "error",
+          });
+          return;
+        }
+
+        headers = csvRows[0] ?? [];
+        rawRows = csvRows.slice(1);
+      } else {
         setProgress({
-          phase: "No CSV rows found",
+          phase: "Unsupported file type. Please use .csv or .xlsx",
           percent: 0,
           status: "error",
         });
         return;
       }
+
+      if (rawRows.length === 0) {
+        setProgress({
+          phase: "No data rows found in file",
+          percent: 0,
+          status: "error",
+        });
+        return;
+      }
+
+      // Show import wizard with detected headers and rows
+      setImportWizardState({ headers, rawRows });
+    } catch (error) {
+      setProgress({
+        phase: `Import failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        percent: 0,
+        status: "error",
+      });
+    }
+  };
+
+  const handleImportWizardConfirm = (selectedData: string[][]) => {
+    try {
+      const [headerRow, ...dataRows] = selectedData;
+
+      if (!headerRow || dataRows.length === 0) {
+        setProgress({
+          phase: "No valid data to import",
+          percent: 0,
+          status: "error",
+        });
+        return;
+      }
+
+      // Parse the selected data using the generic parser
+      const importedRows = dataRows.map((row) => {
+        const headers = headerRow.map((h) =>
+          h.trim().toLowerCase().replace(/[^a-z0-9]+/g, ""),
+        );
+        const record: Partial<EmployeeRecord> = {};
+
+        row.forEach((cell, index) => {
+          const header = headers[index];
+          const cellValue = String(cell ?? "").trim();
+
+          switch (header) {
+            case "fullname":
+            case "name":
+            case "employeename":
+              record.fullName = cellValue;
+              break;
+            case "department":
+            case "dept":
+            case "grade":
+            case "designation":
+              record.department = cellValue;
+              break;
+            case "role":
+            case "jobtitle":
+            case "position":
+              record.role = cellValue;
+              break;
+            case "idnumber":
+            case "employeeid":
+            case "id":
+            case "serial":
+            case "code":
+              record.idNumber = cellValue;
+              break;
+            case "issuedate":
+            case "date":
+            case "issue":
+              record.issueDate = cellValue;
+              break;
+            case "imageurl":
+            case "image":
+            case "photo":
+              record.imageUrl = cellValue || null;
+              break;
+            default:
+              break;
+          }
+        });
+
+        return record;
+      });
 
       const importedEmployees = importedRows.map((row, index) =>
         createEmployeeRecord(row, index),
@@ -294,14 +450,61 @@ export default function App() {
       setEmployees(importedEmployees);
       setSelectedIndex(0);
       setActiveTab("employees");
+      setImportWizardState(null);
       setProgress({
         phase: `Imported ${importedEmployees.length} employee rows`,
         percent: 100,
         status: "complete",
       });
+    } catch (error) {
+      setProgress({
+        phase: `Import processing failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        percent: 0,
+        status: "error",
+      });
+    }
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const importedRows = parseClipboardText(text);
+
+      if (importedRows.length === 0) {
+        setProgress({
+          phase: "No valid data found in clipboard",
+          percent: 0,
+          status: "error",
+        });
+        return;
+      }
+
+      // For clipboard paste, try to extract headers
+      // Assume the pasted text has headers in the first line
+      const lines = text.trim().split(/\r?\n/);
+      const isTabSeparated = lines[0]?.includes("\t");
+
+      const headerRow = lines[0]?.split(isTabSeparated ? "\t" : ",") ?? [];
+      const dataRows = lines.slice(1).map((line) =>
+        line.split(isTabSeparated ? "\t" : ","),
+      );
+
+      if (dataRows.length === 0 || headerRow.length === 0) {
+        setProgress({
+          phase: "Could not parse clipboard data",
+          percent: 0,
+          status: "error",
+        });
+        return;
+      }
+
+      setImportWizardState({
+        headers: headerRow,
+        rawRows: dataRows,
+      });
     } catch {
       setProgress({
-        phase: "CSV import failed",
+        phase: "Failed to read clipboard. Please ensure you have copied data from a spreadsheet.",
         percent: 0,
         status: "error",
       });
@@ -681,10 +884,10 @@ export default function App() {
           <input
             ref={csvInputRef}
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             className="hidden"
-            title="Import employee CSV"
-            aria-label="Import employee CSV"
+            title="Import employee CSV or XLSX"
+            aria-label="Import employee CSV or XLSX"
             onChange={handleCsvImport}
           />
 
@@ -793,6 +996,12 @@ export default function App() {
                         label: "Import CSV",
                         icon: Upload,
                         onClick: openCsvPicker,
+                        disabled: false,
+                      },
+                      {
+                        label: "Paste from Clipboard",
+                        icon: Clipboard,
+                        onClick: handlePasteFromClipboard,
                         disabled: false,
                       },
                       {
@@ -1052,6 +1261,15 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {importWizardState && (
+        <ImportWizard
+          headers={importWizardState.headers}
+          rawRows={importWizardState.rawRows}
+          onConfirm={handleImportWizardConfirm}
+          onCancel={() => setImportWizardState(null)}
+        />
+      )}
     </div>
   );
 }
