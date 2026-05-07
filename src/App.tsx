@@ -306,7 +306,9 @@ export default function App() {
         // For now, assume first row is headers
         headers = Object.keys(importedRows[0] || {});
         rawRows = importedRows.map((row) =>
-          headers.map((header) => String(row[header as keyof typeof row] ?? "")),
+          headers.map((header) =>
+            String(row[header as keyof typeof row] ?? ""),
+          ),
         );
       } else if (isCsv) {
         const text = await file.text();
@@ -393,7 +395,10 @@ export default function App() {
       // Parse the selected data using the generic parser
       const importedRows = dataRows.map((row) => {
         const headers = headerRow.map((h) =>
-          h.trim().toLowerCase().replace(/[^a-z0-9]+/g, ""),
+          h
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, ""),
         );
         const record: Partial<EmployeeRecord> = {};
 
@@ -485,9 +490,9 @@ export default function App() {
       const isTabSeparated = lines[0]?.includes("\t");
 
       const headerRow = lines[0]?.split(isTabSeparated ? "\t" : ",") ?? [];
-      const dataRows = lines.slice(1).map((line) =>
-        line.split(isTabSeparated ? "\t" : ","),
-      );
+      const dataRows = lines
+        .slice(1)
+        .map((line) => line.split(isTabSeparated ? "\t" : ","));
 
       if (dataRows.length === 0 || headerRow.length === 0) {
         setProgress({
@@ -504,7 +509,8 @@ export default function App() {
       });
     } catch {
       setProgress({
-        phase: "Failed to read clipboard. Please ensure you have copied data from a spreadsheet.",
+        phase:
+          "Failed to read clipboard. Please ensure you have copied data from a spreadsheet.",
         percent: 0,
         status: "error",
       });

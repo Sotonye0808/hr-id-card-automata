@@ -4,7 +4,13 @@
  */
 
 import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Copy } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+} from "lucide-react";
 import { RawImportRow } from "../types";
 import { FieldMapping, detectFieldMappings } from "../lib/employeeStore";
 
@@ -22,7 +28,9 @@ export default function ImportWizard({
   onCancel,
 }: ImportWizardProps) {
   const [step, setStep] = useState<"mapping" | "select">("mapping");
-  const [mappings, setMappings] = useState<Map<number, string | null>>(new Map());
+  const [mappings, setMappings] = useState<Map<number, string | null>>(
+    new Map(),
+  );
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [expandedMappings, setExpandedMappings] = useState(false);
 
@@ -43,7 +51,13 @@ export default function ImportWizard({
     setSelectedRows(new Set(rawRows.map((_, i) => i)));
   }, [headers, rawRows]);
 
-  const targetFields = ["fullName", "department", "role", "idNumber", "issueDate"];
+  const targetFields = [
+    "fullName",
+    "department",
+    "role",
+    "idNumber",
+    "issueDate",
+  ];
 
   const updateMapping = (headerIndex: number, targetField: string | null) => {
     const newMappings = new Map(mappings);
@@ -79,7 +93,9 @@ export default function ImportWizard({
     setSelectedRows(newSelected);
   };
 
-  const hasValidMappings = Array.from(mappings.values()).some((m) => m !== null);
+  const hasValidMappings = Array.from(mappings.values()).some(
+    (m) => m !== null,
+  );
   const hasSelectedRows = selectedRows.size > 0;
 
   const handleConfirm = () => {
@@ -97,7 +113,9 @@ export default function ImportWizard({
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-[24px] border border-[var(--border)] bg-[var(--bg)] shadow-2xl">
         {/* Header */}
         <div className="border-b border-[var(--border)] px-6 py-4">
-          <h2 className="text-lg font-bold text-[var(--text)]">Import Spreadsheet Data</h2>
+          <h2 className="text-lg font-bold text-[var(--text)]">
+            Import Spreadsheet Data
+          </h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
             {step === "mapping"
               ? "Map columns to template fields"
@@ -121,7 +139,11 @@ export default function ImportWizard({
                       Map source columns to ID card template fields
                     </p>
                   </div>
-                  {expandedMappings ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  {expandedMappings ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
                 </button>
 
                 {expandedMappings && (
@@ -281,10 +303,7 @@ export default function ImportWizard({
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-[var(--border)] px-6 py-4">
-          <button
-            onClick={onCancel}
-            className="secondary-button"
-            type="button">
+          <button onClick={onCancel} className="secondary-button" type="button">
             Cancel
           </button>
 
@@ -299,14 +318,10 @@ export default function ImportWizard({
             )}
             <button
               onClick={
-                step === "mapping"
-                  ? () => setStep("select")
-                  : handleConfirm
+                step === "mapping" ? () => setStep("select") : handleConfirm
               }
               disabled={
-                step === "mapping"
-                  ? !hasValidMappings
-                  : !hasSelectedRows
+                step === "mapping" ? !hasValidMappings : !hasSelectedRows
               }
               className="primary-button disabled:opacity-50 disabled:cursor-not-allowed"
               type="button">
