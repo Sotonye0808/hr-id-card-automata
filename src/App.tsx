@@ -52,6 +52,7 @@ import {
   parseClipboardText,
   renderTransformedImage,
   savePersistedBatch,
+  detectFieldMappings,
 } from "./lib/employeeStore";
 
 type WorkspaceTab = "employees" | "template" | "export";
@@ -379,7 +380,10 @@ export default function App() {
     }
   };
 
-  const handleImportWizardConfirm = (selectedData: string[][]) => {
+  const handleImportWizardConfirm = (
+    selectedData: string[][],
+    headerMapping: Map<number, number | null>,
+  ) => {
     try {
       const [headerRow, ...dataRows] = selectedData;
 
@@ -392,58 +396,55 @@ export default function App() {
         return;
       }
 
-      // Parse the selected data using the generic parser
+      // Build a map of which columns map to which template fields
+      // headerMapping maps: column index -> column index (the mapping)
+      // We need to determine which columns contain which data
+
+      // Detect field mappings from headers
+      const detected = detectFieldMappings(headerRow);
+      const fieldToColumnMap = new Map<string, number>();
+
+      // For each detected mapping, record which column index contains that field
+      detected.forEach((mapping) => {
+        const columnIndex = headerRow.indexOf(mapping.sourceHeader);
+        if (columnIndex !== -1) {
+          fieldToColumnMap.set(mapping.targetField, columnIndex);
+        }
+      });
+
+      // Parse the selected data using the detected field mappings
       const importedRows = dataRows.map((row) => {
-        const headers = headerRow.map((h) =>
-          h
-            .trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, ""),
-        );
         const record: Partial<EmployeeRecord> = {};
 
-        row.forEach((cell, index) => {
-          const header = headers[index];
-          const cellValue = String(cell ?? "").trim();
+        // Extract fullName
+        const fullNameIdx = fieldToColumnMap.get("fullName") ?? 0;
+        if (fullNameIdx < row.length && row[fullNameIdx]) {
+          record.fullName = String(row[fullNameIdx]).trim();
+        }
 
-          switch (header) {
-            case "fullname":
-            case "name":
-            case "employeename":
-              record.fullName = cellValue;
-              break;
-            case "department":
-            case "dept":
-            case "grade":
-            case "designation":
-              record.department = cellValue;
-              break;
-            case "role":
-            case "jobtitle":
-            case "position":
-              record.role = cellValue;
-              break;
-            case "idnumber":
-            case "employeeid":
-            case "id":
-            case "serial":
-            case "code":
-              record.idNumber = cellValue;
-              break;
-            case "issuedate":
-            case "date":
-            case "issue":
-              record.issueDate = cellValue;
-              break;
-            case "imageurl":
-            case "image":
-            case "photo":
-              record.imageUrl = cellValue || null;
-              break;
-            default:
-              break;
-          }
-        });
+        // Extract department
+        const deptIdx = fieldToColumnMap.get("department") ?? -1;
+        if (deptIdx >= 0 && deptIdx < row.length && row[deptIdx]) {
+          record.department = String(row[deptIdx]).trim();
+        }
+
+        // Extract role
+        const roleIdx = fieldToColumnMap.get("role") ?? -1;
+        if (roleIdx >= 0 && roleIdx < row.length && row[roleIdx]) {
+          record.role = String(row[roleIdx]).trim();
+        }
+
+        // Extract idNumber
+        const idIdx = fieldToColumnMap.get("idNumber") ?? -1;
+        if (idIdx >= 0 && idIdx < row.length && row[idIdx]) {
+          record.idNumber = String(row[idIdx]).trim();
+        }
+
+        // Extract issueDate
+        const dateIdx = fieldToColumnMap.get("issueDate") ?? -1;
+        if (dateIdx >= 0 && dateIdx < row.length && row[dateIdx]) {
+          record.issueDate = String(row[dateIdx]).trim();
+        }
 
         return record;
       });

@@ -7,19 +7,29 @@ import { useEffect, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronDown,
   ChevronRight,
-  Copy,
+  Search,
+  X,
 } from "lucide-react";
-import { RawImportRow } from "../types";
-import { FieldMapping, detectFieldMappings } from "../lib/employeeStore";
+import { detectFieldMappings } from "../lib/employeeStore";
 
 export interface ImportWizardProps {
   headers: string[];
   rawRows: string[][];
-  onConfirm: (selectedRows: string[][]) => void;
+  onConfirm: (
+    selectedRows: string[][],
+    fieldToHeaderMap: Map<string, number | null>,
+  ) => void;
   onCancel: () => void;
 }
+
+const TARGET_FIELDS = [
+  { key: "fullName", label: "📝 Full Name", required: true },
+  { key: "department", label: "🏢 Department/Grade", required: false },
+  { key: "role", label: "💼 Role/Position", required: false },
+  { key: "idNumber", label: "🔢 ID/Code", required: true },
+  { key: "issueDate", label: "📅 Issue Date", required: false },
+];
 
 export default function ImportWizard({
   headers,
@@ -28,41 +38,36 @@ export default function ImportWizard({
   onCancel,
 }: ImportWizardProps) {
   const [step, setStep] = useState<"mapping" | "select">("mapping");
-  const [mappings, setMappings] = useState<Map<number, string | null>>(
-    new Map(),
-  );
+  const [fieldToHeaderMap, setFieldToHeaderMap] = useState<
+    Map<string, number | null>
+  >(new Map());
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
-  const [expandedMappings, setExpandedMappings] = useState(false);
+  const [searchFilter, setSearchFilter] = useState("");
 
   // Initialize mappings and selected rows on mount
   useEffect(() => {
-    // Detect initial mappings
     const detected = detectFieldMappings(headers);
-    const mappingMap = new Map<number, string | null>();
+    const fieldMap = new Map<string, number | null>();
 
-    headers.forEach((header, index) => {
-      const mapping = detected.find((m) => m.sourceHeader === header);
-      mappingMap.set(index, mapping?.targetField ?? null);
+    TARGET_FIELDS.forEach((field) => {
+      const mapping = detected.find((m) => m.targetField === field.key);
+      if (mapping) {
+        const sourceIndex = headers.indexOf(mapping.sourceHeader);
+        fieldMap.set(field.key, sourceIndex >= 0 ? sourceIndex : null);
+      }
     });
 
-    setMappings(mappingMap);
-
-    // Select all rows by default
+    setFieldToHeaderMap(fieldMap);
     setSelectedRows(new Set(rawRows.map((_, i) => i)));
   }, [headers, rawRows]);
 
-  const targetFields = [
-    "fullName",
-    "department",
-    "role",
-    "idNumber",
-    "issueDate",
-  ];
-
-  const updateMapping = (headerIndex: number, targetField: string | null) => {
-    const newMappings = new Map(mappings);
-    newMappings.set(headerIndex, targetField);
-    setMappings(newMappings);
+  const updateFieldMapping = (
+    targetField: string,
+    headerIndex: number | null,
+  ) => {
+    const newMap = new Map(fieldToHeaderMap);
+    newMap.set(targetField, headerIndex);
+    setFieldToHeaderMap(newMap);
   };
 
   const toggleRowSelection = (rowIndex: number) => {
@@ -93,8 +98,8 @@ export default function ImportWizard({
     setSelectedRows(newSelected);
   };
 
-  const hasValidMappings = Array.from(mappings.values()).some(
-    (m) => m !== null,
+  const hasValidMappings = TARGET_FIELDS.some(
+    (field) => field.required && fieldToHeaderMap.get(field.key) !== null,
   );
   const hasSelectedRows = selectedRows.size > 0;
 
@@ -103,14 +108,27 @@ export default function ImportWizard({
       .sort()
       .map((i) => rawRows[i]);
 
-    // Include header row
     const dataWithHeaders = [headers, ...selectedData];
-    onConfirm(dataWithHeaders);
+    onConfirm(dataWithHeaders, fieldToHeaderMap);
   };
+
+  // Filter rows based on search
+  const filteredRowIndices = rawRows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => {
+      if (!searchFilter.trim()) return true;
+      const searchLower = searchFilter.toLowerCase();
+      return row.some((cell) =>
+        String(cell ?? "")
+          .toLowerCase()
+          .includes(searchLower),
+      );
+    })
+    .map(({ index }) => index);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-[24px] border border-[var(--border)] bg-[var(--bg)] shadow-2xl">
+      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-[24px] border border-[var(--border)] bg-[var(--bg)] shadow-2xl">
         {/* Header */}
         <div className="border-b border-[var(--border)] px-6 py-4">
           <h2 className="text-lg font-bold text-[var(--text)]">
@@ -118,7 +136,7 @@ export default function ImportWizard({
           </h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
             {step === "mapping"
-              ? "Map columns to template fields"
+              ? "Assign columns to template fields"
               : "Select rows to import"}
           </p>
         </div>
@@ -129,53 +147,62 @@ export default function ImportWizard({
             <div className="space-y-4">
               {/* Field Mappings */}
               <div className="rounded-[16px] border border-[var(--border)] bg-[var(--surface)] p-4">
-                <button
-                  onClick={() => setExpandedMappings(!expandedMappings)}
-                  className="flex w-full items-center justify-between py-2 text-left"
-                  type="button">
-                  <div>
-                    <p className="eyebrow">Field Mappings</p>
-                    <p className="text-xs text-[var(--muted)]">
-                      Map source columns to ID card template fields
-                    </p>
-                  </div>
-                  {expandedMappings ? (
-                    <ChevronDown size={16} />
-                  ) : (
-                    <ChevronRight size={16} />
-                  )}
-                </button>
+                <div className="mb-4">
+                  <p className="eyebrow">Map Template Fields</p>
+                  <p className="text-xs text-[var(--muted)]">
+                    Select which imported column corresponds to each card field
+                  </p>
+                </div>
 
-                {expandedMappings && (
-                  <div className="mt-4 space-y-3 border-t border-[var(--border)] pt-4">
-                    {headers.map((header, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <div className="flex-1 rounded-lg bg-[var(--bg)] px-3 py-2 text-sm font-medium text-[var(--text)]">
-                          {header}
-                        </div>
-                        <div className="text-xs text-[var(--muted)]">→</div>
-                        <select
-                          value={mappings.get(index) ?? ""}
-                          onChange={(e) =>
-                            updateMapping(index, e.target.value || null)
-                          }
-                          className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]">
-                          <option value="">Not mapped</option>
-                          {targetFields.map((field) => (
-                            <option key={field} value={field}>
-                              {field === "fullName"
-                                ? "Full Name"
-                                : field === "idNumber"
-                                  ? "ID/Code"
-                                  : field.charAt(0).toUpperCase() +
-                                    field.slice(1)}
-                            </option>
-                          ))}
-                        </select>
+                <div className="space-y-3">
+                  {TARGET_FIELDS.map((field) => (
+                    <div
+                      key={field.key}
+                      className="flex flex-col gap-3 rounded-lg bg-[var(--bg)] p-3 sm:flex-row sm:items-center">
+                      <div className="flex-shrink-0 sm:w-[160px]">
+                        <label className="text-sm font-semibold text-[var(--text)]">
+                          {field.label}
+                          {field.required && (
+                            <span className="text-red-500"> *</span>
+                          )}
+                        </label>
                       </div>
-                    ))}
-                  </div>
-                )}
+
+                      <div className="hidden text-xs text-[var(--muted)] sm:block">
+                        →
+                      </div>
+
+                      <select
+                        value={fieldToHeaderMap.get(field.key) ?? ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          updateFieldMapping(
+                            field.key,
+                            value ? Number.parseInt(value, 10) : null,
+                          );
+                        }}
+                        className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]">
+                        <option value="">Choose column...</option>
+                        {headers.map((header, idx) => (
+                          <option key={idx} value={idx}>
+                            {header}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Auto-detection hint */}
+                <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+                  <p className="font-medium">💡 Auto-Detected Matches</p>
+                  <p className="mt-1 text-xs">
+                    {detectFieldMappings(headers)
+                      .map((m) => `${m.sourceHeader} → ${m.targetField}`)
+                      .join(", ") ||
+                      "Manual assignment needed for your column names"}
+                  </p>
+                </div>
               </div>
 
               {/* Row Preview */}
@@ -185,7 +212,7 @@ export default function ImportWizard({
                   {rawRows.length} rows detected
                 </p>
 
-                <div className="mt-3 max-h-[200px] overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--bg)]">
+                <div className="mt-3 max-h-[220px] overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--bg)]">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-[var(--border)]">
@@ -220,8 +247,8 @@ export default function ImportWizard({
                   <div className="mt-3 flex items-center gap-2 rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
                     <AlertCircle size={16} className="flex-shrink-0" />
                     <p>
-                      At least one field should be mapped to recognize the data
-                      properly.
+                      Map at least the required fields (Full Name & ID) to
+                      continue.
                     </p>
                   </div>
                 )}
@@ -229,65 +256,109 @@ export default function ImportWizard({
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Row Selection */}
+              {/* Row Selection with Search */}
               <div className="rounded-[16px] border border-[var(--border)] bg-[var(--surface)] p-4">
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="eyebrow">Select Rows to Import</p>
                     <p className="text-xs text-[var(--muted)]">
-                      {selectedRows.size} of {rawRows.length} rows selected
+                      {selectedRows.size} of {filteredRowIndices.length} rows
+                      selected
                     </p>
                   </div>
-                  <button
-                    onClick={selectAllRows}
-                    className="mini-button"
-                    type="button">
-                    All
-                  </button>
-                  <button
-                    onClick={deselectAllRows}
-                    className="mini-button"
-                    type="button">
-                    None
-                  </button>
-                  <button
-                    onClick={invertSelection}
-                    className="mini-button"
-                    type="button">
-                    Invert
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={selectAllRows}
+                      className="mini-button"
+                      type="button"
+                      title="Select all visible rows">
+                      All
+                    </button>
+                    <button
+                      onClick={deselectAllRows}
+                      className="mini-button"
+                      type="button"
+                      title="Deselect all rows">
+                      None
+                    </button>
+                    <button
+                      onClick={invertSelection}
+                      className="mini-button"
+                      type="button"
+                      title="Invert selection">
+                      Invert
+                    </button>
+                  </div>
                 </div>
 
-                <div className="max-h-[400px] space-y-2 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--bg)] p-3">
-                  {rawRows.map((row, rowIndex) => {
-                    const isSelected = selectedRows.has(rowIndex);
-                    const firstCell = String(row[0] ?? "").slice(0, 50);
+                {/* Search Box */}
+                <div className="relative mb-3">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search rows by any value..."
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] pl-10 pr-3 py-2 text-sm text-[var(--text)] placeholder-[var(--muted)]"
+                  />
+                  {searchFilter && (
+                    <button
+                      onClick={() => setSearchFilter("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)]"
+                      type="button"
+                      title="Clear search">
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
 
-                    return (
-                      <button
-                        key={rowIndex}
-                        onClick={() => toggleRowSelection(rowIndex)}
-                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${
-                          isSelected
-                            ? "bg-[var(--accent-soft)]"
-                            : "bg-transparent hover:bg-black/5"
-                        }`}
-                        type="button">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          readOnly
-                          className="h-4 w-4"
-                        />
-                        <span className="flex-1 truncate text-sm text-[var(--text)]">
-                          {firstCell || "(empty row)"}
-                        </span>
-                        <span className="text-xs text-[var(--muted)]">
-                          Row {rowIndex + 1}
-                        </span>
-                      </button>
-                    );
-                  })}
+                {/* Filtered Rows List */}
+                <div className="max-h-[350px] space-y-2 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--bg)] p-3">
+                  {filteredRowIndices.length === 0 ? (
+                    <div className="flex h-20 items-center justify-center text-center text-sm text-[var(--muted)]">
+                      No rows match the search filter
+                    </div>
+                  ) : (
+                    filteredRowIndices.map((rowIndex) => {
+                      const isSelected = selectedRows.has(rowIndex);
+                      const row = rawRows[rowIndex];
+                      // Try to get a representative string from the row
+                      const firstNonEmpty = row.find((cell) =>
+                        String(cell ?? "").trim(),
+                      );
+                      const displayText = String(
+                        firstNonEmpty ?? row[0] ?? "",
+                      ).slice(0, 50);
+
+                      return (
+                        <button
+                          key={rowIndex}
+                          onClick={() => toggleRowSelection(rowIndex)}
+                          className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${
+                            isSelected
+                              ? "bg-[var(--accent-soft)]"
+                              : "bg-transparent hover:bg-black/5"
+                          }`}
+                          type="button">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            readOnly
+                            className="h-4 w-4"
+                          />
+                          <span className="flex-1 truncate text-sm text-[var(--text)] font-medium">
+                            {displayText || "(empty row)"}
+                          </span>
+                          <span className="text-xs text-[var(--muted)]">
+                            Row {rowIndex + 1}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
 
                 {!hasSelectedRows && (
