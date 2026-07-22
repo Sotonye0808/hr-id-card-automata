@@ -1,38 +1,92 @@
-# HR ID Card Automata
+# Default Template
 
-Small PWA to generate HR ID cards from employee data. Supports local-first workflows, image upload & basic cropping, live preview, and export to PDF/DOCX.
+A GitHub template repository incorporating the **`ai-system`** framework for AI-assisted software development, pre-configured with an **opencode local trigger workflow**.
 
-## Quickstart (local)
+---
 
-Prerequisites: Node.js (16+)
+## What's Included
 
-1. Install dependencies:
+### `ai-system/` — AI-Assisted Development System
 
-```bash
-npm install
+A vendor-neutral, model-agnostic framework for AI-assisted software development. Provides structured documentation, command-driven workflows, and quality gates that work identically across any AI coding tool.
+
+```
+ai-system/
+├── protocols/          # Entry, tiering, QA, escalation, verification
+├── agents/             # Function-based roles (Planner, Architect, Implementer, etc.)
+├── commands/           # Reusable command pipelines (execute-feature, dev-cycle, etc.)
+├── standards/          # Engineering principles
+├── planning/           # Task queue and project plan
+├── memory/             # Decisions and lessons
+├── index/              # Repo map and dependency graph
+├── testing/            # Test plan and results
+├── checkpoints/        # Session log and in-progress tracking
+├── summaries/          # Development history
+└── integrations/       # Optional tool integration examples
 ```
 
-2. Run the dev server:
+### `ai-context.md` — Session entry point
+
+The first file any AI agent reads to get a 30-second project orientation.
+
+### `MIGRATION.md` — Upgrade guide
+
+For teams upgrading from `ai-system` v1 to v2.
+
+### `.github/workflows/opencode.yml` — Opencode local trigger
+
+Enables running opencode agents directly from issue comments and PR review comments using `/oc`, `/opencode`, `/design`, `/od`, and `/opendesign` commands. Delegates to the central workflow runner in the [sotonye-dagogo-dev/github-workflows](https://github.com/sotonye-dagogo-dev/github-workflows) repository.
+
+---
+
+## How to Use This Template
+
+### 1. Create a Repository from This Template
+
+Click **"Use this template"** on GitHub to create a new repository.
+
+### 2. Clone and Bootstrap
 
 ```bash
-npm run dev
+git clone <your-new-repo-url>
+cd <your-repo>
 ```
 
-3. Open http://localhost:3000
+Then, in your AI tool, run the bootstrap command:
 
-## Purpose
+```
+Execute command: ai-system/commands/bootstrap-project.md
+Directive: [describe your project, e.g., "Next.js + Node.js marketplace app"]
+```
 
-This repo is a streamlined PWA for HR teams to batch-create ID cards using a JSON-driven template. It is local-first (no external DB), supports offline use, and exports PDFs or DOCX files.
+### 3. Start Development
 
-The default preview follows the provided sample layout: heading, employee table row, photo block, and developer credit footer.
+```
+Execute command: ai-system/commands/dev-cycle.md
+```
 
-## Notes
+### 4. Use Opencode (Optional)
 
-- The UI includes a Template Editor and a Batch/Activity panel for exports.
-- Batch entry supports manual rows and CSV import.
-- A sample CSV is available at `/sample-employee-batch.csv` and from the app UI.
-- Employee photos are stored locally in IndexedDB, while batch metadata and template settings are kept in localStorage.
-- The sample template used as the default comes from `.ai-system/docs/Staff_IDS_2026_54e4476f.html`.
-- Batch exports generate all queued employees into the same PDF or DOCX file, with page breaks between records.
+Comment `/oc` on any issue or PR to trigger an opencode agent session via the configured workflow.
 
-Built by S.D. — link included in the app footer.
+---
+
+## Prerequisites & Suggestions
+
+- **GitHub Organization**: For teams, set up an org-level secrets and environments to share across repos using this template.
+- **Repository Secrets**: If using the opencode workflow, ensure `GITHUB_TOKEN` has the necessary permissions (contents write, pull requests write, issues write).
+- **AI Tool**: Any AI coding tool that can read `ai-context.md` at session start (CLI, IDE extension, API loop, or autonomous agent).
+- **GitHub Workflows Repo**: The opencode trigger workflow references `sotonye-dagogo-dev/github-workflows`. Ensure this repository is accessible within your org, or update the workflow reference accordingly.
+
+---
+
+## References
+
+- **`ai-system` Framework Docs**: See [Sotonye0808/ai-system-template](https://github.com/Sotonye0808/ai-system-template) for the canonical `ai-system` documentation and philosophy.
+- **Opencode Workflows**: See [sotonye-dagogo-dev/github-workflows](https://github.com/sotonye-dagogo-dev/github-workflows) for the central workflow runners.
+
+---
+
+## License
+
+See [LICENSE](./LICENSE).

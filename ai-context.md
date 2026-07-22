@@ -1,0 +1,50 @@
+# Project AI Context
+
+> **Metadata**
+> - last-updated-by: bootstrap-project
+> - last-verified-against-code: 2026-07-22
+> - staleness-policy: re-verify before trusting if project structure has changed
+
+> **Overview:** Local-first, single-page PWA built with React 19 + Vite + TypeScript + Tailwind CSS v4 that helps HR teams turn employee records and photos into printable, batch-exportable ID cards. Fully client-side — data persisted to localStorage and IndexedDB, exports generated in-browser via jsPDF and docx.
+
+---
+
+## Quick Reference
+
+| Field            | Value                                    |
+| ---------------- | ---------------------------------------- |
+| Project Name     | HR ID Card Automata                      |
+| Type             | Single-Page Application                  |
+| Primary Language | TypeScript                               |
+| Frontend         | React 19 + Vite 6                        |
+| Backend          | None (fully client-side)                 |
+| Database         | localStorage + IndexedDB                 |
+| Styling          | Tailwind CSS v4 + CSS custom properties  |
+| Deployment       | Static site (Vite build → dist/)         |
+
+---
+
+## Key Modules
+
+| Module          | Location              | Purpose                                   |
+| --------------- | --------------------- | ----------------------------------------- |
+| App Shell       | src/App.tsx           | Main app state, routing, import/export    |
+| Data Entry      | src/components/DataEntry.tsx | Employee data form + image upload  |
+| ID Card Preview | src/components/IDCard.tsx    | Live card preview with template     |
+| Template Editor | src/components/TemplateEditor.tsx | Font, color, layout customization |
+| Import Wizard   | src/components/ImportWizard.tsx | CSV/XLSX/clipboard import with mapping |
+| Data Layer      | src/lib/employeeStore.ts | Persistence, CSV/XLSX parsing, image transforms |
+
+---
+
+## Entry Point
+
+The AI system documentation lives in `ai-system/`.
+
+Start with: `ai-system/protocols/entry-protocol.md`
+
+---
+
+## Active Development Focus
+
+ID card generation and batch export with template customization — currently in active development with core features implemented and refinement ongoing.
