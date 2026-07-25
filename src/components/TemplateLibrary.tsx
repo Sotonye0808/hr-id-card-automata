@@ -94,7 +94,7 @@ export default function TemplateLibrary({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
-      <div className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl sm:p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-black text-[var(--text)]">Template Library</h2>
           <button className="secondary-button" onClick={onClose}>

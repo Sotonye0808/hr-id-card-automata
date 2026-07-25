@@ -1,8 +1,8 @@
 # Repo Map
 
 > **Metadata**
-> - last-updated-by: bootstrap-project
-> - last-verified-against-code: 2026-07-22
+> - last-updated-by: execute-feature
+> - last-verified-against-code: 2026-07-25
 > - staleness-policy: auto-regenerable — update when project structure changes
 
 > **Overview:** Directory structure with purpose of each folder and key files.
@@ -24,12 +24,18 @@ hr-id-card-automata/
 │   ├── types.ts            # TypeScript interfaces
 │   ├── index.css           # Global styles + Tailwind + CSS variables
 │   ├── lib/
-│   │   └── employeeStore.ts # Data layer (parse, persist, image pipeline)
+│   │   ├── employeeStore.ts    # Data layer (parse, persist, image pipeline)
+│   │   ├── templateStore.ts    # Template CRUD (localStorage), JSON import/export, legacy migration
+│   │   ├── templateImporter.ts # Import images/DOCX/PDF as tracing backgrounds
+│   │   └── seo.ts              # Dynamic SEO meta tag injection
 │   └── components/
 │       ├── DataEntry.tsx       # Employee data form + image upload
-│       ├── IDCard.tsx          # Live card preview
-│       ├── TemplateEditor.tsx  # Card template customizer
-│       ├── ImportWizard.tsx    # CSV/XLSX/clipboard import
+│       ├── IDCard.tsx          # Live card preview (legacy + designer template modes)
+│       ├── TemplateEditor.tsx  # Combined editor (design/layout tabs + designer tab)
+│       ├── TemplateDesigner.tsx # WYSIWYG canvas editor with drag/resize/layer panel
+│       ├── TemplateLibrary.tsx # Save/load/rename/delete/import/export templates
+│       ├── CookieConsent.tsx   # GDPR consent banner
+│       ├── ImportWizard.tsx    # CSV/XLSX/clipboard import with field mapping
 │       └── ActivityBoard.tsx   # Decorative batch processor UI
 ├── .env.example            # Environment variable template
 ├── index.html              # HTML shell

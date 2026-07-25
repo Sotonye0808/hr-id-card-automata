@@ -32,5 +32,24 @@
 
 - **Desktop**: Two-column layout — left panel (active tab content), right panel (ID card preview)
 - **Mobile**: Single column with overlay preview toggled by button
+- **TemplateDesigner**: Side-by-side flex on desktop (`lg:flex-row`), stacked on mobile (`flex-col`). Property panel sidebars capped at `max-h-[300px]` on small screens with scroll.
 - **Cards**: `sheet-theme-*` classes apply background and accent colors from template config
 - **Designer Canvas**: Center-aligned canvas with grid background, layer outlines on selection
+
+## Z-Index Layering
+
+Three-tier convention:
+- **z-50**: In-page modals (TemplateLibrary, ImportWizard)
+- **z-[60]**: Full-screen overrides (mobile preview overlay, CookieConsent banner)
+- **z-[70]+**: Reserved for future use (toasts, notifications)
+
+This prevents overlap issues caused by `backdrop-filter` creating stacking contexts on parent elements.
+
+## Responsive Patterns
+
+- **Breakpoints**: Use Tailwind defaults (`sm: 640px`, `md: 768px`, `lg: 1024px`)
+- **Flex/Float layouts**: Default to `flex-col` on mobile, switch to `flex-row` at breakpoint (e.g., `lg:flex-row`)
+- **Modals**: Full-width on mobile with `p-2 sm:p-4`, auto-height with `max-h-[90vh]`
+- **Overlay preview**: Uses `z-[60]` to appear above all other elements, with scrollable content area
+- **Buttons**: Padding reduced on mobile (`p-3` → `p-2`), icon-only actions use `grid-cols-3` on small screens
+- **Scrollbars**: Custom thin scrollbar via `.custom-scrollbar` class for overflow containers

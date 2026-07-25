@@ -106,18 +106,18 @@ export default function TemplateEditor({ config, onChange, onReset }: TemplateEd
         </div>
       </div>
 
-      <div className="mb-4 flex gap-1 rounded-lg border border-[var(--border)]/50 bg-[var(--bg)] p-1">
+      <div className="mb-4 grid grid-cols-3 gap-1 rounded-lg border border-[var(--border)]/50 bg-[var(--bg)] p-1">
         {(["design", "layout", "designer"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-md py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all sm:gap-2 ${
               activeTab === tab
                 ? "bg-[var(--accent-soft)] text-[var(--accent)] shadow-sm"
                 : "text-[var(--muted)] hover:text-[var(--text)]"
             }`}>
             {tab === "design" ? <Palette size={12} /> : tab === "layout" ? <Move size={12} /> : <Layers size={12} />}
-            {tab === "designer" ? "Designer" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            <span className="truncate">{tab === "designer" ? "Designer" : tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
           </button>
         ))}
       </div>

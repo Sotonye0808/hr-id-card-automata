@@ -10,8 +10,8 @@ export default function CookieConsent({ onAccept, onDismiss }: CookieConsentProp
   if (getConsented()) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl">
-      <div className="mx-auto flex max-w-[1600px] items-start justify-between gap-4">
+    <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl">
+      <div className="mx-auto flex max-w-[1600px] flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex-1">
           <p className="text-sm font-bold text-[var(--text)]">
             We use localStorage
