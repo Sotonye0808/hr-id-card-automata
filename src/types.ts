@@ -87,3 +87,74 @@ export interface RawImportRow {
   values: string[];
   selected: boolean;
 }
+
+export type LayerType = "text" | "image" | "shape" | "barcode";
+
+export interface TemplateLayer {
+  id: string;
+  type: LayerType;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  zIndex: number;
+  visible: boolean;
+  locked: boolean;
+  opacity: number;
+  props: TextLayerProps | ImageLayerProps | ShapeLayerProps | BarcodeLayerProps;
+}
+
+export interface TextLayerProps {
+  text: string;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  color: string;
+  textAlign: "left" | "center" | "right";
+  lineHeight: number;
+  letterSpacing: number;
+}
+
+export interface ImageLayerProps {
+  src: string | null;
+  objectFit: "cover" | "contain" | "fill";
+  borderRadius: number;
+}
+
+export interface ShapeLayerProps {
+  shapeType: "rectangle" | "circle" | "line";
+  backgroundColor: string;
+  borderColor: string;
+  borderWidth: number;
+  borderRadius: number;
+}
+
+export interface BarcodeLayerProps {
+  format: "code128" | "qr" | "datamatrix";
+  value: string;
+  color: string;
+  bgColor: string;
+}
+
+export interface DesignerTemplate {
+  id: string;
+  name: string;
+  description: string;
+  canvasWidth: number;
+  canvasHeight: number;
+  canvasColor: string;
+  layers: TemplateLayer[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TemplateMeta {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  thumbnailUrl: string | null;
+}
