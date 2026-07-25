@@ -89,4 +89,4 @@ Active sprint focus: Template designer overhaul — drag-and-drop canvas editor,
 |---------|---------|------------|
 | None | All processing is client-side | N/A |
 
-(Note: `@google/genai`, `express`, and `dotenv` are listed in package.json but unused — remnants from earlier iteration.)
+(Note: No unused dependencies in package.json — `@google/genai`, `express`, and `dotenv` were removed in a previous cleanup.)

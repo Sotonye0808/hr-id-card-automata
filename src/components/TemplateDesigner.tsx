@@ -272,8 +272,8 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1">
           <button
             className="mini-button"
             onClick={() => addLayer("text")}
@@ -306,7 +306,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
             Import
           </button>
           {showImportMenu && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-2xl">
+            <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-2xl min-[0px]:left-auto min-[0px]:right-0 max-sm:left-1/2 max-sm:-translate-x-1/2">
               <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-[var(--accent-soft)]">
                 Image (PNG/JPG)
                 <input
@@ -339,11 +339,11 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
         </div>
       </div>
 
-      <div className="flex flex-1 gap-4 overflow-hidden">
+        <div className="flex flex-1 flex-col gap-4 overflow-hidden lg:flex-row">
         <div
           ref={canvasRef}
           data-canvas="true"
-          className="relative flex-1 overflow-auto rounded-2xl border border-[var(--border)] bg-white"
+          className="relative min-h-[300px] flex-1 overflow-auto rounded-2xl border border-[var(--border)] bg-white"
           onClick={handleCanvasClick}
           style={{
             backgroundImage:
@@ -359,6 +359,10 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
               margin: "24px auto",
               borderRadius: "12px",
               boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
+              maxWidth: "100%",
+              transform: undefined,
+              transformOrigin: "top left",
+              overflow: "hidden",
             }}>
             {sortedLayers.map((layer) => (
               <div
@@ -407,7 +411,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
           </div>
         </div>
 
-        <div className="flex w-64 shrink-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3">
+        <div className="w-full shrink-0 lg:w-64 flex-col gap-3 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 max-lg:max-h-[300px]">
           <p className="eyebrow">Layers</p>
           <div className="flex flex-col gap-1">
             {[...template.layers]

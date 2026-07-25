@@ -127,8 +127,8 @@ export default function ImportWizard({
     .map(({ index }) => index);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-[24px] border border-[var(--border)] bg-[var(--bg)] shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4">
+      <div className="flex max-h-[95vh] w-full max-w-3xl flex-col rounded-[24px] border border-[var(--border)] bg-[var(--bg)] shadow-2xl">
         {/* Header */}
         <div className="border-b border-[var(--border)] px-6 py-4">
           <h2 className="text-lg font-bold text-[var(--text)]">
