@@ -1,7 +1,7 @@
 # Project Context
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-25
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
@@ -63,8 +63,10 @@ Active sprint focus: Template designer overhaul — drag-and-drop canvas editor,
 ## In Scope
 
 - Drag-and-drop visual template designer with text/image/shape/barcode layers
+- Front/back dual-sided template support with side toggle
 - Template library with save/load/rename/delete/export/import (JSON)
 - Import templates from images (PNG/JPG), DOCX, PDF as tracing backgrounds
+- Responsive canvas auto-scaling with zoom controls
 - GDPR-compliant cookie/localStorage consent banner
 - Dynamic SEO meta tag injection (Open Graph, Twitter Cards, JSON-LD)
 - Dark/light theme with local persistence

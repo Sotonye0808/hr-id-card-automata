@@ -24,7 +24,9 @@ export default function TemplateLibrary({
   onLoadTemplate,
   onClose,
 }: TemplateLibraryProps) {
-  const [templates, setTemplates] = useState<TemplateMeta[]>(listTemplates);
+  const [templates, setTemplates] = useState<TemplateMeta[]>(() => {
+    try { return listTemplates(); } catch { return []; }
+  });
   const [saveName, setSaveName] = useState(currentTemplate.name || "My Template");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");

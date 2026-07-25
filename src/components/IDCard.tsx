@@ -35,6 +35,7 @@ export default function IDCard({ config, data, designerTemplate }: IDCardProps) 
   const fontClass = FONT_CLASSES[config.font] ?? FONT_CLASSES["font-sans"];
   const combinedRole = [data.department, data.role].filter(Boolean).join(" • ");
   const [renderedImageUrl, setRenderedImageUrl] = useState<string | null>(null);
+  const [showBack, setShowBack] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -78,8 +79,26 @@ export default function IDCard({ config, data, designerTemplate }: IDCardProps) 
     data.imageUrl,
   ]);
 
+  const hasBack = designerTemplate?.hasBackSide && (designerTemplate.backLayers?.length ?? 0) > 0;
+
   if (designerTemplate && designerTemplate.layers.length > 0) {
-    return <DesignerIDCard template={designerTemplate} data={data} renderedImageUrl={renderedImageUrl} />;
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <DesignerIDCard
+          template={designerTemplate}
+          data={data}
+          renderedImageUrl={renderedImageUrl}
+          side={showBack ? "back" : "front"}
+        />
+        {hasBack && (
+          <button
+            className="mini-button"
+            onClick={() => setShowBack((s) => !s)}>
+            {showBack ? "Show Front" : "Show Back"}
+          </button>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -174,36 +193,40 @@ export default function IDCard({ config, data, designerTemplate }: IDCardProps) 
   );
 }
 
-function DesignerIDCard({ template, data, renderedImageUrl }: { template: DesignerTemplate; data: UserData; renderedImageUrl: string | null }) {
-  const sortedLayers = [...template.layers].sort((a, b) => a.zIndex - b.zIndex);
+function DesignerIDCard({ template, data, renderedImageUrl, side }: { template: DesignerTemplate; data: UserData; renderedImageUrl: string | null; side?: "front" | "back" }) {
+  const layers = side === "back" && template.backLayers ? template.backLayers : template.layers;
+  const sortedLayers = [...layers].sort((a, b) => a.zIndex - b.zIndex);
 
   return (
-    <div
-      className="relative overflow-hidden rounded-[28px] border"
-      style={{
-        width: template.canvasWidth,
-        height: template.canvasHeight,
-        backgroundColor: template.canvasColor,
-        borderColor: "#111827",
-      }}>
-      {sortedLayers.map((layer) => {
-        if (!layer.visible) return null;
-        return (
-          <div
-            key={layer.id}
-            className="absolute"
-            style={{
-              left: layer.x,
-              top: layer.y,
-              width: layer.width,
-              height: layer.height,
-              zIndex: layer.zIndex,
-              opacity: layer.opacity,
-            }}>
-            <LayerRenderer layer={layer} data={data} renderedImageUrl={renderedImageUrl} />
-          </div>
-        );
-      })}
+    <div className="w-full max-w-full overflow-auto">
+      <div
+        className="relative mx-auto overflow-hidden rounded-[28px] border"
+        style={{
+          width: template.canvasWidth,
+          height: template.canvasHeight,
+          backgroundColor: template.canvasColor,
+          borderColor: "#111827",
+          maxWidth: "100%",
+        }}>
+        {sortedLayers.map((layer) => {
+          if (!layer.visible) return null;
+          return (
+            <div
+              key={layer.id}
+              className="absolute"
+              style={{
+                left: layer.x,
+                top: layer.y,
+                width: layer.width,
+                height: layer.height,
+                zIndex: layer.zIndex,
+                opacity: layer.opacity,
+              }}>
+              <LayerRenderer layer={layer} data={data} renderedImageUrl={renderedImageUrl} />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -11,6 +11,9 @@ import {
   Image,
   Square,
   Barcode,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from "lucide-react";
 import type {
   DesignerTemplate,
@@ -31,6 +34,9 @@ const SNAP = 8;
 
 export default function TemplateDesigner({ template, onChange }: TemplateDesignerProps) {
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [activeSide, setActiveSide] = useState<"front" | "back">("front");
+  const [zoom, setZoom] = useState(1);
+  const [autoFit, setAutoFit] = useState(true);
   const [dragging, setDragging] = useState<{
     layerId: string;
     startX: number;
@@ -48,26 +54,61 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
   } | null>(null);
   const [showImportMenu, setShowImportMenu] = useState(false);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const selectedLayer = template.layers.find((l) => l.id === selectedLayerId) ?? null;
+  const activeLayers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+  const setActiveLayers = useCallback(
+    (layers: TemplateLayer[]) => {
+      if (activeSide === "front") {
+        onChange({ ...template, layers });
+      } else {
+        onChange({ ...template, backLayers: layers });
+      }
+    },
+    [template, activeSide, onChange],
+  );
+  const toggleSide = useCallback(() => {
+    setActiveSide((s) => (s === "front" ? "back" : "front"));
+    setSelectedLayerId(null);
+  }, []);
+
+  const currentLayers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+
+  useEffect(() => {
+    if (!autoFit || !containerRef.current) return;
+    const container = containerRef.current;
+    const obs = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        const pad = 48;
+        const scaleX = (width - pad) / template.canvasWidth;
+        const scaleY = (height - pad) / template.canvasHeight;
+        setZoom(Math.max(0.1, Math.min(scaleX, scaleY, 2)));
+      }
+    });
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, [autoFit, template.canvasWidth, template.canvasHeight]);
+
+  const selectedLayer = currentLayers.find((l) => l.id === selectedLayerId) ?? null;
 
   const updateLayer = useCallback(
     (layerId: string, patch: Partial<TemplateLayer>) => {
-      onChange({
-        ...template,
-        layers: template.layers.map((l) =>
-          l.id === layerId ? { ...l, ...patch } : l,
-        ),
-      });
+      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      const updated = layers.map((l) =>
+        l.id === layerId ? { ...l, ...patch } : l,
+      );
+      setActiveLayers(updated);
     },
-    [template, onChange],
+    [template, activeSide, setActiveLayers],
   );
 
   const addLayer = useCallback(
     (type: LayerType) => {
       const id = crypto.randomUUID?.() ?? `layer-${Date.now()}`;
-      const maxZ = Math.max(...template.layers.map((l) => l.zIndex), 0);
+      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      const maxZ = Math.max(...layers.map((l) => l.zIndex), 0);
       let props: TextLayerProps | ImageLayerProps | ShapeLayerProps | BarcodeLayerProps;
 
       switch (type) {
@@ -125,24 +166,23 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
         props,
       };
 
-      onChange({ ...template, layers: [...template.layers, layer] });
+      setActiveLayers([...layers, layer]);
       setSelectedLayerId(id);
     },
-    [template, onChange],
+    [template, activeSide, setActiveLayers],
   );
 
   const deleteSelectedLayer = useCallback(() => {
     if (!selectedLayerId) return;
-    onChange({
-      ...template,
-      layers: template.layers.filter((l) => l.id !== selectedLayerId),
-    });
+    const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+    setActiveLayers(layers.filter((l) => l.id !== selectedLayerId));
     setSelectedLayerId(null);
-  }, [template, onChange, selectedLayerId]);
+  }, [template, activeSide, selectedLayerId, setActiveLayers]);
 
   const moveLayer = useCallback(
     (id: string, direction: "up" | "down") => {
-      const sorted = [...template.layers].sort((a, b) => a.zIndex - b.zIndex);
+      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      const sorted = [...layers].sort((a, b) => a.zIndex - b.zIndex);
       const idx = sorted.findIndex((l) => l.id === id);
       if (idx < 0) return;
       const swap = direction === "up" ? idx + 1 : idx - 1;
@@ -150,15 +190,15 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       const temp = sorted[idx].zIndex;
       sorted[idx] = { ...sorted[idx], zIndex: sorted[swap].zIndex };
       sorted[swap] = { ...sorted[swap], zIndex: temp };
-      onChange({ ...template, layers: sorted });
+      setActiveLayers(sorted);
     },
-    [template, onChange],
+    [template, activeSide, setActiveLayers],
   );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, layerId: string) => {
       if (e.button !== 0) return;
-      const layer = template.layers.find((l) => l.id === layerId);
+      const layer = currentLayers.find((l) => l.id === layerId);
       if (!layer || layer.locked) return;
       setSelectedLayerId(layerId);
       setDragging({
@@ -169,13 +209,13 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
         startLayerY: layer.y,
       });
     },
-    [template.layers],
+    [currentLayers],
   );
 
   const handleResizeStart = useCallback(
     (e: React.MouseEvent, layerId: string, handle: string) => {
       e.stopPropagation();
-      const layer = template.layers.find((l) => l.id === layerId);
+      const layer = currentLayers.find((l) => l.id === layerId);
       if (!layer || layer.locked) return;
       setResizing({
         layerId,
@@ -186,7 +226,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
         startH: layer.height,
       });
     },
-    [template.layers],
+    [currentLayers],
   );
 
   useEffect(() => {
@@ -234,7 +274,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
     };
   }, [resizing, updateLayer]);
 
-  const sortedLayers = [...template.layers].sort((a, b) => a.zIndex - b.zIndex);
+  const sortedLayers = [...currentLayers].sort((a, b) => a.zIndex - b.zIndex);
 
   const handleCanvasClick = (e: React.MouseEvent) => {
     if (e.target === canvasRef.current || (e.target as HTMLElement).dataset?.canvas) {
@@ -299,51 +339,80 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
             <Barcode size={14} /> Barcode
           </button>
         </div>
-        <div className="relative">
+        <div className="flex flex-wrap items-center gap-1">
+          <button
+            className={`mini-button ${activeSide === "back" ? "bg-[var(--accent-soft)] text-[var(--accent)]" : ""}`}
+            onClick={toggleSide}
+            title={`Switch to ${activeSide === "front" ? "back" : "front"} side`}>
+            {activeSide === "front" ? "Front" : "Back"}
+          </button>
           <button
             className="mini-button"
-            onClick={() => setShowImportMenu((v) => !v)}>
-            Import
+            onClick={() => { setAutoFit(true); }}
+            title="Auto-fit canvas">
+            <Maximize2 size={14} />
           </button>
-          {showImportMenu && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-2xl min-[0px]:left-auto min-[0px]:right-0 max-sm:left-1/2 max-sm:-translate-x-1/2">
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-[var(--accent-soft)]">
-                Image (PNG/JPG)
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImportFile}
-                />
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-[var(--accent-soft)]">
-                Word (DOCX)
-                <input
-                  type="file"
-                  accept=".docx"
-                  className="hidden"
-                  onChange={handleImportFile}
-                />
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-[var(--accent-soft)]">
-                PDF
-                <input
-                  type="file"
-                  accept=".pdf"
-                  className="hidden"
-                  onChange={handleImportFile}
-                />
-              </label>
-            </div>
-          )}
+          <button
+            className="mini-button"
+            onClick={() => { setAutoFit(false); setZoom((z) => Math.max(0.1, z - 0.1)); }}
+            title="Zoom out">
+            <ZoomOut size={14} />
+          </button>
+          <span className="text-[10px] font-bold text-[var(--muted)] min-w-[32px] text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            className="mini-button"
+            onClick={() => { setAutoFit(false); setZoom((z) => Math.min(3, z + 0.1)); }}
+            title="Zoom in">
+            <ZoomIn size={14} />
+          </button>
+          <div className="relative">
+            <button
+              className="mini-button"
+              onClick={() => setShowImportMenu((v) => !v)}>
+              Import
+            </button>
+            {showImportMenu && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-2xl min-[0px]:left-auto min-[0px]:right-0 max-sm:left-1/2 max-sm:-translate-x-1/2">
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-[var(--accent-soft)]">
+                  Image (PNG/JPG)
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImportFile}
+                  />
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-[var(--accent-soft)]">
+                  Word (DOCX)
+                  <input
+                    type="file"
+                    accept=".docx"
+                    className="hidden"
+                    onChange={handleImportFile}
+                  />
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-[var(--accent-soft)]">
+                  PDF
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    className="hidden"
+                    onChange={handleImportFile}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-        <div className="flex flex-1 flex-col gap-4 overflow-hidden lg:flex-row">
+      <div className="flex flex-1 flex-col gap-4 overflow-hidden lg:flex-row">
         <div
-          ref={canvasRef}
+          ref={containerRef}
           data-canvas="true"
-          className="relative min-h-[300px] flex-1 overflow-auto rounded-2xl border border-[var(--border)] bg-white"
+          className="relative flex min-h-[250px] flex-1 items-start justify-center overflow-auto rounded-2xl border border-[var(--border)] bg-white sm:min-h-[300px]"
           onClick={handleCanvasClick}
           style={{
             backgroundImage:
@@ -351,7 +420,8 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
             backgroundSize: "8px 8px",
           }}>
           <div
-            className="relative"
+            ref={canvasRef}
+            className="relative shrink-0"
             style={{
               width: template.canvasWidth,
               height: template.canvasHeight,
@@ -359,9 +429,9 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
               margin: "24px auto",
               borderRadius: "12px",
               boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
-              maxWidth: "100%",
-              transform: undefined,
-              transformOrigin: "top left",
+              maxWidth: `${template.canvasWidth}px`,
+              transform: `scale(${zoom})`,
+              transformOrigin: "top center",
               overflow: "hidden",
             }}>
             {sortedLayers.map((layer) => (
@@ -411,10 +481,15 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
           </div>
         </div>
 
-        <div className="w-full shrink-0 lg:w-64 flex-col gap-3 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 max-lg:max-h-[300px]">
-          <p className="eyebrow">Layers</p>
+        <div className="w-full shrink-0 lg:w-64 flex-col gap-3 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 max-lg:max-h-[250px] sm:max-lg:max-h-[300px]">
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">Layers - {activeSide === "front" ? "Front" : "Back"}</p>
+          </div>
           <div className="flex flex-col gap-1">
-            {[...template.layers]
+            {currentLayers.length === 0 && (
+              <p className="py-4 text-center text-[11px] text-[var(--muted)]">No layers on this side</p>
+            )}
+            {[...currentLayers]
               .sort((a, b) => b.zIndex - a.zIndex)
               .map((layer) => (
                 <div

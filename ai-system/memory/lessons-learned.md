@@ -1,7 +1,7 @@
 # Lessons Learned
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-25
 > - staleness-policy: append each time a lesson is identified
 
@@ -26,3 +26,15 @@ Modals rendered inside deeply nested components (e.g., TemplateLibrary inside Te
 **Date:** 2026-07-25
 
 When making a side-by-side flex layout (canvas + property panel) responsive to stack vertically on mobile, switch from `flex-row` to `flex-col` at the breakpoint. Use `lg:flex-row` for desktop and default `flex-col` for mobile. Set `max-h` on the sidebar on mobile to prevent it from taking too much vertical space.
+
+## Lesson 4 — React `useState` Initializers Can Crash Rendering
+
+**Date:** 2026-07-25
+
+A function passed to `useState(fn)` runs during render. If it throws (e.g., `listTemplates()` checks localStorage consent and throws), the component crashes. The overlay `<div>` may already be rendered before the crash, causing a "blank screen" appearance. Always wrap fallible state initializers in try-catch, or use lazy initialization with `useState(() => { try { ... } catch { return fallback; } })`.
+
+## Lesson 5 — Lifting State Between Parent and Child Modal Components
+
+**Date:** 2026-07-25
+
+When a child component (TemplateEditor) manages state that a sibling or parent (IDCard preview in App.tsx) needs to display, lift the state to the common ancestor and pass it down via props. Otherwise, the two components drift out of sync and the preview shows stale data. Use a callback prop (`onDesignerTemplateChange`) to let the child notify the parent of changes.

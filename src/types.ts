@@ -146,6 +146,8 @@ export interface DesignerTemplate {
   canvasHeight: number;
   canvasColor: string;
   layers: TemplateLayer[];
+  backLayers?: TemplateLayer[];
+  hasBackSide?: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -58,7 +58,9 @@ import {
 import {
   getConsented,
   loadTemplate,
+  saveTemplate,
   getActiveTemplateId,
+  setActiveTemplateId,
   migrateCardConfigToDesignerTemplate,
 } from "./lib/templateStore";
 import { injectMetaTags } from "./lib/seo";
@@ -168,7 +170,8 @@ export default function App() {
       const saved = loadTemplate(activeId);
       if (saved) return saved;
     }
-    return null;
+    const migrated = migrateCardConfigToDesignerTemplate("Default", template);
+    return migrated;
   });
   const csvInputRef = useRef<HTMLInputElement>(null);
 
@@ -176,6 +179,12 @@ export default function App() {
   useEffect(() => {
     injectMetaTags();
   }, []);
+
+  const handleDesignerTemplateChange = (tpl: DesignerTemplate) => {
+    setDesignerTemplate(tpl);
+    saveTemplate(tpl);
+    setActiveTemplateId(tpl.id);
+  };
 
   const handleCookieAccept = () => {
     localStorage.setItem("hr-id-card-automata.consent", "true");
@@ -1079,6 +1088,8 @@ export default function App() {
                   config={template}
                   onChange={setTemplate}
                   onReset={() => setTemplate(DEFAULT_TEMPLATE)}
+                  designerTemplate={designerTemplate}
+                  onDesignerTemplateChange={handleDesignerTemplateChange}
                 />
               </div>
             )}
@@ -1177,8 +1188,8 @@ export default function App() {
 
           <div className="min-h-0 flex-1 overflow-auto rounded-[28px] border border-[var(--border)] bg-[var(--paper-bg)] p-4 shadow-inner">
             {selectedEmployee ? (
-              <div className="mx-auto w-[920px] max-w-none">
-                <IDCard config={template} data={selectedEmployee} />
+              <div className="mx-auto max-w-full">
+                <IDCard config={template} data={selectedEmployee} designerTemplate={designerTemplate ?? undefined} />
               </div>
             ) : (
               <div className="flex h-full min-h-[520px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)]">

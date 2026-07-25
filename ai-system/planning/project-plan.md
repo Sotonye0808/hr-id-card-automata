@@ -1,7 +1,7 @@
 # Project Plan
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-25
 > - staleness-policy: update after each sprint
 
@@ -29,6 +29,8 @@
 - [x] Dark/light theme toggle
 - [x] Employee list management (select, duplicate, delete)
 - [x] Responsive mobile layout with overlay preview
+- [x] Responsive canvas auto-scaling with zoom controls
+- [x] Front/back dual-sided template support
 
 ### In Progress
 - [ ] Import wizard polish (validation edge cases)
