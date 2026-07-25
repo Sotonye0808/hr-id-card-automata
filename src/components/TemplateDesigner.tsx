@@ -1,0 +1,1020 @@
+import { useState, useRef, useCallback, useEffect } from "react";
+import {
+  Trash2,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff,
+  ChevronUp,
+  ChevronDown,
+  Type,
+  Image,
+  Square,
+  Barcode,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+} from "lucide-react";
+import type {
+  DesignerTemplate,
+  TemplateLayer,
+  LayerType,
+  TextLayerProps,
+  ImageLayerProps,
+  ShapeLayerProps,
+  BarcodeLayerProps,
+} from "../types";
+
+interface TemplateDesignerProps {
+  template: DesignerTemplate;
+  onChange: (template: DesignerTemplate) => void;
+}
+
+const SNAP = 8;
+
+export default function TemplateDesigner({ template, onChange }: TemplateDesignerProps) {
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [activeSide, setActiveSide] = useState<"front" | "back">("front");
+  const [zoom, setZoom] = useState(1);
+  const [autoFit, setAutoFit] = useState(true);
+  const [dragging, setDragging] = useState<{
+    layerId: string;
+    startX: number;
+    startY: number;
+    startLayerX: number;
+    startLayerY: number;
+  } | null>(null);
+  const [resizing, setResizing] = useState<{
+    layerId: string;
+    handle: string;
+    startX: number;
+    startY: number;
+    startW: number;
+    startH: number;
+  } | null>(null);
+  const [showImportMenu, setShowImportMenu] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  const activeLayers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+  const setActiveLayers = useCallback(
+    (layers: TemplateLayer[]) => {
+      if (activeSide === "front") {
+        onChange({ ...template, layers });
+      } else {
+        onChange({ ...template, backLayers: layers });
+      }
+    },
+    [template, activeSide, onChange],
+  );
+  const toggleSide = useCallback(() => {
+    setActiveSide((s) => (s === "front" ? "back" : "front"));
+    setSelectedLayerId(null);
+  }, []);
+
+  const currentLayers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+
+  useEffect(() => {
+    if (!autoFit || !containerRef.current) return;
+    const container = containerRef.current;
+    const obs = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        const pad = 48;
+        const scaleX = (width - pad) / template.canvasWidth;
+        const scaleY = (height - pad) / template.canvasHeight;
+        setZoom(Math.max(0.1, Math.min(scaleX, scaleY, 2)));
+      }
+    });
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, [autoFit, template.canvasWidth, template.canvasHeight]);
+
+  const selectedLayer = currentLayers.find((l) => l.id === selectedLayerId) ?? null;
+
+  const updateLayer = useCallback(
+    (layerId: string, patch: Partial<TemplateLayer>) => {
+      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      const updated = layers.map((l) =>
+        l.id === layerId ? { ...l, ...patch } : l,
+      );
+      setActiveLayers(updated);
+    },
+    [template, activeSide, setActiveLayers],
+  );
+
+  const addLayer = useCallback(
+    (type: LayerType) => {
+      const id = crypto.randomUUID?.() ?? `layer-${Date.now()}`;
+      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      const maxZ = Math.max(...layers.map((l) => l.zIndex), 0);
+      let props: TextLayerProps | ImageLayerProps | ShapeLayerProps | BarcodeLayerProps;
+
+      switch (type) {
+        case "text":
+          props = {
+            text: "Text Layer",
+            fontFamily: "font-sans",
+            fontSize: 16,
+            fontWeight: "bold",
+            color: "#111827",
+            textAlign: "left",
+            lineHeight: 1.3,
+            letterSpacing: 0,
+          };
+          break;
+        case "image":
+          props = {
+            src: null,
+            objectFit: "cover",
+            borderRadius: 0,
+          };
+          break;
+        case "shape":
+          props = {
+            shapeType: "rectangle",
+            backgroundColor: "#0f766e",
+            borderColor: "#0f766e",
+            borderWidth: 0,
+            borderRadius: 8,
+          };
+          break;
+        case "barcode":
+          props = {
+            format: "code128",
+            value: "EMP-001",
+            color: "#000000",
+            bgColor: "#FFFFFF",
+          };
+          break;
+      }
+
+      const layer: TemplateLayer = {
+        id,
+        type,
+        name: `New ${type}`,
+        x: 40,
+        y: 40,
+        width: 200,
+        height: type === "text" ? 40 : type === "shape" ? 100 : 120,
+        rotation: 0,
+        zIndex: maxZ + 1,
+        visible: true,
+        locked: false,
+        opacity: 1,
+        props,
+      };
+
+      setActiveLayers([...layers, layer]);
+      setSelectedLayerId(id);
+    },
+    [template, activeSide, setActiveLayers],
+  );
+
+  const deleteSelectedLayer = useCallback(() => {
+    if (!selectedLayerId) return;
+    const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+    setActiveLayers(layers.filter((l) => l.id !== selectedLayerId));
+    setSelectedLayerId(null);
+  }, [template, activeSide, selectedLayerId, setActiveLayers]);
+
+  const moveLayer = useCallback(
+    (id: string, direction: "up" | "down") => {
+      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      const sorted = [...layers].sort((a, b) => a.zIndex - b.zIndex);
+      const idx = sorted.findIndex((l) => l.id === id);
+      if (idx < 0) return;
+      const swap = direction === "up" ? idx + 1 : idx - 1;
+      if (swap < 0 || swap >= sorted.length) return;
+      const temp = sorted[idx].zIndex;
+      sorted[idx] = { ...sorted[idx], zIndex: sorted[swap].zIndex };
+      sorted[swap] = { ...sorted[swap], zIndex: temp };
+      setActiveLayers(sorted);
+    },
+    [template, activeSide, setActiveLayers],
+  );
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent, layerId: string) => {
+      if (e.button !== 0) return;
+      const layer = currentLayers.find((l) => l.id === layerId);
+      if (!layer || layer.locked) return;
+      setSelectedLayerId(layerId);
+      setDragging({
+        layerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        startLayerX: layer.x,
+        startLayerY: layer.y,
+      });
+    },
+    [currentLayers],
+  );
+
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent, layerId: string, handle: string) => {
+      e.stopPropagation();
+      const layer = currentLayers.find((l) => l.id === layerId);
+      if (!layer || layer.locked) return;
+      setResizing({
+        layerId,
+        handle,
+        startX: e.clientX,
+        startY: e.clientY,
+        startW: layer.width,
+        startH: layer.height,
+      });
+    },
+    [currentLayers],
+  );
+
+  useEffect(() => {
+    if (!dragging) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = Math.round((e.clientX - dragging.startX) / SNAP) * SNAP;
+      const dy = Math.round((e.clientY - dragging.startY) / SNAP) * SNAP;
+      updateLayer(dragging.layerId, {
+        x: dragging.startLayerX + dx,
+        y: dragging.startLayerY + dy,
+      });
+    };
+    const handleMouseUp = () => setDragging(null);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [dragging, updateLayer]);
+
+  useEffect(() => {
+    if (!resizing) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = Math.round((e.clientX - resizing.startX) / SNAP) * SNAP;
+      const dy = Math.round((e.clientY - resizing.startY) / SNAP) * SNAP;
+      let newW = resizing.startW;
+      let newH = resizing.startH;
+      if (resizing.handle.includes("e")) newW = Math.max(20, resizing.startW + dx);
+      if (resizing.handle.includes("s")) newH = Math.max(20, resizing.startH + dy);
+      if (resizing.handle.includes("w")) {
+        newW = Math.max(20, resizing.startW - dx);
+      }
+      if (resizing.handle.includes("n")) {
+        newH = Math.max(20, resizing.startH - dy);
+      }
+      updateLayer(resizing.layerId, { width: newW, height: newH });
+    };
+    const handleMouseUp = () => setResizing(null);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [resizing, updateLayer]);
+
+  const sortedLayers = [...currentLayers].sort((a, b) => a.zIndex - b.zIndex);
+
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (e.target === canvasRef.current || (e.target as HTMLElement).dataset?.canvas) {
+      setSelectedLayerId(null);
+    }
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const { importFromImage, importFromDocx, importFromPdf } = await import("../lib/templateImporter");
+    try {
+      let result;
+      const ext = file.name.toLowerCase();
+      if (ext.match(/\.(png|jpg|jpeg|gif|webp)$/)) {
+        result = await importFromImage(file);
+      } else if (ext.endsWith(".docx")) {
+        result = await importFromDocx(file);
+      } else if (ext.endsWith(".pdf")) {
+        result = await importFromPdf(file);
+      } else {
+        alert("Unsupported file format. Use PNG, JPG, DOCX, or PDF.");
+        return;
+      }
+      onChange(result.template);
+      setShowImportMenu(false);
+      if (result.warnings.length) {
+        alert(result.warnings.join("\n"));
+      }
+    } catch (err) {
+      alert(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  };
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1">
+          <button
+            className="mini-button"
+            onClick={() => addLayer("text")}
+            title="Add text layer">
+            <Type size={14} /> Text
+          </button>
+          <button
+            className="mini-button"
+            onClick={() => addLayer("image")}
+            title="Add image layer">
+            <Image size={14} /> Image
+          </button>
+          <button
+            className="mini-button"
+            onClick={() => addLayer("shape")}
+            title="Add shape layer">
+            <Square size={14} /> Shape
+          </button>
+          <button
+            className="mini-button"
+            onClick={() => addLayer("barcode")}
+            title="Add barcode layer">
+            <Barcode size={14} /> Barcode
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          <button
+            className={`mini-button ${activeSide === "back" ? "bg-[var(--accent-soft)] text-[var(--accent)]" : ""}`}
+            onClick={toggleSide}
+            title={`Switch to ${activeSide === "front" ? "back" : "front"} side`}>
+            {activeSide === "front" ? "Front" : "Back"}
+          </button>
+          <button
+            className="mini-button"
+            onClick={() => { setAutoFit(true); }}
+            title="Auto-fit canvas">
+            <Maximize2 size={14} />
+          </button>
+          <button
+            className="mini-button"
+            onClick={() => { setAutoFit(false); setZoom((z) => Math.max(0.1, z - 0.1)); }}
+            title="Zoom out">
+            <ZoomOut size={14} />
+          </button>
+          <span className="text-[10px] font-bold text-[var(--muted)] min-w-[32px] text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            className="mini-button"
+            onClick={() => { setAutoFit(false); setZoom((z) => Math.min(3, z + 0.1)); }}
+            title="Zoom in">
+            <ZoomIn size={14} />
+          </button>
+          <div className="relative">
+            <button
+              className="mini-button"
+              onClick={() => setShowImportMenu((v) => !v)}>
+              Import
+            </button>
+            {showImportMenu && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-2xl min-[0px]:left-auto min-[0px]:right-0 max-sm:left-1/2 max-sm:-translate-x-1/2">
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-[var(--accent-soft)]">
+                  Image (PNG/JPG)
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImportFile}
+                  />
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-[var(--accent-soft)]">
+                  Word (DOCX)
+                  <input
+                    type="file"
+                    accept=".docx"
+                    className="hidden"
+                    onChange={handleImportFile}
+                  />
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-[var(--accent-soft)]">
+                  PDF
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    className="hidden"
+                    onChange={handleImportFile}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-4 overflow-hidden lg:flex-row">
+        <div
+          ref={containerRef}
+          data-canvas="true"
+          className="relative flex min-h-[250px] flex-1 items-start justify-center overflow-auto rounded-2xl border border-[var(--border)] bg-white sm:min-h-[300px]"
+          onClick={handleCanvasClick}
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(0deg, transparent, transparent 7px, rgba(0,0,0,0.03) 7px, rgba(0,0,0,0.03) 8px), repeating-linear-gradient(90deg, transparent, transparent 7px, rgba(0,0,0,0.03) 7px, rgba(0,0,0,0.03) 8px)",
+            backgroundSize: "8px 8px",
+          }}>
+          <div
+            ref={canvasRef}
+            className="relative shrink-0"
+            style={{
+              width: template.canvasWidth,
+              height: template.canvasHeight,
+              backgroundColor: template.canvasColor,
+              margin: "24px auto",
+              borderRadius: "12px",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
+              maxWidth: `${template.canvasWidth}px`,
+              transform: `scale(${zoom})`,
+              transformOrigin: "top center",
+              overflow: "hidden",
+            }}>
+            {sortedLayers.map((layer) => (
+              <div
+                key={layer.id}
+                className={`absolute cursor-move ${!layer.visible ? "hidden" : ""}`}
+                style={{
+                  left: layer.x,
+                  top: layer.y,
+                  width: layer.width,
+                  height: layer.height,
+                  zIndex: layer.zIndex,
+                  opacity: layer.opacity,
+                  outline:
+                    selectedLayerId === layer.id
+                      ? "2px solid #0f766e"
+                      : undefined,
+                  outlineOffset: 1,
+                  borderRadius:
+                    layer.type === "image"
+                      ? (layer.props as ImageLayerProps).borderRadius
+                      : layer.type === "shape"
+                        ? (layer.props as ShapeLayerProps).borderRadius
+                        : undefined,
+                }}
+                onMouseDown={(e) => handleMouseDown(e, layer.id)}>
+                {renderLayerPreview(layer)}
+
+                {selectedLayerId === layer.id && !layer.locked && (
+                  <>
+                    <div
+                      className="absolute -bottom-1 -right-1 z-10 h-3 w-3 cursor-se-resize rounded-full border-2 border-white bg-[#0f766e]"
+                      onMouseDown={(e) => handleResizeStart(e, layer.id, "se")}
+                    />
+                    <div
+                      className="absolute -bottom-1 left-1/2 z-10 h-3 w-3 -translate-x-1/2 cursor-s-resize rounded-full border-2 border-white bg-[#0f766e]"
+                      onMouseDown={(e) => handleResizeStart(e, layer.id, "s")}
+                    />
+                    <div
+                      className="absolute -right-1 top-1/2 z-10 h-3 w-3 -translate-y-1/2 cursor-e-resize rounded-full border-2 border-white bg-[#0f766e]"
+                      onMouseDown={(e) => handleResizeStart(e, layer.id, "e")}
+                    />
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="w-full shrink-0 lg:w-64 flex-col gap-3 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 max-lg:max-h-[250px] sm:max-lg:max-h-[300px]">
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">Layers - {activeSide === "front" ? "Front" : "Back"}</p>
+          </div>
+          <div className="flex flex-col gap-1">
+            {currentLayers.length === 0 && (
+              <p className="py-4 text-center text-[11px] text-[var(--muted)]">No layers on this side</p>
+            )}
+            {[...currentLayers]
+              .sort((a, b) => b.zIndex - a.zIndex)
+              .map((layer) => (
+                <div
+                  key={layer.id}
+                  className={`flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 text-xs transition-colors ${selectedLayerId === layer.id ? "bg-[var(--accent-soft)]" : "hover:bg-black/5"}`}
+                  onClick={() => setSelectedLayerId(layer.id)}>
+                  <LayerIcon type={layer.type} />
+                  <span className="flex-1 truncate font-semibold">
+                    {layer.name}
+                  </span>
+                  <span className="text-[10px] text-[var(--muted)]">
+                    z:{layer.zIndex}
+                  </span>
+                </div>
+              ))}
+          </div>
+
+          {selectedLayer && (
+            <div className="space-y-3 border-t border-[var(--border)] pt-3">
+              <p className="eyebrow">Properties</p>
+
+              <div className="flex gap-1">
+                <button
+                  className="mini-button"
+                  onClick={() =>
+                    updateLayer(selectedLayer.id, {
+                      visible: !selectedLayer.visible,
+                    })
+                  }
+                  title="Toggle visibility">
+                  {selectedLayer.visible ? <Eye size={12} /> : <EyeOff size={12} />}
+                </button>
+                <button
+                  className="mini-button"
+                  onClick={() =>
+                    updateLayer(selectedLayer.id, {
+                      locked: !selectedLayer.locked,
+                    })
+                  }
+                  title="Toggle lock">
+                  {selectedLayer.locked ? <Lock size={12} /> : <Unlock size={12} />}
+                </button>
+                <button
+                  className="mini-button"
+                  onClick={() => moveLayer(selectedLayer.id, "up")}
+                  title="Move up">
+                  <ChevronUp size={12} />
+                </button>
+                <button
+                  className="mini-button"
+                  onClick={() => moveLayer(selectedLayer.id, "down")}
+                  title="Move down">
+                  <ChevronDown size={12} />
+                </button>
+                <button
+                  className="mini-button text-red-500"
+                  onClick={deleteSelectedLayer}
+                  title="Delete layer">
+                  <Trash2 size={12} />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] font-bold text-[var(--muted)]">
+                    Name
+                  </label>
+                  <input
+                    className="field-input mt-1 py-1.5 text-xs"
+                    value={selectedLayer.name}
+                    onChange={(e) =>
+                      updateLayer(selectedLayer.id, { name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--muted)]">
+                      X
+                    </label>
+                    <input
+                      type="number"
+                      className="field-input mt-1 py-1.5 text-xs"
+                      value={selectedLayer.x}
+                      onChange={(e) =>
+                        updateLayer(selectedLayer.id, {
+                          x: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--muted)]">
+                      Y
+                    </label>
+                    <input
+                      type="number"
+                      className="field-input mt-1 py-1.5 text-xs"
+                      value={selectedLayer.y}
+                      onChange={(e) =>
+                        updateLayer(selectedLayer.id, {
+                          y: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--muted)]">
+                      Width
+                    </label>
+                    <input
+                      type="number"
+                      className="field-input mt-1 py-1.5 text-xs"
+                      value={selectedLayer.width}
+                      onChange={(e) =>
+                        updateLayer(selectedLayer.id, {
+                          width: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--muted)]">
+                      Height
+                    </label>
+                    <input
+                      type="number"
+                      className="field-input mt-1 py-1.5 text-xs"
+                      value={selectedLayer.height}
+                      onChange={(e) =>
+                        updateLayer(selectedLayer.id, {
+                          height: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-[var(--muted)]">
+                    Opacity
+                  </label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    className="field-range mt-1"
+                    value={selectedLayer.opacity}
+                    onChange={(e) =>
+                      updateLayer(selectedLayer.id, {
+                        opacity: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              {selectedLayer.type === "text" && (
+                <TextLayerPropsPanel
+                  props={selectedLayer.props as TextLayerProps}
+                  onChange={(props) =>
+                    updateLayer(selectedLayer.id, { props } as Partial<TemplateLayer>)
+                  }
+                />
+              )}
+              {selectedLayer.type === "image" && (
+                <ImageLayerPropsPanel
+                  props={selectedLayer.props as ImageLayerProps}
+                  onChange={(props) =>
+                    updateLayer(selectedLayer.id, { props } as Partial<TemplateLayer>)
+                  }
+                />
+              )}
+              {selectedLayer.type === "shape" && (
+                <ShapeLayerPropsPanel
+                  props={selectedLayer.props as ShapeLayerProps}
+                  onChange={(props) =>
+                    updateLayer(selectedLayer.id, { props } as Partial<TemplateLayer>)
+                  }
+                />
+              )}
+              {selectedLayer.type === "barcode" && (
+                <BarcodeLayerPropsPanel
+                  props={selectedLayer.props as BarcodeLayerProps}
+                  onChange={(props) =>
+                    updateLayer(selectedLayer.id, { props } as Partial<TemplateLayer>)
+                  }
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LayerIcon({ type }: { type: LayerType }) {
+  switch (type) {
+    case "text":
+      return <Type size={12} className="text-[var(--accent)]" />;
+    case "image":
+      return <Image size={12} className="text-blue-500" />;
+    case "shape":
+      return <Square size={12} className="text-purple-500" />;
+    case "barcode":
+      return <Barcode size={12} className="text-amber-500" />;
+  }
+}
+
+function renderLayerPreview(layer: TemplateLayer) {
+  switch (layer.type) {
+    case "text": {
+      const p = layer.props as TextLayerProps;
+      return (
+        <div
+          className="flex h-full w-full items-center overflow-hidden px-2"
+          style={{
+            fontFamily: p.fontFamily,
+            fontSize: p.fontSize,
+            fontWeight: p.fontWeight,
+            color: p.color,
+            textAlign: p.textAlign,
+            lineHeight: p.lineHeight,
+            letterSpacing: p.letterSpacing,
+          }}>
+          <span className="truncate">{p.text}</span>
+        </div>
+      );
+    }
+    case "image": {
+      const p = layer.props as ImageLayerProps;
+      if (p.src) {
+        return (
+          <img
+            src={p.src}
+            alt=""
+            className="h-full w-full"
+            style={{
+              objectFit: p.objectFit,
+              borderRadius: p.borderRadius,
+            }}
+          />
+        );
+      }
+      return (
+        <div className="flex h-full w-full items-center justify-center rounded bg-gray-100 text-[10px] text-gray-400">
+          No image
+        </div>
+      );
+    }
+    case "shape": {
+      const p = layer.props as ShapeLayerProps;
+      return (
+        <div
+          className="h-full w-full"
+          style={{
+            backgroundColor: p.backgroundColor,
+            border: p.borderWidth > 0 ? `${p.borderWidth}px solid ${p.borderColor}` : undefined,
+            borderRadius: p.borderRadius,
+          }}
+        />
+      );
+    }
+    case "barcode": {
+      const p = layer.props as BarcodeLayerProps;
+      return (
+        <div
+          className="flex h-full w-full items-center justify-center text-[10px] font-mono"
+          style={{ color: p.color, backgroundColor: p.bgColor }}>
+          [{p.format}] {p.value}
+        </div>
+      );
+    }
+  }
+}
+
+function TextLayerPropsPanel({
+  props,
+  onChange,
+}: {
+  props: TextLayerProps;
+  onChange: (props: TextLayerProps) => void;
+}) {
+  const set = (patch: Partial<TextLayerProps>) => onChange({ ...props, ...patch });
+
+  return (
+    <div className="space-y-2 border-t border-[var(--border)] pt-2">
+      <p className="text-[10px] font-bold text-[var(--muted)]">Text Properties</p>
+      <div>
+        <label className="text-[10px] font-bold text-[var(--muted)]">Content</label>
+        <input
+          className="field-input mt-1 py-1.5 text-xs"
+          value={props.text}
+          onChange={(e) => set({ text: e.target.value })}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Font Size</label>
+          <input
+            type="number"
+            className="field-input mt-1 py-1.5 text-xs"
+            value={props.fontSize}
+            onChange={(e) => set({ fontSize: Number(e.target.value) })}
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Weight</label>
+          <select
+            className="field-input mt-1 py-1.5 text-xs"
+            value={props.fontWeight}
+            onChange={(e) => set({ fontWeight: e.target.value })}>
+            <option value="normal">Normal</option>
+            <option value="medium">Medium</option>
+            <option value="bold">Bold</option>
+            <option value="black">Black</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="text-[10px] font-bold text-[var(--muted)]">Color</label>
+        <input
+          type="color"
+          className="color-input mt-1"
+          value={props.color}
+          onChange={(e) => set({ color: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className="text-[10px] font-bold text-[var(--muted)]">Align</label>
+        <select
+          className="field-input mt-1 py-1.5 text-xs"
+          value={props.textAlign}
+          onChange={(e) => set({ textAlign: e.target.value as "left" | "center" | "right" })}>
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function ImageLayerPropsPanel({
+  props,
+  onChange,
+}: {
+  props: ImageLayerProps;
+  onChange: (props: ImageLayerProps) => void;
+}) {
+  const set = (patch: Partial<ImageLayerProps>) => onChange({ ...props, ...patch });
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => set({ src: reader.result as string });
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-2 border-t border-[var(--border)] pt-2">
+      <p className="text-[10px] font-bold text-[var(--muted)]">Image Properties</p>
+      {props.src ? (
+        <div className="relative">
+          <img
+            src={props.src}
+            alt=""
+            className="h-20 w-full rounded-lg object-cover"
+          />
+          <button
+            className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white"
+            onClick={() => set({ src: null })}>
+            <Trash2 size={10} />
+          </button>
+        </div>
+      ) : (
+        <label className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[var(--border)] py-4 text-xs text-[var(--muted)] hover:bg-[var(--accent-soft)]">
+          Upload Image
+          <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+        </label>
+      )}
+      <div>
+        <label className="text-[10px] font-bold text-[var(--muted)]">Object Fit</label>
+        <select
+          className="field-input mt-1 py-1.5 text-xs"
+          value={props.objectFit}
+          onChange={(e) => set({ objectFit: e.target.value as "cover" | "contain" | "fill" })}>
+          <option value="cover">Cover</option>
+          <option value="contain">Contain</option>
+          <option value="fill">Fill</option>
+        </select>
+      </div>
+      <div>
+        <label className="text-[10px] font-bold text-[var(--muted)]">Border Radius</label>
+        <input
+          type="number"
+          className="field-input mt-1 py-1.5 text-xs"
+          value={props.borderRadius}
+          onChange={(e) => set({ borderRadius: Number(e.target.value) })}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ShapeLayerPropsPanel({
+  props,
+  onChange,
+}: {
+  props: ShapeLayerProps;
+  onChange: (props: ShapeLayerProps) => void;
+}) {
+  const set = (patch: Partial<ShapeLayerProps>) => onChange({ ...props, ...patch });
+
+  return (
+    <div className="space-y-2 border-t border-[var(--border)] pt-2">
+      <p className="text-[10px] font-bold text-[var(--muted)]">Shape Properties</p>
+      <div>
+        <label className="text-[10px] font-bold text-[var(--muted)]">Shape Type</label>
+        <select
+          className="field-input mt-1 py-1.5 text-xs"
+          value={props.shapeType}
+          onChange={(e) => set({ shapeType: e.target.value as "rectangle" | "circle" | "line" })}>
+          <option value="rectangle">Rectangle</option>
+          <option value="circle">Circle</option>
+          <option value="line">Line</option>
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Fill Color</label>
+          <input
+            type="color"
+            className="color-input mt-1"
+            value={props.backgroundColor}
+            onChange={(e) => set({ backgroundColor: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Border Color</label>
+          <input
+            type="color"
+            className="color-input mt-1"
+            value={props.borderColor}
+            onChange={(e) => set({ borderColor: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Border Width</label>
+          <input
+            type="number"
+            className="field-input mt-1 py-1.5 text-xs"
+            value={props.borderWidth}
+            onChange={(e) => set({ borderWidth: Number(e.target.value) })}
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Radius</label>
+          <input
+            type="number"
+            className="field-input mt-1 py-1.5 text-xs"
+            value={props.borderRadius}
+            onChange={(e) => set({ borderRadius: Number(e.target.value) })}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BarcodeLayerPropsPanel({
+  props,
+  onChange,
+}: {
+  props: BarcodeLayerProps;
+  onChange: (props: BarcodeLayerProps) => void;
+}) {
+  const set = (patch: Partial<BarcodeLayerProps>) => onChange({ ...props, ...patch });
+
+  return (
+    <div className="space-y-2 border-t border-[var(--border)] pt-2">
+      <p className="text-[10px] font-bold text-[var(--muted)]">Barcode Properties</p>
+      <div>
+        <label className="text-[10px] font-bold text-[var(--muted)]">Format</label>
+        <select
+          className="field-input mt-1 py-1.5 text-xs"
+          value={props.format}
+          onChange={(e) => set({ format: e.target.value as "code128" | "qr" | "datamatrix" })}>
+          <option value="code128">Code 128</option>
+          <option value="qr">QR Code</option>
+          <option value="datamatrix">Data Matrix</option>
+        </select>
+      </div>
+      <div>
+        <label className="text-[10px] font-bold text-[var(--muted)]">Value</label>
+        <input
+          className="field-input mt-1 py-1.5 text-xs"
+          value={props.value}
+          onChange={(e) => set({ value: e.target.value })}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Color</label>
+          <input
+            type="color"
+            className="color-input mt-1"
+            value={props.color}
+            onChange={(e) => set({ color: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Background</label>
+          <input
+            type="color"
+            className="color-input mt-1"
+            value={props.bgColor}
+            onChange={(e) => set({ bgColor: e.target.value })}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

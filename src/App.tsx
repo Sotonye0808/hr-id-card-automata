@@ -38,11 +38,12 @@ import {
   TextRun,
   WidthType,
 } from "docx";
-import { CardConfig, EmployeeRecord, ExportProgress, UserData } from "./types";
+import { CardConfig, EmployeeRecord, ExportProgress, UserData, DesignerTemplate } from "./types";
 import DataEntry from "./components/DataEntry";
 import TemplateEditor from "./components/TemplateEditor";
 import IDCard from "./components/IDCard.tsx";
 import ImportWizard from "./components/ImportWizard";
+import CookieConsent from "./components/CookieConsent";
 import {
   createEmployeeRecord,
   duplicateEmployeeRecord,
@@ -54,6 +55,15 @@ import {
   savePersistedBatch,
   detectFieldMappings,
 } from "./lib/employeeStore";
+import {
+  getConsented,
+  loadTemplate,
+  saveTemplate,
+  getActiveTemplateId,
+  setActiveTemplateId,
+  migrateCardConfigToDesignerTemplate,
+} from "./lib/templateStore";
+import { injectMetaTags } from "./lib/seo";
 
 type WorkspaceTab = "employees" | "template" | "export";
 
@@ -153,7 +163,37 @@ export default function App() {
     headers: string[];
     rawRows: string[][];
   } | null>(null);
+  const [cookieConsent, setCookieConsent] = useState(() => getConsented());
+  const [designerTemplate, setDesignerTemplate] = useState<DesignerTemplate | null>(() => {
+    const activeId = getActiveTemplateId();
+    if (activeId) {
+      const saved = loadTemplate(activeId);
+      if (saved) return saved;
+    }
+    const migrated = migrateCardConfigToDesignerTemplate("Default", template);
+    return migrated;
+  });
   const csvInputRef = useRef<HTMLInputElement>(null);
+
+
+  useEffect(() => {
+    injectMetaTags();
+  }, []);
+
+  const handleDesignerTemplateChange = (tpl: DesignerTemplate) => {
+    setDesignerTemplate(tpl);
+    saveTemplate(tpl);
+    setActiveTemplateId(tpl.id);
+  };
+
+  const handleCookieAccept = () => {
+    localStorage.setItem("hr-id-card-automata.consent", "true");
+    setCookieConsent(true);
+  };
+
+  const handleCookieDismiss = () => {
+    setCookieConsent(true);
+  };
 
   useEffect(() => {
     const theme = isDarkTheme ? "dark" : "light";
@@ -382,7 +422,7 @@ export default function App() {
 
   const handleImportWizardConfirm = (
     selectedData: string[][],
-    headerMapping: Map<number, number | null>,
+    headerMapping: Map<string, number | null>,
   ) => {
     try {
       const [headerRow, ...dataRows] = selectedData;
@@ -785,19 +825,19 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       <header className="sticky top-0 z-30 border-b border-[var(--border)]/70 bg-[var(--bg)]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
-          <div className="flex items-center gap-4">
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-3 py-3 sm:gap-4 sm:px-4 sm:py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 shadow-sm sm:px-4 sm:py-3">
               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-[var(--muted)]">
                 <BadgePlus size={12} />
                 HR ID Card Automata
               </div>
-              <p className="mt-1 text-sm font-semibold text-[var(--text)]">
+              <p className="mt-0.5 text-xs font-semibold text-[var(--text)] sm:mt-1 sm:text-sm">
                 Batch input, sample-aligned preview, PDF/DOCX export
               </p>
             </div>
 
-            <div className="hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 md:block">
+            <div className="hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 sm:px-4 sm:py-3 md:block">
               <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--muted)]">
                 Batch Queue
               </div>
@@ -829,13 +869,13 @@ export default function App() {
 
           <div className="relative flex items-center gap-2 md:hidden">
             <button
-              className="secondary-button"
+              className="secondary-button text-xs sm:text-sm"
               onClick={() => setIsPreviewOpen(true)}>
               <Eye size={16} />
               Preview
             </button>
             <button
-              className="secondary-button"
+              className="secondary-button text-xs sm:text-sm"
               onClick={() => setIsHeaderMenuOpen((current) => !current)}
               aria-controls="mobile-header-menu"
               aria-label="Open export and theme menu">
@@ -886,8 +926,8 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-[1600px] gap-6 px-4 py-6 lg:grid-cols-[420px_minmax(0,1fr)] lg:px-6 xl:grid-cols-[460px_minmax(0,1fr)]">
-        <section className="panel flex min-h-0 flex-col border border-[var(--border)] p-4 shadow-xl">
+      <main className="mx-auto grid max-w-[1600px] gap-4 px-3 py-4 sm:gap-6 sm:px-4 sm:py-6 lg:grid-cols-[420px_minmax(0,1fr)] lg:px-6 xl:grid-cols-[460px_minmax(0,1fr)]">
+        <section className="panel flex min-h-0 flex-col border border-[var(--border)] p-3 shadow-xl sm:p-4">
           <input
             ref={csvInputRef}
             type="file"
@@ -979,7 +1019,7 @@ export default function App() {
                     </div>
                     <span className="cell-label">5</span>
                   </div>
-                  <div className="grid grid-cols-5 gap-2 md:flex md:flex-wrap">
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 md:flex md:flex-wrap">
                     {[
                       {
                         label: "Add row",
@@ -1048,6 +1088,8 @@ export default function App() {
                   config={template}
                   onChange={setTemplate}
                   onReset={() => setTemplate(DEFAULT_TEMPLATE)}
+                  designerTemplate={designerTemplate}
+                  onDesignerTemplateChange={handleDesignerTemplateChange}
                 />
               </div>
             )}
@@ -1130,7 +1172,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className="panel hidden min-h-0 flex-col border border-[var(--border)] p-4 shadow-xl lg:flex">
+        <section className="panel hidden min-h-0 flex-col border border-[var(--border)] p-3 shadow-xl lg:flex lg:p-4">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="eyebrow">Live preview</p>
@@ -1146,8 +1188,8 @@ export default function App() {
 
           <div className="min-h-0 flex-1 overflow-auto rounded-[28px] border border-[var(--border)] bg-[var(--paper-bg)] p-4 shadow-inner">
             {selectedEmployee ? (
-              <div className="mx-auto w-[920px] max-w-none">
-                <IDCard config={template} data={selectedEmployee} />
+              <div className="mx-auto max-w-full">
+                <IDCard config={template} data={selectedEmployee} designerTemplate={designerTemplate ?? undefined} />
               </div>
             ) : (
               <div className="flex h-full min-h-[520px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)]">
@@ -1182,24 +1224,24 @@ export default function App() {
 
         {isPreviewOpen ? (
           <div
-            className="fixed inset-0 z-50 bg-black/55 p-3 lg:hidden"
+            className="fixed inset-0 z-[60] bg-black/55 p-2 lg:hidden sm:p-3"
             role="presentation"
             onClick={() => setIsPreviewOpen(false)}>
             <div
-              className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--bg)] shadow-2xl"
+              className="flex h-full flex-col overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--bg)] shadow-2xl sm:rounded-[28px]"
               role="dialog"
               aria-modal="true"
               aria-label="Mobile preview"
               onClick={(event) => event.stopPropagation()}>
-              <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-4">
-                <div>
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--border)] px-3 py-3 sm:px-4 sm:py-4">
+                <div className="min-w-0">
                   <p className="eyebrow">Live preview</p>
-                  <h2 className="mt-1 text-lg font-black text-[var(--text)]">
+                  <h2 className="mt-1 truncate text-base font-black text-[var(--text)] sm:text-lg">
                     Batch sheet preview
                   </h2>
                 </div>
                 <button
-                  className="secondary-button"
+                  className="secondary-button shrink-0"
                   onClick={() => setIsPreviewOpen(false)}
                   aria-label="Close preview">
                   <X size={16} />
@@ -1207,32 +1249,32 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-auto bg-[var(--paper-bg)] p-4">
-                <div className="overflow-auto rounded-[28px] border border-[var(--border)] bg-white p-3 shadow-inner">
+              <div className="min-h-0 flex-1 overflow-auto bg-[var(--paper-bg)] p-3 sm:p-4">
+                <div className="overflow-auto rounded-[20px] border border-[var(--border)] bg-white p-2 shadow-inner sm:rounded-[28px] sm:p-3">
                   {selectedEmployee ? (
                     <div className="mx-auto w-[920px] max-w-none">
-                      <IDCard config={template} data={selectedEmployee} />
+                <IDCard config={template} data={selectedEmployee} designerTemplate={designerTemplate ?? undefined} />
                     </div>
                   ) : (
-                    <div className="flex h-full min-h-[480px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)]">
+                    <div className="flex h-full min-h-[400px] items-center justify-center rounded-[20px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)] sm:min-h-[480px] sm:rounded-[24px]">
                       Add an employee to preview the sheet here.
                     </div>
                   )}
                 </div>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid gap-2 sm:mt-4 sm:grid-cols-2 sm:gap-3">
                   {employees.map((employee, index) => (
                     <div
                       key={employee.id}
-                      className="rounded-[22px] border border-[var(--border)] bg-white p-4 shadow-sm">
+                      className="rounded-[18px] border border-[var(--border)] bg-white p-3 shadow-sm sm:rounded-[22px] sm:p-4">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-bold text-[var(--paper-text)]">
+                        <p className="truncate font-bold text-[var(--paper-text)]">
                           {employee.fullName}
                         </p>
                         {index === selectedIndex ? (
                           <CheckCircle2
                             size={16}
-                            className="text-emerald-600"
+                            className="shrink-0 text-emerald-600"
                           />
                         ) : null}
                       </div>
@@ -1252,7 +1294,7 @@ export default function App() {
       </main>
 
       <footer className="border-t border-[var(--border)] bg-[var(--bg)]">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-2 px-4 py-4 text-sm text-[var(--muted)] lg:flex-row lg:items-center lg:justify-between lg:px-6">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-2 px-3 py-3 text-xs text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-4 sm:text-sm lg:px-6">
           <div>
             Ready for offline use, local template storage, and batch export.
           </div>
@@ -1275,6 +1317,13 @@ export default function App() {
           rawRows={importWizardState.rawRows}
           onConfirm={handleImportWizardConfirm}
           onCancel={() => setImportWizardState(null)}
+        />
+      )}
+
+      {!cookieConsent && (
+        <CookieConsent
+          onAccept={handleCookieAccept}
+          onDismiss={handleCookieDismiss}
         />
       )}
     </div>

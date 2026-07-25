@@ -1,12 +1,40 @@
 # Lessons Learned
 
 > **Metadata**
-> - last-updated-by: bootstrap-project
-> - last-verified-against-code: 2026-07-22
+> - last-updated-by: update-ai-system
+> - last-verified-against-code: 2026-07-25
 > - staleness-policy: append each time a lesson is identified
 
 > **Overview:** Lessons learned during development. Add entries as new insights arise.
 
 ---
 
-*No lessons logged yet.*
+## Lesson 1 — `backdrop-filter` Creates Stacking Context
+
+**Date:** 2026-07-25
+
+CSS properties like `backdrop-filter` and `transform` create new stacking contexts on their elements. When a child uses `position: fixed`, its z-index is resolved within the nearest stacking context, not the root. To avoid modal overlap issues, use explicit higher z-index values (e.g., z-[60]) for the topmost overlays (mobile preview, cookie consent) and keep in-page modals at z-50.
+
+## Lesson 2 — Components with `position: fixed` Escape Parent Overflow
+
+**Date:** 2026-07-25
+
+Modals rendered inside deeply nested components (e.g., TemplateLibrary inside TemplateEditor inside a panel) still display correctly because `position: fixed` positions relative to the viewport regardless of DOM depth. However, their z-index may be constrained by ancestor stacking contexts, so explicit z-index layering is essential.
+
+## Lesson 3 — Responsive Layout with Flex Children and `overflow: hidden`
+
+**Date:** 2026-07-25
+
+When making a side-by-side flex layout (canvas + property panel) responsive to stack vertically on mobile, switch from `flex-row` to `flex-col` at the breakpoint. Use `lg:flex-row` for desktop and default `flex-col` for mobile. Set `max-h` on the sidebar on mobile to prevent it from taking too much vertical space.
+
+## Lesson 4 — React `useState` Initializers Can Crash Rendering
+
+**Date:** 2026-07-25
+
+A function passed to `useState(fn)` runs during render. If it throws (e.g., `listTemplates()` checks localStorage consent and throws), the component crashes. The overlay `<div>` may already be rendered before the crash, causing a "blank screen" appearance. Always wrap fallible state initializers in try-catch, or use lazy initialization with `useState(() => { try { ... } catch { return fallback; } })`.
+
+## Lesson 5 — Lifting State Between Parent and Child Modal Components
+
+**Date:** 2026-07-25
+
+When a child component (TemplateEditor) manages state that a sibling or parent (IDCard preview in App.tsx) needs to display, lift the state to the common ancestor and pass it down via props. Otherwise, the two components drift out of sync and the preview shows stale data. Use a callback prop (`onDesignerTemplateChange`) to let the child notify the parent of changes.
