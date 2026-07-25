@@ -1,7 +1,7 @@
 # System Architecture
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-25
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
@@ -70,8 +70,8 @@ Central state management via React `useState`. Manages:
 |-----------|---------------|-------|
 | `DataEntry` | Employee form fields + image upload + transform controls | `data, onChange` |
 | `IDCard` | Live card rendering — supports legacy CardConfig and new DesignerTemplate | `config, data, designerTemplate?` |
-| `TemplateEditor` | Combined editor: design tab (fonts/colors), layout tab (sliders), designer tab (canvas editor) | `config, onChange, onReset` |
-| `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate, layer panel, property inspector per layer type | `template, onChange` |
+| `TemplateEditor` | Combined editor: design tab (fonts/colors), layout tab (sliders), designer tab (canvas editor) | `config, onChange, onReset, designerTemplate?, onDesignerTemplateChange?` |
+| `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate, layer panel, property inspector per layer type, front/back side toggle, responsive auto-zoom | `template, onChange` |
 | `TemplateLibrary` | Save/load/rename/delete templates, export/import JSON files | `currentTemplate, onLoadTemplate, onClose` |
 | `CookieConsent` | GDPR-compliant banner with Accept/Dismiss, persists consent flag | `onAccept, onDismiss` |
 | `ImportWizard` | Two-step modal: field mapping → row selection | `headers, rawRows, onConfirm, onCancel` |
@@ -106,11 +106,11 @@ User Input → App.tsx state → Component re-render → Persist (useEffect)
 
 Template Library (save/load) → localStorage (named templates list + active template JSON)
                                          ↓
-                             TemplateDesigner ↔ App.tsx state
+                              TemplateDesigner ↔ App.tsx state (front + back layers)
                                          ↓
-                                   IDCard (live preview)
+                                    IDCard (live preview, front/back toggle)
                                          ↓
-                              Import: image/DOCX/PDF → templateImporter → layout layers
+                               Import: image/DOCX/PDF → templateImporter → layout layers
 ```
 
 ---
@@ -125,4 +125,6 @@ Template Library (save/load) → localStorage (named templates list + active tem
 | Canvas-based image pipeline | Full control over crop/scale/offset without external lib |
 | All-in-one App.tsx | Single state hub for simplicity (no state management lib) |
 | Layer-based template model | Flexible composition of text/image/shape/barcode elements |
+| Front/back template sides | `hasBackSide` flag + optional `backLayers[]` for dual-sided ID cards |
+| Auto-scaling canvas | ResizeObserver-driven zoom to fit canvas within viewport on all screen sizes |
 | Backward-compat migration | `migrateCardConfigToDesignerTemplate()` converts old CardConfig to new DesignerTemplate format |

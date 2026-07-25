@@ -1,7 +1,7 @@
 # Development History
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-25
 > - staleness-policy: append at the end of each significant development phase
 
@@ -52,3 +52,15 @@
 - Added responsive CSS breakpoint refinements to panels, buttons, and layout grid
 - CookieConsent buttons stack vertically on very small screens
 - Verified build succeeds with no regressions
+
+## v0.4 — Back-of-Card, Responsive Canvas & Bug Fixes
+
+**Date:** 2026-07-25
+
+**Summary:**
+- Fixed TemplateLibrary blank-screen crash: `listTemplates()` in useState initializer now wrapped in try-catch to handle missing localStorage consent gracefully
+- Added front/back dual-sided template support: `hasBackSide` flag + optional `backLayers[]` on `DesignerTemplate`, side toggle button in TemplateDesigner toolbar, flip button in IDCard preview
+- Made TemplateDesigner canvas responsive: auto-scaling via ResizeObserver that fits canvas to container, zoom in/out/reset controls with percentage display, proper overflow handling on mobile
+- Synced `designerTemplate` state between App.tsx and TemplateEditor via lifted state + `onDesignerTemplateChange` callback so IDCard preview always reflects current designer changes
+- Improved desktop preview section to use `max-w-full` wrapper and pass `designerTemplate` to IDCard
+- Updated all ai-system docs: system-architecture (front/back flow, responsive zoom), project-context (back-of-card scope), project-plan (completed items), dev-history (this entry), project-decisions (back-of-card decision added)

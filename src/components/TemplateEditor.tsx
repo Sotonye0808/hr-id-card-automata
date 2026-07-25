@@ -17,6 +17,8 @@ interface TemplateEditorProps {
   config: CardConfig;
   onChange: (config: CardConfig) => void;
   onReset: () => void;
+  designerTemplate?: DesignerTemplate | null;
+  onDesignerTemplateChange?: (template: DesignerTemplate) => void;
 }
 
 const FONTS = [
@@ -40,34 +42,40 @@ const PALETTE_COLORS: Record<string, string> = {
   Amethyst: "bg-violet-500",
 };
 
-export default function TemplateEditor({ config, onChange, onReset }: TemplateEditorProps) {
+export default function TemplateEditor({ config, onChange, onReset, designerTemplate: externalDesignerTemplate, onDesignerTemplateChange }: TemplateEditorProps) {
   const [activeTab, setActiveTab] = useState<"design" | "layout" | "designer">("design");
   const [showLibrary, setShowLibrary] = useState(false);
 
-  const [designerTemplate, setDesignerTemplate] = useState<DesignerTemplate | null>(() => {
+  const designerTemplate = externalDesignerTemplate ?? (() => {
     const activeId = getActiveTemplateId();
     if (activeId) {
       const saved = loadTemplate(activeId);
       if (saved) return saved;
     }
-    const migrated = migrateCardConfigToDesignerTemplate("Default", config);
-    return migrated;
-  });
+    return migrateCardConfigToDesignerTemplate("Default", config);
+  })();
 
   const handleDesignerChange = useCallback(
     (tpl: DesignerTemplate) => {
-      setDesignerTemplate(tpl);
-      saveTemplate(tpl);
-      setActiveTemplateId(tpl.id);
+      if (onDesignerTemplateChange) {
+        onDesignerTemplateChange(tpl);
+      } else {
+        saveTemplate(tpl);
+        setActiveTemplateId(tpl.id);
+      }
     },
-    [],
+    [onDesignerTemplateChange],
   );
 
   const handleLoadTemplate = useCallback((tpl: DesignerTemplate) => {
-    setDesignerTemplate(tpl);
-    setActiveTemplateId(tpl.id);
+    if (onDesignerTemplateChange) {
+      onDesignerTemplateChange(tpl);
+    } else {
+      saveTemplate(tpl);
+      setActiveTemplateId(tpl.id);
+    }
     setShowLibrary(false);
-  }, []);
+  }, [onDesignerTemplateChange]);
 
   const updateColor = (key: keyof CardConfig["colors"], value: string) => {
     onChange({ ...config, colors: { ...config.colors, [key]: value } });
