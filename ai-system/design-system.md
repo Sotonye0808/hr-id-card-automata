@@ -1,8 +1,8 @@
 # Design System
 
 > **Metadata**
-> - last-updated-by: bootstrap-project
-> - last-verified-against-code: 2026-07-22
+> - last-updated-by: execute-feature
+> - last-verified-against-code: 2026-07-25
 > - staleness-policy: re-verify if design tokens change
 
 > **Overview:** Documented UI patterns, design tokens, and conventions used in the HR ID Card Automata.
@@ -18,10 +18,14 @@
 
 ## Component Patterns
 
-- **Tab Navigation**: Segmented control (pill-style) for switching views
+- **Tab Navigation**: Segmented control (pill-style) for switching views — now includes "Designer" tab for canvas editor
+- **Canvas Editor**: Drag-and-drop layer positioning with snap-to-grid (8px), resize handles (SE, S, E), layer panel for z-index/visibility/lock management
+- **Layer Property Panels**: Context-sensitive property inspectors per layer type (text: content/font/color/size, image: upload/fit/radius, shape: type/fill/border/radius, barcode: format/value/color)
+- **Template Library**: Modal with save/load/rename/delete/export/import actions
+- **Cookie Consent**: Fixed bottom banner with Accept/Dismiss, only shown before consent given
 - **Modal Wizard**: Two-step import wizard with back/next navigation
 - **Form Controls**: Styled input groups with labels, consistent spacing
-- **Image Upload**: File picker (PNG/JPG, 2MB limit) with preview and transform controls
+- **Image Upload**: File picker (PNG/JPG) with preview and transform controls
 - **Export Progress**: Phase/percentage/status display during batch operations
 
 ## Layout Structure
@@ -29,3 +33,4 @@
 - **Desktop**: Two-column layout — left panel (active tab content), right panel (ID card preview)
 - **Mobile**: Single column with overlay preview toggled by button
 - **Cards**: `sheet-theme-*` classes apply background and accent colors from template config
+- **Designer Canvas**: Center-aligned canvas with grid background, layer outlines on selection

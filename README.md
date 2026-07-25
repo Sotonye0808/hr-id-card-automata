@@ -1,89 +1,136 @@
-# Default Template
+# HR ID Card Automata
 
-A GitHub template repository incorporating the **`ai-system`** framework for AI-assisted software development, pre-configured with an **opencode local trigger workflow**.
+A privacy-first, offline-capable web application for designing, customizing, and batch-exporting employee ID cards. Features a full drag-and-drop visual template designer with layer-based editing, template library, and PDF/DOCX export.
 
----
-
-## What's Included
-
-### `ai-system/` — AI-Assisted Development System
-
-A vendor-neutral, model-agnostic framework for AI-assisted software development. Provides structured documentation, command-driven workflows, and quality gates that work identically across any AI coding tool.
-
-```
-ai-system/
-├── protocols/          # Entry, tiering, QA, escalation, verification
-├── agents/             # Function-based roles (Planner, Architect, Implementer, etc.)
-├── commands/           # Reusable command pipelines (execute-feature, dev-cycle, etc.)
-├── standards/          # Engineering principles
-├── planning/           # Task queue and project plan
-├── memory/             # Decisions and lessons
-├── index/              # Repo map and dependency graph
-├── testing/            # Test plan and results
-├── checkpoints/        # Session log and in-progress tracking
-├── summaries/          # Development history
-└── integrations/       # Optional tool integration examples
-```
-
-### `ai-context.md` — Session entry point
-
-The first file any AI agent reads to get a 30-second project orientation.
-
-### `MIGRATION.md` — Upgrade guide
-
-For teams upgrading from `ai-system` v1 to v2.
-
-### `.github/workflows/opencode.yml` — Opencode local trigger
-
-Enables running opencode agents directly from issue comments and PR review comments using `/oc`, `/opencode`, `/design`, `/od`, and `/opendesign` commands. Delegates to the central workflow runner in the [sotonye-dagogo-dev/github-workflows](https://github.com/sotonye-dagogo-dev/github-workflows) repository.
+![HR ID Card Automata](https://hr-id-card-automata.vercel.app/og-image.png)
 
 ---
 
-## How to Use This Template
+## Features
 
-### 1. Create a Repository from This Template
+- **Drag-and-Drop Template Designer** — Add text fields, images (logos, signatures, photos), shapes, and barcodes on a visual canvas. Drag, resize, and reorder layers with snap-to-grid support.
+- **Layer Panel** — Toggle visibility, lock/unlock, reorder (z-index), and delete layers. Each layer has a dedicated property inspector (font, color, size, position, image source).
+- **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, and import from JSON files.
+- **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
+- **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings.
+- **Batch Export** — Generate PDF or DOCX files for all employees in the queue.
+- **Cookie Consent** — GDPR-compliant banner explaining localStorage usage for theme and template storage.
+- **Dark/Light Theme** — Toggle between dark and light mode with local persistence.
+- **Offline Capable** — Fully client-side. No data leaves the browser. Ready for PWA deployment.
 
-Click **"Use this template"** on GitHub to create a new repository.
+---
 
-### 2. Clone and Bootstrap
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm
+
+### Install
 
 ```bash
-git clone <your-new-repo-url>
-cd <your-repo>
+npm install
 ```
 
-Then, in your AI tool, run the bootstrap command:
+### Development
 
-```
-Execute command: ai-system/commands/bootstrap-project.md
-Directive: [describe your project, e.g., "Next.js + Node.js marketplace app"]
-```
-
-### 3. Start Development
-
-```
-Execute command: ai-system/commands/dev-cycle.md
+```bash
+npm run dev
 ```
 
-### 4. Use Opencode (Optional)
+Opens at `http://localhost:3000`.
 
-Comment `/oc` on any issue or PR to trigger an opencode agent session via the configured workflow.
+### Build
+
+```bash
+npm run build
+```
+
+Output in `dist/`.
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
 
 ---
 
-## Prerequisites & Suggestions
+## Architecture
 
-- **GitHub Organization**: For teams, set up an org-level secrets and environments to share across repos using this template.
-- **Repository Secrets**: If using the opencode workflow, ensure `GITHUB_TOKEN` has the necessary permissions (contents write, pull requests write, issues write).
-- **AI Tool**: Any AI coding tool that can read `ai-context.md` at session start (CLI, IDE extension, API loop, or autonomous agent).
-- **GitHub Workflows Repo**: The opencode trigger workflow references `sotonye-dagogo-dev/github-workflows`. Ensure this repository is accessible within your org, or update the workflow reference accordingly.
+```
+src/
+├── App.tsx                    # State hub — employees, template, export
+├── main.tsx                   # Entry point
+├── types.ts                   # TypeScript types (CardConfig, DesignerTemplate, TemplateLayer, etc.)
+├── index.css                  # Global styles, CSS variables, sheet themes
+├── components/
+│   ├── DataEntry.tsx           # Employee form fields + image upload
+│   ├── IDCard.tsx              # Live preview (legacy + designer template modes)
+│   ├── TemplateEditor.tsx      # Combined editor (design/layout tabs + designer tab)
+│   ├── TemplateDesigner.tsx    # WYSIWYG canvas editor with drag/resize/layer panel
+│   ├── TemplateLibrary.tsx     # Save/load/rename/delete/import/export templates
+│   ├── CookieConsent.tsx       # GDPR consent banner
+│   ├── ImportWizard.tsx        # CSV/XLSX field mapping wizard
+│   └── ActivityBoard.tsx       # Decorative batch processor UI
+└── lib/
+    ├── employeeStore.ts        # Employee CRUD, CSV/XLSX parse, image pipeline, IndexedDB
+    ├── templateStore.ts        # Template CRUD, JSON import/export, legacy migration
+    ├── templateImporter.ts     # Image/DOCX/PDF import parsers
+    └── seo.ts                  # Dynamic meta tag injection
+```
+
+### Data Flow
+
+```
+User Input → App.tsx state → Component re-render → Persist (useEffect)
+                                                           ↓
+                                                  localStorage + IndexedDB
+                                                           ↓
+                                                  Load on next app start
+```
+
+Template flow:
+
+```
+Template Library (save/load) → localStorage (named templates)
+                                          ↓
+                              TemplateDesigner ↔ App.tsx state
+                                          ↓
+                                    IDCard (live preview)
+```
 
 ---
 
-## References
+## Usage
 
-- **`ai-system` Framework Docs**: See [Sotonye0808/ai-system-template](https://github.com/Sotonye0808/ai-system-template) for the canonical `ai-system` documentation and philosophy.
-- **Opencode Workflows**: See [sotonye-dagogo-dev/github-workflows](https://github.com/sotonye-dagogo-dev/github-workflows) for the central workflow runners.
+1. **Add Employees** — Use the Employees tab to enter employee data manually or import from CSV/XLSX.
+2. **Design Template** — Go to the Template tab. Use the "Designer" tab to open the drag-and-drop canvas. Add text, image, shape, and barcode layers. Drag to position, resize handles to adjust.
+3. **Save Template** — Click the library icon to save your design. Export as JSON for sharing.
+4. **Preview** — The right panel shows a live preview of the card with employee data.
+5. **Export** — Go to the Export tab to generate PDF or DOCX for all employees.
+
+---
+
+## Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| React 19 + Vite | Frontend framework and build tool |
+| Tailwind CSS v4 | Utility-first styling |
+| TypeScript | Type safety |
+| jsPDF | PDF export |
+| docx | DOCX export |
+| xlsx | XLSX import |
+| lucide-react | Icons |
+| motion | Animations |
+
+---
+
+## AI-Assisted Development
+
+This project uses the **`ai-system`** framework for AI-assisted development. See `ai-system/` for structured documentation, command-driven workflows, and quality gates.
 
 ---
 

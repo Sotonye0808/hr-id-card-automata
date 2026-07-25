@@ -38,11 +38,12 @@ import {
   TextRun,
   WidthType,
 } from "docx";
-import { CardConfig, EmployeeRecord, ExportProgress, UserData } from "./types";
+import { CardConfig, EmployeeRecord, ExportProgress, UserData, DesignerTemplate } from "./types";
 import DataEntry from "./components/DataEntry";
 import TemplateEditor from "./components/TemplateEditor";
 import IDCard from "./components/IDCard.tsx";
 import ImportWizard from "./components/ImportWizard";
+import CookieConsent from "./components/CookieConsent";
 import {
   createEmployeeRecord,
   duplicateEmployeeRecord,
@@ -54,6 +55,13 @@ import {
   savePersistedBatch,
   detectFieldMappings,
 } from "./lib/employeeStore";
+import {
+  getConsented,
+  loadTemplate,
+  getActiveTemplateId,
+  migrateCardConfigToDesignerTemplate,
+} from "./lib/templateStore";
+import { injectMetaTags } from "./lib/seo";
 
 type WorkspaceTab = "employees" | "template" | "export";
 
@@ -153,7 +161,30 @@ export default function App() {
     headers: string[];
     rawRows: string[][];
   } | null>(null);
+  const [cookieConsent, setCookieConsent] = useState(() => getConsented());
+  const [designerTemplate, setDesignerTemplate] = useState<DesignerTemplate | null>(() => {
+    const activeId = getActiveTemplateId();
+    if (activeId) {
+      const saved = loadTemplate(activeId);
+      if (saved) return saved;
+    }
+    return null;
+  });
   const csvInputRef = useRef<HTMLInputElement>(null);
+
+
+  useEffect(() => {
+    injectMetaTags();
+  }, []);
+
+  const handleCookieAccept = () => {
+    localStorage.setItem("hr-id-card-automata.consent", "true");
+    setCookieConsent(true);
+  };
+
+  const handleCookieDismiss = () => {
+    setCookieConsent(true);
+  };
 
   useEffect(() => {
     const theme = isDarkTheme ? "dark" : "light";
@@ -382,7 +413,7 @@ export default function App() {
 
   const handleImportWizardConfirm = (
     selectedData: string[][],
-    headerMapping: Map<number, number | null>,
+    headerMapping: Map<string, number | null>,
   ) => {
     try {
       const [headerRow, ...dataRows] = selectedData;
@@ -1211,7 +1242,7 @@ export default function App() {
                 <div className="overflow-auto rounded-[28px] border border-[var(--border)] bg-white p-3 shadow-inner">
                   {selectedEmployee ? (
                     <div className="mx-auto w-[920px] max-w-none">
-                      <IDCard config={template} data={selectedEmployee} />
+                <IDCard config={template} data={selectedEmployee} designerTemplate={designerTemplate ?? undefined} />
                     </div>
                   ) : (
                     <div className="flex h-full min-h-[480px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)]">
@@ -1275,6 +1306,13 @@ export default function App() {
           rawRows={importWizardState.rawRows}
           onConfirm={handleImportWizardConfirm}
           onCancel={() => setImportWizardState(null)}
+        />
+      )}
+
+      {!cookieConsent && (
+        <CookieConsent
+          onAccept={handleCookieAccept}
+          onDismiss={handleCookieDismiss}
         />
       )}
     </div>
