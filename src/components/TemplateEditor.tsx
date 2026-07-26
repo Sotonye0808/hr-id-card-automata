@@ -1,12 +1,10 @@
 import { useState, useCallback, useMemo } from "react";
-import { Settings, RotateCcw, Layers, Library, Palette, Move } from "lucide-react";
+import { Settings, RotateCcw, Library, Palette, Move } from "lucide-react";
 import { CardConfig } from "../types";
 import { DesignerTemplate } from "../types";
-import TemplateDesigner from "./TemplateDesigner";
 import TemplateLibrary from "./TemplateLibrary";
 import {
   saveTemplate,
-  loadTemplate,
   getActiveTemplateId,
   setActiveTemplateId,
   migrateCardConfigToDesignerTemplate,
@@ -41,36 +39,13 @@ const PALETTE_COLORS: Record<string, string> = {
   Amethyst: "bg-violet-500",
 };
 
-function getOrCreateTemplate(config: CardConfig): DesignerTemplate {
-  try {
-    const activeId = getActiveTemplateId();
-    if (activeId) {
-      const saved = loadTemplate(activeId);
-      if (saved) return saved;
-    }
-  } catch {}
-  return migrateCardConfigToDesignerTemplate("Default", config);
-}
-
 export default function TemplateEditor({ config, onChange, onReset, designerTemplate: externalDesignerTemplate, onDesignerTemplateChange }: TemplateEditorProps) {
-  const [activeTab, setActiveTab] = useState<"design" | "layout" | "designer">("design");
+  const [activeTab, setActiveTab] = useState<"design" | "layout">("design");
   const [showLibrary, setShowLibrary] = useState(false);
 
   const designerTemplate = useMemo(
-    () => externalDesignerTemplate ?? getOrCreateTemplate(config),
+    () => externalDesignerTemplate ?? migrateCardConfigToDesignerTemplate("Default", config),
     [externalDesignerTemplate, config],
-  );
-
-  const handleDesignerChange = useCallback(
-    (tpl: DesignerTemplate) => {
-      if (onDesignerTemplateChange) {
-        onDesignerTemplateChange(tpl);
-      } else {
-        saveTemplate(tpl);
-        setActiveTemplateId(tpl.id);
-      }
-    },
-    [onDesignerTemplateChange],
   );
 
   const handleLoadTemplate = useCallback((tpl: DesignerTemplate) => {
@@ -83,18 +58,25 @@ export default function TemplateEditor({ config, onChange, onReset, designerTemp
     setShowLibrary(false);
   }, [onDesignerTemplateChange]);
 
-  const updateColor = (key: keyof CardConfig["colors"], value: string) => {
-    onChange({ ...config, colors: { ...config.colors, [key]: value } });
+  const updatePalette = (key: string, value: string) => {
+    const updated: DesignerTemplate = {
+      ...designerTemplate,
+      canvasColor: key === "canvasColor" ? value : designerTemplate.canvasColor,
+      layers: designerTemplate.layers.map((l) => {
+        if (l.type === "text") {
+          const p = { ...l.props as any };
+          if (key === "text") p.color = value;
+          return { ...l, props: p };
+        }
+        return l;
+      }),
+    };
+    onDesignerTemplateChange?.(updated);
   };
 
-  const updateElement = (el: keyof CardConfig["elements"], key: string, value: number | string) => {
-    onChange({
-      ...config,
-      elements: {
-        ...config.elements,
-        [el]: { ...config.elements[el], [key]: value },
-      },
-    });
+  const updateCanvas = (patch: Partial<DesignerTemplate>) => {
+    if (!onDesignerTemplateChange) return;
+    onDesignerTemplateChange({ ...designerTemplate, ...patch });
   };
 
   return (
@@ -120,8 +102,8 @@ export default function TemplateEditor({ config, onChange, onReset, designerTemp
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-3 gap-1 rounded-lg border border-[var(--border)]/50 bg-[var(--bg)] p-1">
-        {(["design", "layout", "designer"] as const).map((tab) => (
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-[var(--border)]/50 bg-[var(--bg)] p-1">
+        {(["design", "layout"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -130,8 +112,8 @@ export default function TemplateEditor({ config, onChange, onReset, designerTemp
                 ? "bg-[var(--accent-soft)] text-[var(--accent)] shadow-sm"
                 : "text-[var(--muted)] hover:text-[var(--text)]"
             }`}>
-            {tab === "design" ? <Palette size={12} /> : tab === "layout" ? <Move size={12} /> : <Layers size={12} />}
-            <span className="truncate">{tab === "designer" ? "Designer" : tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+            {tab === "design" ? <Palette size={12} /> : <Move size={12} />}
+            <span className="truncate">{tab === "design" ? "Design" : "Canvas"}</span>
           </button>
         ))}
       </div>
@@ -140,7 +122,41 @@ export default function TemplateEditor({ config, onChange, onReset, designerTemp
         {activeTab === "design" && (
           <div className="space-y-6">
             <div className="space-y-3">
-              <label className="eyebrow flex items-center gap-2">Typography</label>
+              <label className="eyebrow flex items-center gap-2">Canvas</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-bold text-[var(--muted)]">Width</label>
+                  <input
+                    type="number"
+                    className="field-input mt-1 py-1.5 text-xs"
+                    value={designerTemplate.canvasWidth}
+                    onChange={(e) => updateCanvas({ canvasWidth: Math.max(200, Number(e.target.value)) })}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-[var(--muted)]">Height</label>
+                  <input
+                    type="number"
+                    className="field-input mt-1 py-1.5 text-xs"
+                    value={designerTemplate.canvasHeight}
+                    onChange={(e) => updateCanvas({ canvasHeight: Math.max(200, Number(e.target.value)) })}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-[11px] text-[var(--muted)]">Canvas Color</span>
+                <input
+                  type="color"
+                  value={designerTemplate.canvasColor}
+                  onChange={(e) => updateCanvas({ canvasColor: e.target.value })}
+                  aria-label="Canvas Color"
+                  className="h-6 w-10 cursor-pointer overflow-hidden rounded border-none bg-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 border-t border-[var(--border)] pt-4">
+              <label className="eyebrow flex items-center gap-2">Typography (Legacy)</label>
               <div className="grid grid-cols-1 gap-2">
                 {FONTS.map((f) => (
                   <button
@@ -157,13 +173,16 @@ export default function TemplateEditor({ config, onChange, onReset, designerTemp
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 border-t border-[var(--border)] pt-4">
               <label className="eyebrow flex items-center gap-2">Presets</label>
               <div className="grid grid-cols-2 gap-2">
                 {PRESET_PALETTES.map((p) => (
                   <button
                     key={p.name}
-                    onClick={() => onChange({ ...config, colors: p })}
+                    onClick={() => {
+                      onChange({ ...config, colors: p });
+                      updateCanvas({ canvasColor: p.secondary });
+                    }}
                     className={`flex items-center gap-2 rounded-lg border p-2 text-left text-[10px] font-bold uppercase tracking-wider transition-all ${
                       config.colors.primary === p.primary
                         ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--text)]"
@@ -175,113 +194,40 @@ export default function TemplateEditor({ config, onChange, onReset, designerTemp
                 ))}
               </div>
             </div>
-
-            <div className="space-y-3 border-t border-[var(--border)] pt-4">
-              <label className="eyebrow">Palette controls</label>
-              <div className="space-y-2">
-                {[
-                  { label: "Card Background", key: "secondary" },
-                  { label: "Accent Color", key: "primary" },
-                  { label: "Text Content", key: "text" },
-                  { label: "Accent Highlight", key: "accent" },
-                ].map((item) => (
-                  <div key={item.key} className="flex items-center justify-between gap-4">
-                    <span className="text-[11px] text-[var(--muted)]">{item.label}</span>
-                    <input
-                      type="color"
-                      value={config.colors[item.key as keyof CardConfig["colors"]]}
-                      onChange={(e) => updateColor(item.key as keyof CardConfig["colors"], e.target.value)}
-                      aria-label={item.label}
-                      className="h-6 w-10 cursor-pointer overflow-hidden rounded border-none bg-transparent"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3 border-t border-[var(--border)] pt-4">
-              <label className="eyebrow">Element Styles</label>
-              {(Object.entries(config.elements) as [keyof CardConfig["elements"], any][]).map(([key, value]) => (
-                <div key={key} className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
-                  <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--accent)]">
-                    {key} style
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[10px] font-bold text-[var(--muted)]">Weight</label>
-                      <select
-                        className="field-input mt-1 py-1.5 text-xs"
-                        value={value.weight ?? "normal"}
-                        onChange={(e) => updateElement(key, "weight", e.target.value)}>
-                        <option value="normal">Normal</option>
-                        <option value="medium">Medium</option>
-                        <option value="bold">Bold</option>
-                        <option value="black">Black</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-[var(--muted)]">Rounded</label>
-                      <input
-                        type="number"
-                        className="field-input mt-1 py-1.5 text-xs"
-                        value={value.rounded ?? 0}
-                        min={0}
-                        max={50}
-                        onChange={(e) => updateElement(key, "rounded", parseInt(e.target.value))}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
         {activeTab === "layout" && (
           <div className="space-y-4">
-                {(Object.entries(config.elements) as [keyof CardConfig["elements"], any][]).map(([key, value]) => (
-                  <div key={key} className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
-                    <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--accent)]">
-                      {key} control
-                    </label>
-                    <div className="space-y-4">
-                      {[
-                        { label: "POSITION X", key: "x", max: 400 },
-                        { label: "POSITION Y", key: "y", max: 250 },
-                        { label: "SCALE / SIZE", key: "size", max: 120 },
-                        { label: "ROTATION", key: "rotation", max: 360 },
-                      ].map((field) => (
-                        <div key={field.key}>
-                          <div className="mb-1 flex justify-between text-[10px] text-[var(--muted)]">
-                            <span>{field.label}</span>
-                            <span>{(value[field.key] ?? (field.key === "rotation" ? 0 : 0))}{field.key === "rotation" ? "°" : "px"}</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max={field.max}
-                            value={value[field.key] ?? (field.key === "rotation" ? 0 : 0)}
-                            onChange={(e) => updateElement(key, field.key, parseInt(e.target.value))}
-                            aria-label={`${key} ${field.label}`}
-                            className="field-range h-1 w-full cursor-pointer appearance-none rounded-lg bg-[var(--border)] accent-[var(--accent)]"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-          </div>
-        )}
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
+              <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--accent)]">
+                Canvas Dimensions
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-bold text-[var(--muted)]">Width</label>
+                  <input
+                    type="number"
+                    className="field-input mt-1 py-1.5 text-xs"
+                    value={designerTemplate.canvasWidth}
+                    onChange={(e) => updateCanvas({ canvasWidth: Math.max(200, Number(e.target.value)) })}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-[var(--muted)]">Height</label>
+                  <input
+                    type="number"
+                    className="field-input mt-1 py-1.5 text-xs"
+                    value={designerTemplate.canvasHeight}
+                    onChange={(e) => updateCanvas({ canvasHeight: Math.max(200, Number(e.target.value)) })}
+                  />
+                </div>
+              </div>
+            </div>
 
-        {activeTab === "designer" && designerTemplate && (
-          <div className="h-full">
-            <p className="mb-3 text-xs text-[var(--muted)]">
-              Drag layers on the canvas. Use the layer panel to reorder, toggle visibility, lock, or delete.
+            <p className="text-xs text-[var(--muted)]">
+              Use the canvas area on the right to select, drag, and resize layers. The layer panel there controls position, rotation, opacity, and per-layer properties.
             </p>
-            <TemplateDesigner
-              template={designerTemplate}
-              onChange={handleDesignerChange}
-            />
           </div>
         )}
       </div>

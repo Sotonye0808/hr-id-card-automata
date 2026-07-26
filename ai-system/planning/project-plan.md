@@ -1,7 +1,7 @@
 # Project Plan
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: update after each sprint
 
@@ -31,6 +31,11 @@
 - [x] Responsive mobile layout with overlay preview
 - [x] Responsive canvas auto-scaling with zoom controls
 - [x] Front/back dual-sided template support
+- [x] Gradient/glassmorphism/border design features for all layer types (text, shape, image)
+- [x] Toast notification system for user actions
+- [x] Undo/redo history stack (50 steps)
+- [x] Touch-enabled controls (drag, resize, rotate) via unified pointer events
+- [x] Single canvas instance (no duplicate designer in sidebar)
 
 ### In Progress
 - [ ] Import wizard polish (validation edge cases)

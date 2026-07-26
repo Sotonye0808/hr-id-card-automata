@@ -70,7 +70,7 @@ Central state management via React `useState`. Manages:
 |-----------|---------------|-------|
 | `DataEntry` | Employee form fields + image upload + transform controls | `data, onChange` |
 | `IDCard` | Live card rendering — supports legacy CardConfig and new DesignerTemplate | `config, data, designerTemplate?` |
-| `TemplateEditor` | Combined editor: design tab (fonts/colors), layout tab (sliders), designer tab (canvas editor) | `config, onChange, onReset, designerTemplate?, onDesignerTemplateChange?` |
+| `TemplateEditor` | Sidebar editor: design tab (canvas config, fonts, presets), layout tab (canvas dimensions) — canvas rendering is in the right preview panel | `config, onChange, onReset, designerTemplate?, onDesignerTemplateChange?` |
 | `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), undo/redo history (50 steps), icon-based resize/rotate handles (larger for touch), layer panel, property inspector per layer type (including gradient, glassmorphism, border controls), front/back side toggle, responsive auto-zoom | `template, onChange` |
 | `TemplateLibrary` | Save/load/rename/delete templates, export/import JSON files, toast feedback | `currentTemplate, onLoadTemplate, onClose` |
 | `CookieConsent` | GDPR-compliant banner with Accept/Dismiss, persists consent flag | `onAccept, onDismiss` |

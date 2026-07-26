@@ -16,11 +16,11 @@ main.tsx
         ├── components/IDCard.tsx
         │     └── lib/employeeStore.ts (renderTransformedImage)
         ├── components/TemplateEditor.tsx
-        │     ├── components/TemplateDesigner.tsx
-        │     │     └── lib/templateImporter.ts (importFromImage/Docx/Pdf)
         │     ├── components/TemplateLibrary.tsx
         │     │     └── lib/templateStore.ts (listTemplates, saveTemplate, etc.)
         │     └── lib/templateStore.ts (migrateCardConfigToDesignerTemplate)
+        ├── components/TemplateDesigner.tsx (rendered in right panel, not sidebar)
+        │     └── lib/templateImporter.ts (importFromImage/Docx/Pdf)
         ├── components/ImportWizard.tsx
         │     └── lib/employeeStore.ts (detectFieldMappings)
         ├── components/CookieConsent.tsx

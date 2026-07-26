@@ -1,7 +1,7 @@
 # Development History
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: append at the end of each significant development phase
 
@@ -103,3 +103,21 @@
 - Fixed critical blank-page crash in TemplateDesigner: `undo`/`redo` `useCallback` deps referenced `setActiveLayers` before its `const` declaration, hitting the temporal dead zone and throwing a `ReferenceError` during render. Reordered hook definitions so `setActiveLayers` is defined before `undo`/`redo`.
 - Removed duplicate `activeLayers`/`setActiveLayers`/`currentLayers` variables that were left after the reorder.
 - Updated all ai-system docs: dev-history (this entry), lessons-learned (TDZ lesson), task-queue (fix item), repo-map freshness
+
+## v0.7 — Dual TemplateDesigner Removal, Expanded Design Features & Doc Sync
+
+**Date:** 2026-07-26
+
+**Summary:**
+- Removed auto-save toast from `handleDesignerTemplateChange` in App.tsx — toast now only fires on manual saves (TemplateLibrary save button)
+- Improved IDCard preview to show both front and back card sides simultaneously when `hasBackSide` is true
+- Removed duplicate TemplateDesigner from TemplateEditor's "designer" tab — canvas now lives solely in the right preview panel, eliminating the two-iteration layout issue
+- Simplified TemplateEditor to two tabs: "Design" (canvas config, fonts, presets) and "Canvas" (dimensions), both operating directly on DesignerTemplate properties
+- Made preset palette changes sync to DesignerTemplate canvasColor for real-time preview reflection
+- Enlarged resize/rotate handles from h-7/w-7 (28px) to h-9/w-9 (36px) with icons sized 14-16px for better touch targets
+- Changed resize handle icons from generic Move to Maximize2 with directional hints (rotated for vertical/horizontal)
+- Added glassmorphism, gradient, and border controls to text layer property panel (TextLayerPropsPanel) — previously only available for shape/image layers
+- Updated text layer rendering (both TemplateDesigner canvas and IDCard preview) to apply gradient, glassmorphism, and border styles
+- Fixed responsive canvas overflow by restructuring with wrapper div that dimensions to `canvasWidth * zoom` × `canvasHeight * zoom`
+- Updated dependency-graph.md to reflect TemplateDesigner is now rendered directly in App.tsx (right panel) rather than inside TemplateEditor
+- Updated all ai-system docs, README, metadata.json to reflect text layer design features and simplified component relationships

@@ -10,8 +10,8 @@ A privacy-first, offline-capable web application for designing, customizing, and
 
 - **Drag-and-Drop Template Designer** — Add text fields, images (logos, signatures, photos), shapes, and barcodes on a visual canvas. Drag, resize, rotate, and reorder layers with snap-to-grid support. **Touch-enabled** — drag, icon-based resize/rotate handles, and rotation work on mobile via unified pointer events.
 - **Undo / Redo** — Full undo/redo history (50 steps) for all layer operations (add, delete, move, resize, rotate, property changes).
-- **Gradient & Glassmorphism** — Apply linear/radial gradients and glassmorphism (backdrop blur + opacity) to shape and image layers directly from the property inspector.
-- **Border Controls** — Customize border width, color, and style (solid/dashed/dotted) for image and shape layers.
+- **Gradient & Glassmorphism** — Apply linear/radial gradients and glassmorphism (backdrop blur + opacity) to text, shape, and image layers directly from the property inspector.
+- **Border Controls** — Customize border width, color, and style (solid/dashed/dotted) for text, image, and shape layers.
 - **Layer Panel** — Toggle visibility, lock/unlock, reorder (z-index), reset rotation, and delete layers. Each layer has a dedicated property inspector (font, color, size, position, rotation, opacity, image source, gradients, borders, glassmorphism).
 - **Toast Notifications** — Subtle feedback toasts for save, load, import, export, and other actions.
 - **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, and import from JSON files.
@@ -72,7 +72,7 @@ src/
 ├── components/
 │   ├── DataEntry.tsx           # Employee form fields + image upload
 │   ├── IDCard.tsx              # Live preview (legacy + designer template modes)
-│   ├── TemplateEditor.tsx      # Combined editor (design/layout tabs + designer tab)
+│   ├── TemplateEditor.tsx      # Combined editor (design/layout tabs)
 │   ├── TemplateDesigner.tsx    # WYSIWYG canvas editor with undo/redo, icon handles, property panels
 │   ├── TemplateLibrary.tsx     # Save/load/rename/delete/import/export templates
 │   ├── CookieConsent.tsx       # GDPR consent banner
@@ -111,11 +111,12 @@ Template Library (save/load) → localStorage (named templates)
 ## Usage
 
 1. **Add Employees** — Use the Employees tab to enter employee data manually or import from CSV/XLSX.
-2. **Design Template** — Go to the Template tab. Use the "Designer" tab to open the drag-and-drop canvas. Add text, image, shape, and barcode layers. Drag to position, use icon-based handles to resize/rotate. Undo/redo via toolbar buttons.
-3. **Style Elements** — Apply gradients, glassmorphism effects, and borders to shape and image layers from the Properties panel. Set rotation in the Layout tab.
-4. **Save Template** — Click the library icon to save your design. Export as JSON for sharing. Toast notifications confirm saves.
-5. **Preview** — The right panel shows a live preview of the card with employee data.
-6. **Export** — Go to the Export tab to generate PDF or DOCX for all employees.
+2. **Design Template** — Go to the Template tab. The right panel shows the interactive drag-and-drop canvas. Add text, image, shape, and barcode layers. Drag to position, use icon-based handles to resize/rotate. Undo/redo via toolbar buttons or Ctrl+Z/Ctrl+Shift+Z.
+3. **Style Elements** — Apply gradients, glassmorphism effects, borders, and colors to text, shape, and image layers from the Properties panel on the right.
+4. **Configure Canvas** — Use the Design and Canvas tabs in the left panel to set canvas dimensions, background color, and typography presets.
+5. **Save Template** — Click the library icon to save your design. Export as JSON for sharing. Toast notifications confirm saves.
+6. **Preview** — The right panel shows a live preview of the card with employee data, including dual-sided front/back support.
+7. **Export** — Go to the Export tab to generate PDF or DOCX for all employees.
 
 ---
 

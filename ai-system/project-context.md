@@ -66,9 +66,9 @@ Active sprint focus: Template designer enhancements — undo/redo history, icon-
 - Touch-enabled drag, resize, and rotate via unified pointer events (mouse + touch + pen)
 - Icon-based resize/rotate handles (28px touch targets using Move/RotateCcw icons)
 - Undo/redo history stack (50 steps) for all layer operations
-- Gradient backgrounds (linear/radial) for shape layers
-- Glassmorphism effects (backdrop blur + opacity) for shape and image layers
-- Border customization (width, color, style: solid/dashed/dotted) for shape and image layers
+- Gradient backgrounds (linear/radial) for text, shape, and image layers
+- Glassmorphism effects (backdrop blur + opacity) for text, shape, and image layers
+- Border customization (width, color, style: solid/dashed/dotted) for text, shape, and image layers
 - Rotation handle and rotation reset in layer properties
 - Rotation property in layout panel for legacy element positioning
 - Front/back dual-sided template support with side toggle

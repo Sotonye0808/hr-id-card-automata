@@ -1,7 +1,7 @@
 # Repo Map
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: auto-regenerable — update when project structure changes
 
@@ -31,7 +31,7 @@ hr-id-card-automata/
 │   └── components/
 │       ├── DataEntry.tsx       # Employee data form + image upload
 │       ├── IDCard.tsx          # Live card preview (legacy + designer template modes)
-│       ├── TemplateEditor.tsx  # Combined editor (design/layout tabs + designer tab)
+│       ├── TemplateEditor.tsx  # Sidebar editor (design/layout tabs for canvas props)
 │       ├── TemplateDesigner.tsx # WYSIWYG canvas editor with drag/resize/layer panel
 │       ├── TemplateLibrary.tsx # Save/load/rename/delete/import/export templates
 │       ├── CookieConsent.tsx   # GDPR consent banner
