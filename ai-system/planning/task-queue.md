@@ -1,8 +1,8 @@
 # Task Queue
 
 > **Metadata**
-> - last-updated-by: update-ai-system
-> - last-verified-against-code: 2026-07-25
+> - last-updated-by: execute-feature
+> - last-verified-against-code: 2026-07-26
 > - staleness-policy: update as tasks are completed or added
 
 > **Overview:** Immediate actionable tasks, ordered by priority.
@@ -36,6 +36,15 @@
 | P0 | M | **Toast notification system** — ToastProvider + useToast hook, success/error/info variants, 3.5s auto-dismiss | Complete |
 | P1 | M | **Rotation in layout panel** — added rotation slider to legacy element position controls | Complete |
 | P1 | M | **Enhanced design panel** — element weight/rounded controls, additional palette color | Complete |
+| P0 | M | **Icon-based resize/rotate handles** — replaced colored dots with lucide-react icons (Move/RotateCcw), 28px touch targets | Complete |
+| P0 | M | **Undo/redo history** — 50-step history ref, undo/redo via toolbar buttons + Cmd/Ctrl+Z keyboard shortcuts | Complete |
+| P0 | M | **Gradient backgrounds** — linear/radial gradient support for shape layers, color pickers in property panel | Complete |
+| P0 | M | **Glassmorphism effects** — backdrop blur + opacity controls for shape and image layers | Complete |
+| P0 | M | **Border controls** — width/color/style (solid/dashed/dotted) for image and shape layers | Complete |
+| P0 | M | **Toast notification system** — ToastProvider + useToast hook, success/error/info variants, 3.5s auto-dismiss | Complete |
+| P1 | M | **Rotation in layout panel** — added rotation slider to legacy element position controls | Complete |
+| P1 | M | **Enhanced design panel** — element weight/rounded controls, additional palette color | Complete |
+| P0 | M | **Fix TemplateDesigner blank page crash** — `undo`/`redo` useCallback referenced `setActiveLayers` before declaration (TDZ ReferenceError). Reordered hook definitions. | Complete |
 | P3 | S | **Clean up unused deps** — express, @google/genai, dotenv (not in package.json — already clean) | N/A |
 | P3 | M | **Service Worker / PWA manifest** — offline support, app icon, theme-color | Pending |
 | P2 | M | Wire ActivityBoard component to real app state | Pending |

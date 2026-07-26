@@ -1,7 +1,7 @@
 # Lessons Learned
 
 > **Metadata**
-> - last-updated-by: update-ai-system
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: append each time a lesson is identified
 
@@ -44,3 +44,11 @@ When a child component (TemplateEditor) manages state that a sibling or parent (
 **Date:** 2026-07-26
 
 For drag-and-drop interactions that need to work across mouse, touch, and pen, use the Pointer Events API (`pointerdown`, `pointermove`, `pointerup`) instead of maintaining separate mouse and touch event handlers. `pointerdown` on elements + `window.addEventListener("pointermove"/"pointerup")` provides a single code path. Use `setPointerCapture` if available, or attach listeners to `window`. Always set `touch-action: none` on draggable elements to prevent browser gesture interference, and set `document.body.style.userSelect = "none"` during drag to prevent text selection.
+
+## Lesson 7 — Temporal Dead Zone in `useCallback` Dependency Arrays
+
+**Date:** 2026-07-26
+
+When multiple `const` hooks (useCallback, useState, etc.) reference each other, the order of declaration matters. `useCallback` dependency arrays are evaluated immediately when the hook runs. If a dependency refers to a `const` declared **after** the current hook, it is in the temporal dead zone and accessing it throws a `ReferenceError`, causing the component to unmount with a blank page.
+
+Always define dependencies (e.g., `setActiveLayers`) before the callbacks that reference them (`undo`/`redo`). React hooks run in order, so a `useCallback` can safely use a `const` declared earlier in the same render, but not one declared later.
