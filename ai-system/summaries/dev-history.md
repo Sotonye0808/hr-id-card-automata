@@ -121,3 +121,17 @@
 - Fixed responsive canvas overflow by restructuring with wrapper div that dimensions to `canvasWidth * zoom` × `canvasHeight * zoom`
 - Updated dependency-graph.md to reflect TemplateDesigner is now rendered directly in App.tsx (right panel) rather than inside TemplateEditor
 - Updated all ai-system docs, README, metadata.json to reflect text layer design features and simplified component relationships
+
+## v0.8 — End-to-End Export Pipeline & Template Rendering
+
+**Date:** 2026-07-26
+
+**Summary:**
+- Created `src/lib/renderTemplateToCanvas.ts` — renders all DesignerTemplate layers (text, image, shape, barcode) to an offscreen canvas with full support for gradients, glassmorphism, borders, rotation, opacity, clipping, employee data variable interpolation (`{{fullName}}`, `{{department}}`, `{{role}}`, `{{idNumber}}`, `{{issueDate}}`), and front/back dual sides
+- Fixed PDF export: `exportPdf()` now uses `renderDesignerTemplateToCanvas()` when a designer template exists, rendering the user-designed card (including front + back) instead of a hardcoded table layout
+- Fixed DOCX export: `exportDocx()` similarly renders via `renderDesignerTemplateToCanvas()` as embedded ImageRun when a designer template exists
+- Kept legacy fallback: if no designer template layers exist, export falls back to the original hardcoded table + image layout
+- Updated preview header text to dynamically show "Template Preview" or "Legacy Sheet Preview" depending on whether a designer template is active
+- Updated export tab description to communicate that exports now use the designer template
+- Updated all ai-system docs: system-architecture (export pipeline, data flow diagram), project-context (end-to-end scope), repo-map (new module), dependency-graph (new dependency chain), dev-history (this entry), task-queue (completed items)
+- Verified build with `npm run build` succeeds; pre-existing type errors in `scripts/verify.ts` unchanged

@@ -27,6 +27,7 @@ hr-id-card-automata/
 │   │   ├── employeeStore.ts    # Data layer (parse, persist, image pipeline)
 │   │   ├── templateStore.ts    # Template CRUD (localStorage), JSON import/export, legacy migration
 │   │   ├── templateImporter.ts # Import images/DOCX/PDF as tracing backgrounds
+│   │   ├── renderTemplateToCanvas.ts # Canvas rendering of designer template for export
 │   │   └── seo.ts              # Dynamic SEO meta tag injection
 │   └── components/
 │       ├── DataEntry.tsx       # Employee data form + image upload

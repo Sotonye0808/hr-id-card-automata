@@ -50,4 +50,6 @@
 | P2 | M | Wire ActivityBoard component to real app state | Pending |
 | P2 | S | Add export progress error states | Pending |
 | P2 | M | Implement image drag-and-drop upload | Pending |
+| P0 | XL | **Export pipeline renders designer template** — PDF/DOCX now uses `renderDesignerTemplateToCanvas()` to render designer template layers (gradients, glassmorphism, borders, rotation, front/back) instead of hardcoded table layouts | Complete |
+| P2 | S | **Update ai-system docs** — add `renderTemplateToCanvas.ts` to repo-map, dependency-graph, system-architecture, project-context, dev-history | Complete |
 | P3 | L | Add chunked export for large employee batches | Pending |
