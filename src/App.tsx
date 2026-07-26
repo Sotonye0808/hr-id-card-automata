@@ -187,7 +187,6 @@ function AppInner() {
     setDesignerTemplate(tpl);
     saveTemplate(tpl);
     setActiveTemplateId(tpl.id);
-    toast("Template saved", "success");
   };
 
   const handleCookieAccept = () => {

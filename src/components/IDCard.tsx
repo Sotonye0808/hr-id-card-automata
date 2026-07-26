@@ -83,19 +83,37 @@ export default function IDCard({ config, data, designerTemplate }: IDCardProps) 
 
   if (designerTemplate && designerTemplate.layers.length > 0) {
     return (
-      <div className="flex flex-col items-center gap-3">
-        <DesignerIDCard
-          template={designerTemplate}
-          data={data}
-          renderedImageUrl={renderedImageUrl}
-          side={showBack ? "back" : "front"}
-        />
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-full">
+          <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+            {showBack ? "Back Side" : "Front Side"}
+          </p>
+          <DesignerIDCard
+            template={designerTemplate}
+            data={data}
+            renderedImageUrl={renderedImageUrl}
+            side={showBack ? "back" : "front"}
+          />
+        </div>
         {hasBack && (
           <button
-            className="mini-button"
+            className="mini-button gap-2 px-4 py-2"
             onClick={() => setShowBack((s) => !s)}>
-            {showBack ? "Show Front" : "Show Back"}
+            {showBack ? "Show Front Side" : "Show Back Side"}
           </button>
+        )}
+        {hasBack && !showBack && (
+          <div className="mt-1 w-full opacity-40">
+            <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+              Back Side Preview
+            </p>
+            <DesignerIDCard
+              template={designerTemplate}
+              data={data}
+              renderedImageUrl={renderedImageUrl}
+              side="back"
+            />
+          </div>
         )}
       </div>
     );
@@ -242,10 +260,22 @@ function LayerRenderer({ layer, data, renderedImageUrl }: { layer: TemplateLayer
         .replace(/\{\{role\}\}/g, data.role)
         .replace(/\{\{idNumber\}\}/g, data.idNumber)
         .replace(/\{\{issueDate\}\}/g, data.issueDate);
+      const bgStyle: React.CSSProperties = {};
+      if (p.backgroundGradient && p.backgroundGradient.type !== "none") {
+        const colors = p.backgroundGradient.colors.join(", ");
+        bgStyle.background = p.backgroundGradient.type === "linear"
+          ? `linear-gradient(${p.backgroundGradient.angle}deg, ${colors})`
+          : `radial-gradient(circle, ${colors})`;
+      }
+      if (p.glassmorphism?.enabled) {
+        bgStyle.backdropFilter = `blur(${p.glassmorphism.blur}px)`;
+        bgStyle.WebkitBackdropFilter = `blur(${p.glassmorphism.blur}px)`;
+      }
       return (
         <div
           className="flex h-full w-full items-center overflow-hidden px-1"
           style={{
+            ...bgStyle,
             fontFamily: p.fontFamily,
             fontSize: p.fontSize,
             fontWeight: p.fontWeight,
@@ -253,6 +283,7 @@ function LayerRenderer({ layer, data, renderedImageUrl }: { layer: TemplateLayer
             textAlign: p.textAlign,
             lineHeight: p.lineHeight,
             letterSpacing: p.letterSpacing,
+            border: p.borderWidth && p.borderWidth > 0 ? `${p.borderWidth}px ${p.borderStyle ?? "solid"} ${p.borderColor ?? "#111827"}` : undefined,
           }}>
           <span className="truncate">{resolved}</span>
         </div>

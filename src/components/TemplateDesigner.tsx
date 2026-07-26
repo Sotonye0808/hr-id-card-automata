@@ -567,22 +567,31 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
         <div
           ref={containerRef}
           data-canvas="true"
-          className="designer-canvas-container relative flex min-h-[250px] flex-1 items-start justify-center overflow-auto rounded-2xl border border-[var(--border)] sm:min-h-[300px]"
+          className="designer-canvas-container relative flex min-h-[250px] flex-1 items-start justify-center overflow-hidden rounded-2xl border border-[var(--border)] sm:min-h-[300px]"
           onClick={handleCanvasClick}
           style={{ touchAction: "manipulation" }}>
           <div
-            ref={canvasRef}
-            className="designer-canvas relative shrink-0"
+            className="flex items-start justify-center p-6"
             style={{
+              width: `${template.canvasWidth * zoom}px`,
+              height: `${template.canvasHeight * zoom}px`,
+              overflow: "visible",
+              flexShrink: 0,
+            }}>
+          <div
+            ref={canvasRef}
+            className="designer-canvas relative"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
               width: template.canvasWidth,
               height: template.canvasHeight,
               backgroundColor: template.canvasColor,
-              margin: "24px auto",
               borderRadius: "12px",
               boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
-              maxWidth: "100%",
               transform: `scale(${zoom})`,
-              transformOrigin: "top center",
+              transformOrigin: "top left",
               overflow: "hidden",
               touchAction: "none",
             }}>
@@ -618,37 +627,38 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
                 {selectedLayerId === layer.id && !layer.locked && (
                   <>
                     <div
-                      className="absolute -bottom-3 -right-3 z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#0f766e] text-white shadow-md"
+                      className="absolute -bottom-4 -right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#0f766e] text-white shadow-md"
                       style={{ touchAction: "none", cursor: "nwse-resize" }}
                       onPointerDown={(e) => handleResizeStart(e, layer.id, "se")}
                       title="Resize">
-                      <Move size={12} />
+                      <Move size={16} />
                     </div>
                     <div
-                      className="absolute -bottom-3 left-1/2 z-10 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-[#0f766e] text-white shadow-md"
+                      className="absolute -bottom-4 left-1/2 z-10 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-[#0f766e] text-white shadow-md"
                       style={{ touchAction: "none", cursor: "ns-resize" }}
                       onPointerDown={(e) => handleResizeStart(e, layer.id, "s")}
                       title="Resize vertically">
-                      <Move size={12} className="rotate-90" />
+                      <Maximize2 size={14} className="rotate-90" />
                     </div>
                     <div
-                      className="absolute -right-3 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-[#0f766e] text-white shadow-md"
+                      className="absolute -right-4 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-[#0f766e] text-white shadow-md"
                       style={{ touchAction: "none", cursor: "ew-resize" }}
                       onPointerDown={(e) => handleResizeStart(e, layer.id, "e")}
                       title="Resize horizontally">
-                      <Move size={12} />
+                      <Maximize2 size={14} />
                     </div>
                     <div
-                      className="absolute -top-8 left-1/2 z-10 flex h-7 w-7 -translate-x-1/2 cursor-grab items-center justify-center rounded-full border-2 border-white bg-orange-500 text-white shadow-md"
+                      className="absolute -top-10 left-1/2 z-10 flex h-9 w-9 -translate-x-1/2 cursor-grab items-center justify-center rounded-full border-2 border-white bg-orange-500 text-white shadow-md"
                       style={{ touchAction: "none" }}
                       onPointerDown={(e) => handleRotateStart(e, layer.id)}
                       title="Rotate">
-                      <RotateCcw size={12} />
+                      <RotateCcw size={16} />
                     </div>
                   </>
                 )}
               </div>
             ))}
+            </div>
           </div>
         </div>
 
@@ -898,10 +908,24 @@ function renderLayerPreview(layer: TemplateLayer) {
   switch (layer.type) {
     case "text": {
       const p = layer.props as TextLayerProps;
+      const bgStyle: React.CSSProperties = {};
+      if (p.backgroundGradient && p.backgroundGradient.type !== "none") {
+        const colors = p.backgroundGradient.colors.join(", ");
+        if (p.backgroundGradient.type === "linear") {
+          bgStyle.background = `linear-gradient(${p.backgroundGradient.angle}deg, ${colors})`;
+        } else {
+          bgStyle.background = `radial-gradient(circle, ${colors})`;
+        }
+      }
+      if (p.glassmorphism?.enabled) {
+        bgStyle.backdropFilter = `blur(${p.glassmorphism.blur}px)`;
+        bgStyle.WebkitBackdropFilter = `blur(${p.glassmorphism.blur}px)`;
+      }
       return (
         <div
           className="flex h-full w-full items-center overflow-hidden px-2"
           style={{
+            ...bgStyle,
             fontFamily: p.fontFamily,
             fontSize: p.fontSize,
             fontWeight: p.fontWeight,
@@ -909,6 +933,7 @@ function renderLayerPreview(layer: TemplateLayer) {
             textAlign: p.textAlign,
             lineHeight: p.lineHeight,
             letterSpacing: p.letterSpacing,
+            border: p.borderWidth && p.borderWidth > 0 ? `${p.borderWidth}px ${p.borderStyle ?? "solid"} ${p.borderColor ?? "#111827"}` : undefined,
           }}>
           <span className="truncate">{p.text}</span>
         </div>
@@ -991,6 +1016,8 @@ function TextLayerPropsPanel({
   onChange: (props: TextLayerProps) => void;
 }) {
   const set = (patch: Partial<TextLayerProps>) => onChange({ ...props, ...patch });
+  const glass = props.glassmorphism ?? { enabled: false, blur: 10, opacity: 0.3 };
+  const grad = props.backgroundGradient ?? { type: "none", angle: 0, colors: ["#0f766e", "#0f4761"] };
 
   return (
     <div className="space-y-2 border-t border-[var(--border)] pt-2">
@@ -1045,6 +1072,121 @@ function TextLayerPropsPanel({
           <option value="center">Center</option>
           <option value="right">Right</option>
         </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 border-t border-[var(--border)] pt-2">
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Border Width</label>
+          <input
+            type="number"
+            className="field-input mt-1 py-1.5 text-xs"
+            value={props.borderWidth ?? 0}
+            onChange={(e) => set({ borderWidth: Number(e.target.value) })}
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Border Color</label>
+          <input
+            type="color"
+            className="color-input mt-1"
+            value={props.borderColor ?? "#111827"}
+            onChange={(e) => set({ borderColor: e.target.value })}
+          />
+        </div>
+      </div>
+      {(props.borderWidth ?? 0) > 0 && (
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Border Style</label>
+          <select
+            className="field-input mt-1 py-1.5 text-xs"
+            value={props.borderStyle ?? "solid"}
+            onChange={(e) => set({ borderStyle: e.target.value as "solid" | "dashed" | "dotted" })}>
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+          </select>
+        </div>
+      )}
+
+      <div className="space-y-2 border-t border-[var(--border)] pt-2">
+        <label className="text-[10px] font-bold text-[var(--muted)]">Background Gradient</label>
+        <select
+          className="field-input mt-1 py-1.5 text-xs"
+          value={grad.type}
+          onChange={(e) => set({ backgroundGradient: { ...grad, type: e.target.value as "none" | "linear" | "radial" } })}>
+          <option value="none">None</option>
+          <option value="linear">Linear</option>
+          <option value="radial">Radial</option>
+        </select>
+        {grad.type !== "none" && (
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-bold text-[var(--muted)]">Angle</label>
+              <input
+                type="number"
+                className="field-input mt-1 py-1.5 text-xs"
+                value={grad.angle}
+                onChange={(e) => set({ backgroundGradient: { ...grad, angle: Number(e.target.value) } })}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-[var(--muted)]">Color 1</label>
+              <input
+                type="color"
+                className="color-input mt-1"
+                value={grad.colors[0] ?? "#0f766e"}
+                onChange={(e) => set({ backgroundGradient: { ...grad, colors: [e.target.value, grad.colors[1] ?? "#0f4761"] } })}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-[var(--muted)]">Color 2</label>
+              <input
+                type="color"
+                className="color-input mt-1"
+                value={grad.colors[1] ?? "#0f4761"}
+                onChange={(e) => set({ backgroundGradient: { ...grad, colors: [grad.colors[0] ?? "#0f766e", e.target.value] } })}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2 border-t border-[var(--border)] pt-2">
+        <label className="text-[10px] font-bold text-[var(--muted)]">Glassmorphism</label>
+        <select
+          className="field-input mt-1 py-1.5 text-xs"
+          value={glass.enabled ? "yes" : "no"}
+          onChange={(e) => set({ glassmorphism: { ...glass, enabled: e.target.value === "yes" } })}>
+          <option value="no">Disabled</option>
+          <option value="yes">Enabled</option>
+        </select>
+        {glass.enabled && (
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-bold text-[var(--muted)]">Blur</label>
+              <input
+                type="number"
+                className="field-input mt-1 py-1.5 text-xs"
+                value={glass.blur}
+                min={1}
+                max={50}
+                onChange={(e) => set({ glassmorphism: { ...glass, blur: Number(e.target.value) } })}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-[var(--muted)]">Opacity</label>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                className="field-range mt-1"
+                value={glass.opacity}
+                onChange={(e) => set({ glassmorphism: { ...glass, opacity: Number(e.target.value) } })}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

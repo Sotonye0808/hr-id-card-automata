@@ -1,7 +1,7 @@
 # Lessons Learned
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: append each time a lesson is identified
 
@@ -52,3 +52,9 @@ For drag-and-drop interactions that need to work across mouse, touch, and pen, u
 When multiple `const` hooks (useCallback, useState, etc.) reference each other, the order of declaration matters. `useCallback` dependency arrays are evaluated immediately when the hook runs. If a dependency refers to a `const` declared **after** the current hook, it is in the temporal dead zone and accessing it throws a `ReferenceError`, causing the component to unmount with a blank page.
 
 Always define dependencies (e.g., `setActiveLayers`) before the callbacks that reference them (`undo`/`redo`). React hooks run in order, so a `useCallback` can safely use a `const` declared earlier in the same render, but not one declared later.
+
+## Lesson 8 — Avoid Dual-Rendering the Same Interactive Component
+
+**Date:** 2026-07-26
+
+When a complex interactive component (like TemplateDesigner) is rendered in two places simultaneously — once in a sidebar tab and once in the main preview panel — it creates confusion and poor UX. Both instances consume memory and may respond to the same state differently. The solution is to render the interactive canvas only in the dedicated preview panel and keep the sidebar for controls/configuration only. This also fixes layout issues on wide screens where neither instance had sufficient space.
