@@ -1,7 +1,7 @@
 # System Architecture
 
 > **Metadata**
-> - last-updated-by: update-ai-system
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
@@ -71,9 +71,10 @@ Central state management via React `useState`. Manages:
 | `DataEntry` | Employee form fields + image upload + transform controls | `data, onChange` |
 | `IDCard` | Live card rendering — supports legacy CardConfig and new DesignerTemplate | `config, data, designerTemplate?` |
 | `TemplateEditor` | Combined editor: design tab (fonts/colors), layout tab (sliders), designer tab (canvas editor) | `config, onChange, onReset, designerTemplate?, onDesignerTemplateChange?` |
-| `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), layer panel, property inspector per layer type, front/back side toggle, responsive auto-zoom, rotation handle | `template, onChange` |
-| `TemplateLibrary` | Save/load/rename/delete templates, export/import JSON files | `currentTemplate, onLoadTemplate, onClose` |
+| `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), undo/redo history (50 steps), icon-based resize/rotate handles (larger for touch), layer panel, property inspector per layer type (including gradient, glassmorphism, border controls), front/back side toggle, responsive auto-zoom | `template, onChange` |
+| `TemplateLibrary` | Save/load/rename/delete templates, export/import JSON files, toast feedback | `currentTemplate, onLoadTemplate, onClose` |
 | `CookieConsent` | GDPR-compliant banner with Accept/Dismiss, persists consent flag | `onAccept, onDismiss` |
+| `Toast` | Toast notification context with animated success/error/info toasts, auto-dismiss | children (context provider) |
 | `ImportWizard` | Two-step modal: field mapping → row selection | `headers, rawRows, onConfirm, onCancel` |
 | `ActivityBoard` | Decorative batch processor UI (cosmetic, not wired) | none |
 
@@ -81,8 +82,9 @@ Central state management via React `useState`. Manages:
 | Module | Responsibility |
 |--------|---------------|
 | `employeeStore.ts` | Employee CRUD, CSV/XLSX import, image render pipeline, IndexedDB persistence |
-| `templateStore.ts` | Template CRUD (localStorage), JSON import/export, legacy CardConfig migration |
+| `templateStore.ts` | Template CRUD (localStorage), JSON import/export, legacy CardConfig migration, consent gate |
 | `templateImporter.ts` | Import images/DOCX/PDF as tracing backgrounds for template design |
+| `Toast.tsx` | Toast notification context — `ToastProvider` wraps App, `useToast()` hook for triggering toasts |
 | `seo.ts` | Dynamic injection of Open Graph, Twitter Card, and JSON-LD structured data |
 
 ### Persistence
@@ -129,3 +131,7 @@ Template Library (save/load) → localStorage (named templates list + active tem
 | Front/back template sides | `hasBackSide` flag + optional `backLayers[]` for dual-sided ID cards |
 | Auto-scaling canvas | ResizeObserver-driven zoom to fit canvas within viewport on all screen sizes |
 | Backward-compat migration | `migrateCardConfigToDesignerTemplate()` converts old CardConfig to new DesignerTemplate format |
+| Icon-based resize/rotate handles | Replaced colored dots with lucide-react icons (`Move`, `RotateCcw`) in 28px touch targets for better usability |
+| Undo/redo via ref-based history | `historyRef` stores up to 50 snapshots of layers; `undo`/`redo` callbacks restore snapshots on pointer-up, add/delete/move |
+| Gradient + glassmorphism as first-class props | `GradientConfig` and `GlassmorphismConfig` embedded in `ShapeLayerProps` and `ImageLayerProps`; rendered via inline `background` and `backdropFilter` styles |
+| Toast notification system | `ToastProvider` context + `useToast()` hook; auto-dismiss after 3.5s; success/error/info variants with `motion` animations |

@@ -261,13 +261,23 @@ function LayerRenderer({ layer, data, renderedImageUrl }: { layer: TemplateLayer
     case "image": {
       const p = layer.props as ImageLayerProps;
       const src = renderedImageUrl || p.src;
+      const imgStyle: React.CSSProperties = {};
+      if (p.glassmorphism?.enabled) {
+        imgStyle.backdropFilter = `blur(${p.glassmorphism.blur}px)`;
+        imgStyle.WebkitBackdropFilter = `blur(${p.glassmorphism.blur}px)`;
+      }
       if (src) {
         return (
           <img
             src={src}
             alt=""
             className="h-full w-full"
-            style={{ objectFit: p.objectFit, borderRadius: p.borderRadius }}
+            style={{
+              objectFit: p.objectFit,
+              borderRadius: p.borderRadius,
+              border: p.borderWidth && p.borderWidth > 0 ? `${p.borderWidth}px ${p.borderStyle ?? "solid"} ${p.borderColor ?? "#111827"}` : undefined,
+              ...imgStyle,
+            }}
           />
         );
       }
@@ -279,12 +289,27 @@ function LayerRenderer({ layer, data, renderedImageUrl }: { layer: TemplateLayer
     }
     case "shape": {
       const p = layer.props as ShapeLayerProps;
+      const bgStyle: React.CSSProperties = {};
+      if (p.backgroundGradient && p.backgroundGradient.type !== "none") {
+        const colors = p.backgroundGradient.colors.join(", ");
+        if (p.backgroundGradient.type === "linear") {
+          bgStyle.background = `linear-gradient(${p.backgroundGradient.angle}deg, ${colors})`;
+        } else {
+          bgStyle.background = `radial-gradient(circle, ${colors})`;
+        }
+      } else {
+        bgStyle.backgroundColor = p.backgroundColor;
+      }
+      if (p.glassmorphism?.enabled) {
+        bgStyle.backdropFilter = `blur(${p.glassmorphism.blur}px)`;
+        bgStyle.WebkitBackdropFilter = `blur(${p.glassmorphism.blur}px)`;
+      }
       return (
         <div
           className="h-full w-full"
           style={{
-            backgroundColor: p.backgroundColor,
-            border: p.borderWidth > 0 ? `${p.borderWidth}px solid ${p.borderColor}` : undefined,
+            ...bgStyle,
+            border: p.borderWidth > 0 ? `${p.borderWidth}px ${p.borderStyle ?? "solid"} ${p.borderColor}` : undefined,
             borderRadius: p.borderRadius,
           }}
         />

@@ -16,6 +16,7 @@ export interface ElementPosition {
   size: number;
   weight?: string;
   rounded?: number;
+  rotation?: number;
 }
 
 export interface CardConfig {
@@ -115,12 +116,33 @@ export interface TextLayerProps {
   textAlign: "left" | "center" | "right";
   lineHeight: number;
   letterSpacing: number;
+  backgroundGradient?: GradientConfig;
+  borderColor?: string;
+  borderWidth?: number;
+  borderStyle?: "solid" | "dashed" | "dotted";
+  glassmorphism?: GlassmorphismConfig;
 }
 
 export interface ImageLayerProps {
   src: string | null;
   objectFit: "cover" | "contain" | "fill";
   borderRadius: number;
+  borderColor?: string;
+  borderWidth?: number;
+  borderStyle?: "solid" | "dashed" | "dotted";
+  glassmorphism?: GlassmorphismConfig;
+}
+
+export interface GradientConfig {
+  type: "none" | "linear" | "radial";
+  angle: number;
+  colors: string[];
+}
+
+export interface GlassmorphismConfig {
+  enabled: boolean;
+  blur: number;
+  opacity: number;
 }
 
 export interface ShapeLayerProps {
@@ -129,6 +151,9 @@ export interface ShapeLayerProps {
   borderColor: string;
   borderWidth: number;
   borderRadius: number;
+  borderStyle?: "solid" | "dashed" | "dotted";
+  backgroundGradient?: GradientConfig;
+  glassmorphism?: GlassmorphismConfig;
 }
 
 export interface BarcodeLayerProps {

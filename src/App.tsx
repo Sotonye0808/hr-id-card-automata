@@ -65,6 +65,7 @@ import {
   migrateCardConfigToDesignerTemplate,
 } from "./lib/templateStore";
 import { injectMetaTags } from "./lib/seo";
+import { ToastProvider, useToast } from "./components/Toast";
 
 type WorkspaceTab = "employees" | "template" | "export";
 
@@ -80,10 +81,10 @@ const DEFAULT_TEMPLATE: CardConfig = {
     accent: "#0f4761",
   },
   elements: {
-    avatar: { x: 16, y: 16, size: 110, rounded: 4 },
-    title: { x: 240, y: 24, size: 20, weight: "black" },
-    subtitle: { x: 240, y: 54, size: 12, weight: "medium" },
-    badge: { x: 16, y: 140, size: 10, weight: "bold" },
+    avatar: { x: 16, y: 16, size: 110, rounded: 4, rotation: 0 },
+    title: { x: 240, y: 24, size: 20, weight: "black", rotation: 0 },
+    subtitle: { x: 240, y: 54, size: 12, weight: "medium", rotation: 0 },
+    badge: { x: 16, y: 140, size: 10, weight: "bold", rotation: 0 },
   },
 };
 
@@ -139,7 +140,8 @@ function dataUrlToBytes(dataUrl: string) {
   return bytes;
 }
 
-export default function App() {
+function AppInner() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("employees");
   const [template, setTemplate] = useState<CardConfig>(DEFAULT_TEMPLATE);
   const [employees, setEmployees] =
@@ -185,6 +187,7 @@ export default function App() {
     setDesignerTemplate(tpl);
     saveTemplate(tpl);
     setActiveTemplateId(tpl.id);
+    toast("Template saved", "success");
   };
 
   const handleCookieAccept = () => {
@@ -503,6 +506,7 @@ export default function App() {
         percent: 100,
         status: "complete",
       });
+      toast(`Imported ${importedEmployees.length} employees`, "success");
     } catch (error) {
       setProgress({
         phase: `Import processing failed: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -549,6 +553,7 @@ export default function App() {
         headers: headerRow,
         rawRows: dataRows,
       });
+      toast("Clipboard data parsed — review and confirm", "info");
     } catch {
       setProgress({
         phase:
@@ -696,6 +701,7 @@ export default function App() {
       percent: 100,
       status: "complete",
     });
+    toast("PDF exported successfully", "success");
   };
 
   const exportDocx = async () => {
@@ -814,6 +820,7 @@ export default function App() {
       percent: 100,
       status: "complete",
     });
+    toast("DOCX exported successfully", "success");
   };
 
   const statusTone =
@@ -1355,5 +1362,13 @@ export default function App() {
         />
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
   );
 }
