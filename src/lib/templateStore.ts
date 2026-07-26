@@ -140,6 +140,22 @@ export function importTemplateFromJson(
   });
 }
 
+export function getTemplateVariables(template: DesignerTemplate): string[] {
+  const vars = new Set<string>();
+  const allLayers = [...template.layers, ...(template.backLayers ?? [])];
+  for (const layer of allLayers) {
+    if (layer.type === "text") {
+      const p = layer.props as import("../types").TextLayerProps;
+      const matches = p.text.match(/\{\{(\w+)\}\}/g);
+      if (matches) {
+        matches.forEach((m) => vars.add(m.replace(/\{\{|\}\}/g, "")));
+      }
+    }
+  }
+  const known = ["fullName", "department", "role", "idNumber", "issueDate"];
+  return known.filter((v) => vars.has(v));
+}
+
 export function migrateCardConfigToDesignerTemplate(
   name: string,
   config: { font: string; colors: { primary: string; secondary: string; text: string; accent: string }; elements: Record<string, { x: number; y: number; size: number; weight?: string; rounded?: number }> },

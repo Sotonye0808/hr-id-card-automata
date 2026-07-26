@@ -82,8 +82,9 @@ Central state management via React `useState`. Manages:
 | Module | Responsibility |
 |--------|---------------|
 | `employeeStore.ts` | Employee CRUD, CSV/XLSX import, image render pipeline, IndexedDB persistence |
-| `templateStore.ts` | Template CRUD (localStorage), JSON import/export, legacy CardConfig migration, consent gate |
+| `templateStore.ts` | Template CRUD (localStorage), JSON import/export, legacy CardConfig migration, consent gate, `getTemplateVariables()` to scan text layers for `{{variable}}` patterns |
 | `templateImporter.ts` | Import images/DOCX/PDF as tracing backgrounds for template design |
+| `exportRenderer.ts` | Canvas-based designer template renderer — draws all layer types (text with variable substitution, images with crop/transform, shapes, barcodes) with gradients, glassmorphism, borders, and rotation onto a `<canvas>` element for embedding in PDF/DOCX |
 | `Toast.tsx` | Toast notification context — `ToastProvider` wraps App, `useToast()` hook for triggering toasts |
 | `seo.ts` | Dynamic injection of Open Graph, Twitter Card, and JSON-LD structured data |
 
@@ -92,8 +93,10 @@ Central state management via React `useState`. Manages:
 - **IndexedDB**: Employee image data URLs (stored separately to avoid localStorage size limits)
 
 ### Export Pipeline
-- **PDF**: `jsPDF` — draws table rows, images, and footer per employee
-- **DOCX**: `docx` — builds document with Table, ImageRun, Paragraph + PageBreak
+- **PDF**: `jsPDF` — renders designer template to canvas via `exportRenderer.ts`, then embeds canvas image per employee; supports front and back sides (separate pages)
+- **DOCX**: `docx` — renders designer template to canvas via `exportRenderer.ts`, then embeds canvas as `ImageRun` per employee; supports front and back sides
+- **Data Entry**: `DataEntry` component dynamically shows fields based on `getTemplateVariables()` — only variables used in the active template's text layers are displayed
+- **Template Variables**: Text layers support `{{fullName}}`, `{{department}}`, `{{role}}`, `{{idNumber}}`, `{{issueDate}}` substitution in both preview and export
 
 ---
 
@@ -112,7 +115,18 @@ Template Library (save/load) → localStorage (named templates list + active tem
                                          ↓
                                     IDCard (live preview, front/back toggle)
                                          ↓
-                               Import: image/DOCX/PDF → templateImporter → layout layers
+                                Import: image/DOCX/PDF → templateImporter → layout layers
+
+Export flow:
+
+```
+Employee data + DesignerTemplate → exportRenderer (canvas draw)
+       ↓
+  For each employee:
+    render front side layers (text variable substitution)
+    render back side layers if hasBackSide
+       ↓
+  Canvas → data URL → jsPDF (PDF) / docx ImageRun (DOCX)
 ```
 
 ---

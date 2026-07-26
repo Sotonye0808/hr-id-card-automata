@@ -58,3 +58,17 @@ Always define dependencies (e.g., `setActiveLayers`) before the callbacks that r
 **Date:** 2026-07-26
 
 When a complex interactive component (like TemplateDesigner) is rendered in two places simultaneously — once in a sidebar tab and once in the main preview panel — it creates confusion and poor UX. Both instances consume memory and may respond to the same state differently. The solution is to render the interactive canvas only in the dedicated preview panel and keep the sidebar for controls/configuration only. This also fixes layout issues on wide screens where neither instance had sufficient space.
+
+## Lesson 9 — Canvas-Based Export for Template Fidelity
+
+**Date:** 2026-07-26
+
+When exporting designer templates to PDF/DOCX, rendering the template's CSS-styled DOM nodes directly to the document format is unreliable because jsPDF and docx support a limited subset of CSS features (gradients, glassmorphism, borders, transforms). Instead, render the template to a native `<canvas>` element using Canvas 2D API drawing commands that replicate the same visual output, then embed the canvas as an image in the export document. This approach:
+- Faithfully reproduces gradients, glassmorphism (simulated via semi-transparent fills), borders, rotation, and text styling
+- Works identically for both PDF (jsPDF addImage) and DOCX (docx ImageRun)
+- Requires no additional dependencies (html2canvas, puppeteer, etc.)
+- Has predictable performance — canvas size equals template dimensions
+
+**Date:** 2026-07-26
+
+When a complex interactive component (like TemplateDesigner) is rendered in two places simultaneously — once in a sidebar tab and once in the main preview panel — it creates confusion and poor UX. Both instances consume memory and may respond to the same state differently. The solution is to render the interactive canvas only in the dedicated preview panel and keep the sidebar for controls/configuration only. This also fixes layout issues on wide screens where neither instance had sufficient space.
