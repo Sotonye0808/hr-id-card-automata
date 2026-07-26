@@ -2,8 +2,8 @@
 
 > **Metadata**
 >
-> - last-updated-by: bootstrap-project
-> - last-verified-against-code: 2026-07-22
+> - last-updated-by: execute-feature
+> - last-verified-against-code: 2026-07-26
 > - staleness-policy: re-verify if sync procedure changes
 
 > **Overview:** Sprint-end deep synchronization. Reads all `ai-system/` files and compares them against the current repository state. Fixes drift that accumulated during the sprint. Heavier than `sync-context.md`.

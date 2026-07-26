@@ -1,7 +1,7 @@
 # Development History
 
 > **Metadata**
-> - last-updated-by: update-ai-system
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: append at the end of each significant development phase
 
@@ -94,3 +94,12 @@
 - Enhanced TemplateEditor design tab with element weight/rounded controls and additional accent color picker
 - Added `ElementPosition.rotation` field to support rotation in legacy CardConfig
 - Updated metadata.json, README, system-architecture.md, project-context.md, design-system.md, and task-queue.md
+
+## v0.6 — TemplateEngine Blank Page Fix & Documentation Sync
+
+**Date:** 2026-07-26
+
+**Summary:**
+- Fixed critical blank-page crash in TemplateDesigner: `undo`/`redo` `useCallback` deps referenced `setActiveLayers` before its `const` declaration, hitting the temporal dead zone and throwing a `ReferenceError` during render. Reordered hook definitions so `setActiveLayers` is defined before `undo`/`redo`.
+- Removed duplicate `activeLayers`/`setActiveLayers`/`currentLayers` variables that were left after the reorder.
+- Updated all ai-system docs: dev-history (this entry), lessons-learned (TDZ lesson), task-queue (fix item), repo-map freshness
