@@ -1,6 +1,6 @@
 # HR ID Card Automata
 
-A privacy-first, offline-capable web application for designing, customizing, and batch-exporting employee ID cards. Features a full drag-and-drop visual template designer with layer-based editing, template library, and PDF/DOCX export.
+A privacy-first, offline-capable web application for designing, customizing, and batch-exporting employee ID cards. Features a full drag-and-drop visual template designer with layer-based editing, template library, canvas-based export, and PDF/DOCX batch export.
 
 ![HR ID Card Automata](https://hr-id-card-automata.vercel.app/og-image.png)
 
@@ -8,21 +8,21 @@ A privacy-first, offline-capable web application for designing, customizing, and
 
 ## Features
 
-- **Drag-and-Drop Template Designer** — Add text fields, images (logos, signatures, photos), shapes, and barcodes on a visual canvas. Drag, resize, rotate, and reorder layers with snap-to-grid support. **Touch-enabled** — drag, icon-based resize/rotate handles, and rotation work on mobile via unified pointer events.
-- **Undo / Redo** — Full undo/redo history (50 steps) for all layer operations (add, delete, move, resize, rotate, property changes).
-- **Gradient & Glassmorphism** — Apply linear/radial gradients and glassmorphism (backdrop blur + opacity) to text, shape, and image layers directly from the property inspector.
+- **Drag-and-Drop Template Designer** — Add text fields (with `{{variable}}` support), images (logos, signatures, photos), shapes, and barcodes on a visual canvas. Drag, resize, rotate, and reorder layers with snap-to-grid, icon-based handles, and full undo/redo (50 steps).
+- **Touch-Optimized Controls** — Unified pointer events (mouse, touch, pen) for drag, resize, and rotate. 28px touch targets with lucide icons.
+- **Gradient & Glassmorphism** — Linear/radial gradients and glassmorphism (backdrop blur + opacity) on text, shape, and image layers via the property inspector.
 - **Border Controls** — Customize border width, color, and style (solid/dashed/dotted) for text, image, and shape layers.
-- **Layer Panel** — Toggle visibility, lock/unlock, reorder (z-index), reset rotation, and delete layers. Each layer has a dedicated property inspector (font, color, size, position, rotation, opacity, image source, gradients, borders, glassmorphism).
-- **Toast Notifications** — Subtle feedback toasts for save, load, import, export, and other actions.
-- **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, and import from JSON files.
-- **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
-- **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings.
-- **Batch Export** — Generate PDF or DOCX files for all employees in the queue.
-- **Dynamic Data Entry** — Employee form fields automatically adapt to variables used in the active template (e.g., `{{fullName}}`, `{{department}}`). Unused fields are hidden for a streamlined workflow.
-- **Canvas-Based Export** — PDF and DOCX exports render the designer template faithfully using a canvas-based renderer, preserving gradients, glassmorphism, borders, and layer layout.
-- **Back Side Export** — Templates with back-of-card layers (`hasBackSide`) are exported as separate pages for each employee in both PDF and DOCX.
+- **Layer Panel** — Toggle visibility, lock/unlock, reorder z-index, reset rotation, delete. Per-layer property inspector (font, color, size, position, rotation, opacity, image source, gradients, borders, glassmorphism).
+- **Front & Back Sides** — Templates support dual-sided ID cards with separate layer sets for front and back. Toggle between sides in the designer and preview.
+- **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, import from JSON files. Toast feedback on manual save only.
+- **Import Templates** — Upload PNG/JPG images as tracing backgrounds. Supports DOCX and PDF import (as background overlay).
+- **Employee Data Import** — CSV, XLSX, and clipboard paste with auto-detected field mappings. Two-step import wizard for mapping and row selection.
+- **Dynamic Data Entry** — Employee form fields adapt to variables used in the active template (`{{fullName}}`, `{{department}}`, `{{role}}`, `{{idNumber}}`, `{{issueDate}}`). Template text context shown as hints above each field.
+- **Canvas-Based Export** — PDF and DOCX exports render the designer template faithfully via `exportRenderer.ts`, preserving gradients, glassmorphism, borders, rotation, and layer layout. Supports front and back sides as separate pages.
+- **Responsive Layout** — On wide screens: side-by-side controls + canvas. On mobile: stacked layout with controls above an inline canvas. Mobile preview button opens the designer or card preview as context-appropriate.
+- **Toast Notifications** — Subtle feedback toasts for manual save, load, import, export (not for auto-saves).
 - **Cookie Consent** — GDPR-compliant banner explaining localStorage usage for theme and template storage.
-- **Dark/Light Theme** — Toggle between dark and light mode with local persistence.
+- **Dark/Light Theme** — Toggle with local persistence.
 - **Offline Capable** — Fully client-side. No data leaves the browser. Ready for PWA deployment.
 
 ---
@@ -73,21 +73,21 @@ src/
 ├── types.ts                   # TypeScript types (CardConfig, DesignerTemplate, TemplateLayer, etc.)
 ├── index.css                  # Global styles, CSS variables, sheet themes
 ├── components/
-│   ├── DataEntry.tsx           # Employee form fields + image upload
-│   ├── IDCard.tsx              # Live preview (legacy + designer template modes)
-│   ├── TemplateEditor.tsx      # Combined editor (design/layout tabs)
+│   ├── DataEntry.tsx           # Employee form fields + image upload + template context hints
+│   ├── IDCard.tsx              # Live preview (legacy + designer template modes, front/back flip)
+│   ├── TemplateEditor.tsx      # Combined editor (design/canvas tabs) with library access
 │   ├── TemplateDesigner.tsx    # WYSIWYG canvas editor with undo/redo, icon handles, property panels
 │   ├── TemplateLibrary.tsx     # Save/load/rename/delete/import/export templates
 │   ├── CookieConsent.tsx       # GDPR consent banner
 │   ├── Toast.tsx               # Toast notification system with context provider
-│   ├── ImportWizard.tsx        # CSV/XLSX field mapping wizard
+│   ├── ImportWizard.tsx        # CSV/XLSX field mapping wizard (2-step)
 │   └── ActivityBoard.tsx       # Decorative batch processor UI
 └── lib/
     ├── employeeStore.ts        # Employee CRUD, CSV/XLSX parse, image pipeline, IndexedDB
-    ├── templateStore.ts        # Template CRUD, JSON import/export, legacy migration
+    ├── templateStore.ts        # Template CRUD, JSON import/export, legacy migration, variable detection
     ├── templateImporter.ts     # Image/DOCX/PDF import parsers
     ├── exportRenderer.ts       # Canvas-based designer template renderer for PDF/DOCX
-    └── seo.ts                  # Dynamic meta tag injection
+    └── seo.ts                  # Dynamic meta tag injection (OG, Twitter, JSON-LD)
 ```
 
 ### Data Flow
@@ -103,11 +103,11 @@ User Input → App.tsx state → Component re-render → Persist (useEffect)
 Template flow:
 
 ```
-Template Library (save/load) → localStorage (named templates)
+Template Library (save/load) → localStorage (named templates + active ID)
                                           ↓
-                              TemplateDesigner ↔ App.tsx state
+                              TemplateDesigner ↔ App.tsx state (front + back layers)
                                           ↓
-                                    IDCard (live preview)
+                                    IDCard (live preview, front/back toggle)
                                           ↓
                               exportRenderer.ts → Canvas → PDF / DOCX
 ```
@@ -118,7 +118,7 @@ Export flow:
 Employee data + DesignerTemplate → exportRenderer (canvas draw)
        ↓
   For each employee:
-    render front side layers (text variable substitution: {{fullName}}, {{department}}, etc.)
+    render front side layers (text variable substitution)
     render back side layers if hasBackSide
        ↓
   Canvas → data URL → jsPDF (PDF) / docx ImageRun (DOCX)
@@ -128,13 +128,13 @@ Employee data + DesignerTemplate → exportRenderer (canvas draw)
 
 ## Usage
 
-1. **Add Employees** — Use the Employees tab to enter employee data manually or import from CSV/XLSX. Fields shown depend on the active template's variables ({{fullName}}, {{department}}, {{role}}, {{idNumber}}, {{issueDate}}).
-2. **Design Template** — Go to the Template tab. The right panel shows the interactive drag-and-drop canvas. Add text, image, shape, and barcode layers. Drag to position, use icon-based handles to resize/rotate. Undo/redo via toolbar buttons or Ctrl+Z/Ctrl+Shift+Z.
-3. **Style Elements** — Apply gradients, glassmorphism effects, borders, and colors to text, shape, and image layers from the Properties panel on the right.
-4. **Configure Canvas** — Use the Design and Canvas tabs in the left panel to set canvas dimensions, background color, and typography presets.
-5. **Save Template** — Click the library icon to save your design. Export as JSON for sharing. Toast notifications confirm saves.
-6. **Preview** — The right panel shows a live preview of the card with employee data, including dual-sided front/back support with a flip button.
-7. **Export** — Go to the Export tab to generate PDF or DOCX for all employees. The export uses the current designer template — including front and back sides, gradients, glassmorphism, borders, and all layer properties.
+1. **Add Employees** — Use the Employees tab to enter employee data manually or import from CSV/XLSX. Fields shown depend on the active template's variable usage. Template text context appears as hints above each field.
+2. **Design Template** — Go to the Template tab. On wide screens the interactive canvas is on the right; on mobile it appears below the controls. Add text, image, shape, and barcode layers. Drag, resize, rotate with icon handles. Undo/redo via buttons or Ctrl+Z/Ctrl+Shift+Z.
+3. **Style Elements** — Apply gradients, glassmorphism effects, borders, and colors from the Properties panel. Select a layer on the canvas to edit its properties.
+4. **Front & Back** — Toggle between front and back sides in the designer. The preview shows a flip button when the template has back layers. Export includes both sides as separate pages.
+5. **Save Template** — Click the library icon in the Template Engine header. Save, load, rename, delete, or export/import JSON. Toast confirms manual saves only.
+6. **Preview** — On wide screens the preview panel shows the card with employee data. On mobile use the Preview button in the header. Preview context changes based on active tab (designer vs card preview).
+7. **Export** — Go to the Export tab to generate PDF or DOCX for all employees. Uses the current designer template faithfully — all layers, effects, variables, and both sides.
 
 ---
 

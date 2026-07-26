@@ -3,6 +3,8 @@
 > **Metadata**
 > - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-26
+
+> - freshness-note: Updated with v0.9 mobile designer and template variable fixes
 > - staleness-policy: update after each sprint
 
 > **Overview:** High-level feature checklist and development roadmap.
@@ -43,6 +45,12 @@
 - [x] Back side in export — front and back rendered as separate pages in PDF and DOCX
 - [x] End-to-end template-export pipeline: designer template → canvas renderer → PDF/DOCX
 - [x] Removed unused imports (TableCell, TableRow, WidthType, AlignmentType from docx)
+- [x] Fixed default migration to use {{variable}} syntax so exports reflect actual employee data
+- [x] Added template text context hints in DataEntry showing non-variable text from template layers
+- [x] Made TemplateDesigner accessible on mobile via inline canvas below TemplateEditor controls
+- [x] Mobile preview shows TemplateDesigner when in template tab (context-aware)
+- [x] Fixed canvas absolute positioning with proper position:relative wrapper
+- [x] Updated all ai-system docs, README, and metadata.json
 
 ### In Progress
 - [ ] Import wizard polish (validation edge cases)

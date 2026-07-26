@@ -134,3 +134,18 @@
 - Updated `DataEntry.tsx` to accept `templateVariables` prop — each input field (fullName, role, department, idNumber, issueDate) is now conditionally rendered based on template usage; all fields shown when no template uses variables (backward compatible)
 - Removed unused docx imports (`AlignmentType`, `TableCell`, `TableRow`, `WidthType`) from App.tsx
 - Updated all documentation: README (dynamic fields, export renderer, back side export), metadata.json (new capabilities), system-architecture.md (exportRenderer module, updated export flow), project-context.md (in-scope items), repo-map.md (new file), dependency-graph.md (new dependency), project-plan.md (completed items), dev-history.md (this entry)
+
+## v0.9 — Mobile Designer Access, Template Variable Defaults & Documentation Sync
+
+**Date:** 2026-07-26
+
+**Summary:**
+- Fixed default migration (`migrateCardConfigToDesignerTemplate`) to use `{{variable}}` syntax (e.g., `{{fullName}}`, `{{department}}`, `{{role}}`, `{{idNumber}}`, `{{issueDate}}`) instead of hardcoded text — ensures exports, preview, and data entry all reflect actual employee data
+- Added `{{issueDate}}` text layer to default migrated template so the field appears in DataEntry
+- Added `templateTextContext` prop to DataEntry — extracts non-variable text from template layers and displays it as context hints above each input field
+- Made TemplateDesigner accessible on mobile by rendering it inline below TemplateEditor controls in the left panel (`lg:hidden`), so mobile users can see and interact with the canvas
+- Updated mobile preview modal to be context-aware: shows TemplateDesigner when the Template tab is active, IDCard preview otherwise
+- Fixed canvas absolute positioning by adding `position: relative` to the canvas wrapper div — ensures the absolute-positioned canvas is properly contained within its parent
+- Updated README with current feature set, architecture diagram, and usage notes
+- Updated metadata.json with new capabilities
+- Updated all ai-system docs: project-plan (completed items), dev-history (this entry), task-queue (new completions)

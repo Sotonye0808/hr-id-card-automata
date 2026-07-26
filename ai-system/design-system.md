@@ -1,7 +1,7 @@
 # Design System
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: re-verify if design tokens change
 
@@ -31,9 +31,11 @@
 
 ## Layout Structure
 
-- **Desktop**: Two-column layout — left panel (active tab content), right panel (ID card preview)
-- **Mobile**: Single column with overlay preview toggled by button
+- **Desktop**: Two-column layout — left panel (active tab content), right panel (ID card preview / TemplateDesigner)
+- **Mobile**: Single column with overlay preview toggled by button. TemplateDesigner canvas renders inline below TemplateEditor controls on small screens (`lg:hidden` in left panel), so mobile users can interact with the canvas without needing the wide-screen right panel.
+- **Mobile Preview Context**: Preview modal shows TemplateDesigner when Template tab is active, IDCard preview otherwise
 - **TemplateDesigner**: Side-by-side flex on desktop (`lg:flex-row`), stacked on mobile (`flex-col`). Property panel sidebars capped at `max-h-[300px]` on small screens with scroll.
+- **Canvas Wrapper**: The canvas wrapper div must have `position: relative` to contain the absolute-positioned canvas element, which uses `top: 0; left: 0` for proper layout containment.
 - **Cards**: `sheet-theme-*` classes apply background and accent colors from template config
 - **Designer Canvas**: Center-aligned canvas with grid background, layer outlines on selection
 

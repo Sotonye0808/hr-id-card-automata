@@ -571,7 +571,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
           onClick={handleCanvasClick}
           style={{ touchAction: "manipulation" }}>
           <div
-            className="flex items-start justify-center p-6"
+            className="relative flex items-start justify-center p-6"
             style={{
               width: `${template.canvasWidth * zoom}px`,
               height: `${template.canvasHeight * zoom}px`,

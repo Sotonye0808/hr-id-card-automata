@@ -267,6 +267,23 @@ function AppInner() {
     () => designerTemplate ? getTemplateVariables(designerTemplate) : [],
     [designerTemplate],
   );
+  const templateTextContext = useMemo(() => {
+    if (!designerTemplate) return {};
+    const ctx: Record<string, string> = {};
+    const allLayers = [...designerTemplate.layers, ...(designerTemplate.backLayers ?? [])];
+    for (const layer of allLayers) {
+      if (layer.type === "text") {
+        const text = (layer.props as any).text ?? "";
+        const matches = [...text.matchAll(/\{\{(\w+)\}\}/g)];
+        for (const match of matches) {
+          const varName = match[1];
+          const context = text.replace(/\{\{(\w+)\}\}/g, "").trim();
+          if (context && !ctx[varName]) ctx[varName] = context;
+        }
+      }
+    }
+    return ctx;
+  }, [designerTemplate]);
 
   const updateSelectedEmployee = (next: UserData) => {
     setEmployees((current) =>
@@ -971,6 +988,7 @@ function AppInner() {
                     data={selectedEmployee}
                     onChange={updateSelectedEmployee}
                     templateVariables={templateVariables}
+                    templateTextContext={templateTextContext}
                   />
                 </div>
 
@@ -1091,7 +1109,7 @@ function AppInner() {
             )}
 
             {activeTab === "template" && (
-              <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
+              <div className="flex flex-col gap-4 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
                 <TemplateEditor
                   config={template}
                   onChange={setTemplate}
@@ -1099,6 +1117,18 @@ function AppInner() {
                   designerTemplate={designerTemplate}
                   onDesignerTemplateChange={handleDesignerTemplateChange}
                 />
+                <div className="min-h-[300px] flex-1 overflow-hidden rounded-[20px] border border-[var(--border)] bg-white p-2 shadow-inner lg:hidden">
+                  {designerTemplate ? (
+                    <TemplateDesigner
+                      template={designerTemplate}
+                      onChange={handleDesignerTemplateChange}
+                    />
+                  ) : (
+                    <div className="flex h-full min-h-[300px] items-center justify-center text-sm text-[var(--muted)]">
+                      No template loaded
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1272,7 +1302,7 @@ function AppInner() {
                 <div className="min-w-0">
                   <p className="eyebrow">Live preview</p>
                   <h2 className="mt-1 truncate text-base font-black text-[var(--text)] sm:text-lg">
-                    Batch sheet preview
+                    {activeTab === "template" ? "Template Designer" : "Batch sheet preview"}
                   </h2>
                 </div>
                 <button
@@ -1286,13 +1316,20 @@ function AppInner() {
 
               <div className="min-h-0 flex-1 overflow-auto bg-[var(--paper-bg)] p-3 sm:p-4">
                 <div className="overflow-auto rounded-[20px] border border-[var(--border)] bg-white p-2 shadow-inner sm:rounded-[28px] sm:p-3">
-                  {selectedEmployee ? (
+                  {activeTab === "template" && designerTemplate ? (
+                    <div className="h-full min-h-[400px]">
+                      <TemplateDesigner
+                        template={designerTemplate}
+                        onChange={handleDesignerTemplateChange}
+                      />
+                    </div>
+                  ) : selectedEmployee ? (
                     <div className="mx-auto w-[920px] max-w-none">
-                <IDCard config={template} data={selectedEmployee} designerTemplate={designerTemplate ?? undefined} />
+                      <IDCard config={template} data={selectedEmployee} designerTemplate={designerTemplate ?? undefined} />
                     </div>
                   ) : (
                     <div className="flex h-full min-h-[400px] items-center justify-center rounded-[20px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)] sm:min-h-[480px] sm:rounded-[24px]">
-                      Add an employee to preview the sheet here.
+                      {activeTab === "template" ? "No template loaded" : "Add an employee to preview the sheet here."}
                     </div>
                   )}
                 </div>

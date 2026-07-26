@@ -1,7 +1,7 @@
 # System Architecture
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
@@ -68,10 +68,10 @@ Central state management via React `useState`. Manages:
 ### Components
 | Component | Responsibility | Props |
 |-----------|---------------|-------|
-| `DataEntry` | Employee form fields + image upload + transform controls | `data, onChange` |
+| `DataEntry` | Employee form fields + image upload + transform controls + template text context hints | `data, onChange, templateVariables?, templateTextContext?` |
 | `IDCard` | Live card rendering — supports legacy CardConfig and new DesignerTemplate | `config, data, designerTemplate?` |
 | `TemplateEditor` | Sidebar editor: design tab (canvas config, fonts, presets), layout tab (canvas dimensions) — canvas rendering is in the right preview panel | `config, onChange, onReset, designerTemplate?, onDesignerTemplateChange?` |
-| `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), undo/redo history (50 steps), icon-based resize/rotate handles (larger for touch), layer panel, property inspector per layer type (including gradient, glassmorphism, border controls), front/back side toggle, responsive auto-zoom | `template, onChange` |
+| `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), undo/redo history (50 steps), icon-based resize/rotate handles (larger for touch), layer panel, property inspector per layer type (including gradient, glassmorphism, border controls), front/back side toggle, responsive auto-zoom. Accessible on mobile via inline rendering below TemplateEditor controls. | `template, onChange` |
 | `TemplateLibrary` | Save/load/rename/delete templates, export/import JSON files, toast feedback | `currentTemplate, onLoadTemplate, onClose` |
 | `CookieConsent` | GDPR-compliant banner with Accept/Dismiss, persists consent flag | `onAccept, onDismiss` |
 | `Toast` | Toast notification context with animated success/error/info toasts, auto-dismiss | children (context provider) |
@@ -95,7 +95,7 @@ Central state management via React `useState`. Manages:
 ### Export Pipeline
 - **PDF**: `jsPDF` — renders designer template to canvas via `exportRenderer.ts`, then embeds canvas image per employee; supports front and back sides (separate pages)
 - **DOCX**: `docx` — renders designer template to canvas via `exportRenderer.ts`, then embeds canvas as `ImageRun` per employee; supports front and back sides
-- **Data Entry**: `DataEntry` component dynamically shows fields based on `getTemplateVariables()` — only variables used in the active template's text layers are displayed
+- **Data Entry**: `DataEntry` component dynamically shows fields based on `getTemplateVariables()` — only variables used in the active template's text layers are displayed. Additionally, `templateTextContext` extracts the non-variable text from template layers and shows it as context hints above each input field.
 - **Template Variables**: Text layers support `{{fullName}}`, `{{department}}`, `{{role}}`, `{{idNumber}}`, `{{issueDate}}` substitution in both preview and export
 
 ---

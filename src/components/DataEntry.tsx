@@ -23,9 +23,10 @@ interface DataEntryProps {
   data: UserData;
   onChange: (data: UserData) => void;
   templateVariables?: string[];
+  templateTextContext?: Record<string, string>;
 }
 
-export default function DataEntry({ data, onChange, templateVariables }: DataEntryProps) {
+export default function DataEntry({ data, onChange, templateVariables, templateTextContext }: DataEntryProps) {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -150,6 +151,9 @@ export default function DataEntry({ data, onChange, templateVariables }: DataEnt
             <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
               <UserCircle size={10} /> Full Legal Name
             </label>
+            {templateTextContext?.['fullName'] ? (
+              <p className="text-[9px] text-[var(--muted)] italic">{`From template: "${templateTextContext['fullName']} {{fullName}}"`}</p>
+            ) : null}
             <input
               type="text"
               value={data.fullName}
@@ -167,6 +171,9 @@ export default function DataEntry({ data, onChange, templateVariables }: DataEnt
             <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
               <Briefcase size={10} /> Professional Role
             </label>
+            {templateTextContext?.['role'] ? (
+              <p className="text-[9px] text-[var(--muted)] italic">{`From template: "${templateTextContext['role']} {{role}}"`}</p>
+            ) : null}
             <input
               type="text"
               value={data.role}
@@ -184,6 +191,9 @@ export default function DataEntry({ data, onChange, templateVariables }: DataEnt
             <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
               <Building2 size={10} /> Department
             </label>
+            {templateTextContext?.['department'] ? (
+              <p className="text-[9px] text-[var(--muted)] italic">{`From template: "${templateTextContext['department']} {{department}}"`}</p>
+            ) : null}
             <input
               type="text"
               value={data.department}
@@ -204,6 +214,9 @@ export default function DataEntry({ data, onChange, templateVariables }: DataEnt
               <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
                 <Hash size={10} /> Serial ID
               </label>
+              {templateTextContext?.['idNumber'] ? (
+                <p className="text-[9px] text-[var(--muted)] italic">{`From template: "${templateTextContext['idNumber']} {{idNumber}}"`}</p>
+              ) : null}
               <input
                 type="text"
                 value={data.idNumber}
@@ -222,6 +235,9 @@ export default function DataEntry({ data, onChange, templateVariables }: DataEnt
               <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
                 <Calendar size={10} /> Date Issued
               </label>
+              {templateTextContext?.['issueDate'] ? (
+                <p className="text-[9px] text-[var(--muted)] italic">{`From template: "${templateTextContext['issueDate']} {{issueDate}}"`}</p>
+              ) : null}
               <input
                 type="date"
                 value={data.issueDate}

@@ -51,6 +51,10 @@
 | P0 | M | **End-to-end template export** — PDF and DOCX exports now render designer template via canvas renderer instead of hardcoded layout | Complete |
 | P0 | M | **Back side in export** — front and back rendered as separate pages per employee in both PDF and DOCX | Complete |
 | P0 | S | **Remove unused docx imports** — AlignmentType, TableCell, TableRow, WidthType no longer needed after export rewrite | Complete |
+| P0 | M | **Fix default migration to use template variables** — changed hardcoded text to {{fullName}}/{{department}}/{{role}}/{{idNumber}}/{{issueDate}} so exports reflect real employee data | Complete |
+| P0 | M | **Mobile canvas accessibility** — TemplateDesigner now renders inline below TemplateEditor on small screens (lg:hidden), mobile preview context-aware for template tab | Complete |
+| P0 | S | **Canvas wrapper position:relative** — prevents absolute-positioned canvas from escaping its layout parent | Complete |
+| P1 | M | **Template text context in DataEntry** — extracts non-variable text from template layers and shows as contextual hints above employee input fields | Complete |
 | P3 | M | **Service Worker / PWA manifest** — offline support, app icon, theme-color | Pending |
 | P2 | M | Wire ActivityBoard component to real app state | Pending |
 | P2 | S | Add export progress error states | Pending |

@@ -1,7 +1,7 @@
 # Project Context
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
@@ -76,15 +76,16 @@ Active sprint focus: End-to-end template-export wiring — export renders design
 - Toast notification system for save/load/import/export feedback
 - Import templates from images (PNG/JPG), DOCX, PDF as tracing backgrounds
 - Responsive canvas auto-scaling with zoom controls; non-overflowing on mobile via max-width constraints
-- Wide-screen preview shows interactive template canvas when designer tab is active
+- Wide-screen preview shows interactive template canvas when designer tab is active; mobile shows inline canvas below controls
 - GDPR-compliant cookie/localStorage consent banner with graceful fallback (no crash when consent is missing)
 - Dynamic SEO meta tag injection (Open Graph, Twitter Cards, JSON-LD)
 - Dark/light theme with local persistence
 - Backward compatibility with legacy CardConfig template format
-- Dynamic employee data entry fields based on template text layer variables ({{fullName}}, {{department}}, {{role}}, {{idNumber}}, {{issueDate}})
+- Dynamic employee data entry fields based on template text layer variables ({{fullName}}, {{department}}, {{role}}, {{idNumber}}, {{issueDate}}), with template text context hints above each field
 - Canvas-based export renderer (`exportRenderer.ts`) that faithfully reproduces designer template layers in PDF/DOCX via canvas drawing
 - End-to-end template-export pipeline: designer template → canvas renderer → PDF/DOCX image embedding
 - Back-of-card export: front and back sides rendered as separate pages per employee in both PDF and DOCX
+- Default migration uses {{variable}} syntax so exports and preview reflect actual employee data
 
 ---
 
