@@ -41,7 +41,7 @@ HR ID Card Automata is a privacy-first, offline-capable web application that ena
 
 Phase: Active Development
 
-Active sprint focus: Template designer enhancements — undo/redo history, icon-based resize/rotate handles, gradient/glassmorphism/border design features, toast notifications, responsive improvements.
+Active sprint focus: End-to-end template integration — PDF/DOCX export now renders designer template layers via canvas (gradients, glassmorphism, borders, rotation, front/back dual-sides). Template designer ↔ preview ↔ export pipeline fully wired.
 
 ---
 
@@ -81,6 +81,7 @@ Active sprint focus: Template designer enhancements — undo/redo history, icon-
 - Dynamic SEO meta tag injection (Open Graph, Twitter Cards, JSON-LD)
 - Dark/light theme with local persistence
 - Backward compatibility with legacy CardConfig template format
+- End-to-end template rendering in export pipeline: PDF and DOCX use `renderDesignerTemplateToCanvas()` to render the designer template (all layers, gradients, glassmorphism, borders, rotation, front/back sides) instead of hardcoded table layouts
 
 ---
 

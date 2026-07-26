@@ -84,6 +84,7 @@ Central state management via React `useState`. Manages:
 | `employeeStore.ts` | Employee CRUD, CSV/XLSX import, image render pipeline, IndexedDB persistence |
 | `templateStore.ts` | Template CRUD (localStorage), JSON import/export, legacy CardConfig migration, consent gate |
 | `templateImporter.ts` | Import images/DOCX/PDF as tracing backgrounds for template design |
+| `renderTemplateToCanvas.ts` | Canvas-based rendering of DesignerTemplate layers to offscreen canvas for PDF/DOCX export. Supports gradients, glassmorphism, borders, rotation, employee data variable interpolation (`{{fullName}}` etc.), and both front/back sides. |
 | `Toast.tsx` | Toast notification context — `ToastProvider` wraps App, `useToast()` hook for triggering toasts |
 | `seo.ts` | Dynamic injection of Open Graph, Twitter Card, and JSON-LD structured data |
 
@@ -92,8 +93,8 @@ Central state management via React `useState`. Manages:
 - **IndexedDB**: Employee image data URLs (stored separately to avoid localStorage size limits)
 
 ### Export Pipeline
-- **PDF**: `jsPDF` — draws table rows, images, and footer per employee
-- **DOCX**: `docx` — builds document with Table, ImageRun, Paragraph + PageBreak
+- **PDF**: `jsPDF` — renders designer template via `renderDesignerTemplateToCanvas()` (supports front + back, gradients, glassmorphism, borders), or legacy fallback (table rows + images per employee)
+- **DOCX**: `docx` — renders designer template via `renderDesignerTemplateToCanvas()` as ImageRun, or legacy fallback (Table + ImageRun + PageBreak)
 
 ---
 
@@ -107,12 +108,17 @@ User Input → App.tsx state → Component re-render → Persist (useEffect)
                                               Load on next app start
 
 Template Library (save/load) → localStorage (named templates list + active template JSON)
-                                         ↓
-                              TemplateDesigner ↔ App.tsx state (front + back layers)
-                                         ↓
-                                    IDCard (live preview, front/back toggle)
-                                         ↓
-                               Import: image/DOCX/PDF → templateImporter → layout layers
+                                          ↓
+                               TemplateDesigner ↔ App.tsx state (front + back layers)
+                                          ↓
+                          ┌──────────────┴──────────────┐
+                          ↓                             ↓
+                    IDCard (live preview,         Export Pipeline (PDF/DOCX)
+                    front/back toggle)                 ↓
+                                               renderDesignerTemplateToCanvas()
+                                               → offscreen canvas → embed in PDF/DOCX
+                                          ↓
+                                Import: image/DOCX/PDF → templateImporter → layout layers
 ```
 
 ---
@@ -125,6 +131,7 @@ Template Library (save/load) → localStorage (named templates list + active tem
 | localStorage + IndexedDB | localStorage for metadata (small), IndexedDB for images (large) |
 | Tab-based navigation | Simple, no routing library needed for single-view app |
 | Canvas-based image pipeline | Full control over crop/scale/offset without external lib |
+| Canvas-based template rendering for export | `renderDesignerTemplateToCanvas()` renders all layers (gradients, glassmorphism, borders, rotation) to an offscreen canvas; exported as image in PDF/DOCX — prevents CSS-to-PDF fidelity gaps |
 | Unified pointer events for drag/resize/rotate | Single event model (`pointerdown`/`pointermove`/`pointerup`) works across mouse, touch, and pen; avoids redundant mouse + touch handler code |
 | All-in-one App.tsx | Single state hub for simplicity (no state management lib) |
 | Layer-based template model | Flexible composition of text/image/shape/barcode elements |
