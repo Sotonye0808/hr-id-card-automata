@@ -82,3 +82,15 @@
 - Added `touch-action: none` on canvas elements and `touch-action: manipulation` on container to prevent browser gesture interference
 - `document.body.style.userSelect = "none"` during drag/resize/rotate to prevent text selection
 - Updated all ai-system docs and README to reflect new capabilities
+
+### Sprint: Dynamic Design Enhancements (2026-07-26)
+- Replaced colored resize/rotate dots with lucide-react icons (`Move` / `RotateCcw`) in 28px touch-target containers for better usability and touch control
+- Added undo/redo history stack (50 steps) via `historyRef` + `pushHistory` on pointer-up/add/delete/move; toolbar buttons (Undo2/Redo2 icons) + keyboard shortcuts (Cmd/Ctrl+Z / +Shift+Z)
+- Added `GradientConfig` and `GlassmorphismConfig` types; gradient (linear/radial) and glassmorphism (backdrop blur + opacity) controls in shape and image layer property panels
+- Added border customization (width, color, style solid/dashed/dotted) for shape and image layers in both property panels and renderers
+- Created `Toast.tsx` component with `ToastProvider` context + `useToast()` hook; success/error/info animated toasts with 3.5s auto-dismiss
+- Integrated toasts across App.tsx (save/import/export), TemplateLibrary (save/load/delete/rename/import/export), TemplateDesigner (file import)
+- Added rotation slider to legacy element position controls in TemplateEditor layout tab
+- Enhanced TemplateEditor design tab with element weight/rounded controls and additional accent color picker
+- Added `ElementPosition.rotation` field to support rotation in legacy CardConfig
+- Updated metadata.json, README, system-architecture.md, project-context.md, design-system.md, and task-queue.md

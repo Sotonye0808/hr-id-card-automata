@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useToast } from "./Toast";
 import {
   Trash2,
   Lock,
@@ -15,6 +16,9 @@ import {
   ZoomOut,
   Maximize2,
   RotateCcw,
+  Undo2,
+  Redo2,
+  Move,
 } from "lucide-react";
 import type {
   DesignerTemplate,
@@ -34,6 +38,7 @@ interface TemplateDesignerProps {
 const SNAP = 8;
 
 export default function TemplateDesigner({ template, onChange }: TemplateDesignerProps) {
+  const { toast } = useToast();
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [activeSide, setActiveSide] = useState<"front" | "back">("front");
   const [zoom, setZoom] = useState(1);
@@ -62,6 +67,50 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
   const [showImportMenu, setShowImportMenu] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const historyRef = useRef<TemplateLayer[][]>([]);
+  const historyIndexRef = useRef(-1);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  const pushHistory = useCallback((layers: TemplateLayer[]) => {
+    const history = historyRef.current;
+    const idx = historyIndexRef.current;
+    const trimmed = history.slice(0, idx + 1);
+    trimmed.push(JSON.parse(JSON.stringify(layers)));
+    if (trimmed.length > 50) trimmed.shift();
+    historyRef.current = trimmed;
+    historyIndexRef.current = trimmed.length - 1;
+    setCanUndo(trimmed.length > 1);
+    setCanRedo(false);
+  }, []);
+
+  const undo = useCallback(() => {
+    const idx = historyIndexRef.current;
+    if (idx <= 0) return;
+    const prev = historyRef.current[idx - 1];
+    if (!prev) return;
+    historyIndexRef.current = idx - 1;
+    setCanUndo(idx - 1 > 0);
+    setCanRedo(true);
+    const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+    if (JSON.stringify(layers) !== JSON.stringify(prev)) {
+      setActiveLayers(JSON.parse(JSON.stringify(prev)));
+    }
+  }, [template, activeSide, setActiveLayers]);
+
+  const redo = useCallback(() => {
+    const idx = historyIndexRef.current;
+    if (idx >= historyRef.current.length - 1) return;
+    const next = historyRef.current[idx + 1];
+    if (!next) return;
+    historyIndexRef.current = idx + 1;
+    setCanUndo(true);
+    setCanRedo(idx + 1 < historyRef.current.length - 1);
+    const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+    if (JSON.stringify(layers) !== JSON.stringify(next)) {
+      setActiveLayers(JSON.parse(JSON.stringify(next)));
+    }
+  }, [template, activeSide, setActiveLayers]);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const activeLayers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
@@ -81,6 +130,28 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
   }, []);
 
   const currentLayers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+
+  useEffect(() => {
+    if (historyRef.current.length === 0 && currentLayers.length > 0) {
+      pushHistory(currentLayers);
+    }
+  }, [currentLayers, pushHistory]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        if (e.shiftKey) {
+          e.preventDefault();
+          redo();
+        } else {
+          e.preventDefault();
+          undo();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
 
   useEffect(() => {
     if (!autoFit || !containerRef.current) return;
@@ -173,18 +244,22 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
         props,
       };
 
-      setActiveLayers([...layers, layer]);
+      const updated = [...layers, layer];
+      setActiveLayers(updated);
+      pushHistory(updated);
       setSelectedLayerId(id);
     },
-    [template, activeSide, setActiveLayers],
+    [template, activeSide, setActiveLayers, pushHistory],
   );
 
   const deleteSelectedLayer = useCallback(() => {
     if (!selectedLayerId) return;
     const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
-    setActiveLayers(layers.filter((l) => l.id !== selectedLayerId));
+    const updated = layers.filter((l) => l.id !== selectedLayerId);
+    setActiveLayers(updated);
+    pushHistory(updated);
     setSelectedLayerId(null);
-  }, [template, activeSide, selectedLayerId, setActiveLayers]);
+  }, [template, activeSide, selectedLayerId, setActiveLayers, pushHistory]);
 
   const moveLayer = useCallback(
     (id: string, direction: "up" | "down") => {
@@ -198,8 +273,9 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       sorted[idx] = { ...sorted[idx], zIndex: sorted[swap].zIndex };
       sorted[swap] = { ...sorted[swap], zIndex: temp };
       setActiveLayers(sorted);
+      pushHistory(sorted);
     },
-    [template, activeSide, setActiveLayers],
+    [template, activeSide, setActiveLayers, pushHistory],
   );
 
   const handlePointerDown = useCallback(
@@ -267,7 +343,11 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
         y: dragging.startLayerY + dy,
       });
     };
-    const handlePointerUp = () => setDragging(null);
+    const handlePointerUp = () => {
+      setDragging(null);
+      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      pushHistory(layers);
+    };
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
     document.body.style.userSelect = "none";
@@ -277,7 +357,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       window.removeEventListener("pointerup", handlePointerUp);
       document.body.style.userSelect = "";
     };
-  }, [dragging, updateLayer]);
+  }, [dragging, updateLayer, template, activeSide, pushHistory]);
 
   useEffect(() => {
     if (!resizing) return;
@@ -296,7 +376,11 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       }
       updateLayer(resizing.layerId, { width: newW, height: newH });
     };
-    const handlePointerUp = () => setResizing(null);
+    const handlePointerUp = () => {
+      setResizing(null);
+      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      pushHistory(layers);
+    };
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
     document.body.style.userSelect = "none";
@@ -305,7 +389,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       window.removeEventListener("pointerup", handlePointerUp);
       document.body.style.userSelect = "";
     };
-  }, [resizing, updateLayer]);
+  }, [resizing, updateLayer, template, activeSide, pushHistory]);
 
   useEffect(() => {
     if (!rotating) return;
@@ -314,7 +398,11 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       const newRotation = Math.round((angle - rotating.startAngle) / 5) * 5;
       updateLayer(rotating.layerId, { rotation: newRotation });
     };
-    const handlePointerUp = () => setRotating(null);
+    const handlePointerUp = () => {
+      setRotating(null);
+      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      pushHistory(layers);
+    };
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
     document.body.style.userSelect = "none";
@@ -323,7 +411,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       window.removeEventListener("pointerup", handlePointerUp);
       document.body.style.userSelect = "";
     };
-  }, [rotating, updateLayer]);
+  }, [rotating, updateLayer, template, activeSide, pushHistory]);
 
   const sortedLayers = [...currentLayers].sort((a, b) => a.zIndex - b.zIndex);
 
@@ -348,16 +436,17 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       } else if (ext.endsWith(".pdf")) {
         result = await importFromPdf(file);
       } else {
-        alert("Unsupported file format. Use PNG, JPG, DOCX, or PDF.");
+        toast("Unsupported file format. Use PNG, JPG, DOCX, or PDF.", "error");
         return;
       }
       onChange(result.template);
       setShowImportMenu(false);
+      toast("Template imported — refine layers as needed", "success");
       if (result.warnings.length) {
-        alert(result.warnings.join("\n"));
+        result.warnings.forEach((w) => toast(w, "info"));
       }
     } catch (err) {
-      alert(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      toast(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`, "error");
     }
   };
 
@@ -388,6 +477,21 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
             onClick={() => addLayer("barcode")}
             title="Add barcode layer">
             <Barcode size={14} /> Barcode
+          </button>
+          <span className="mx-1 h-5 w-px bg-[var(--border)]" />
+          <button
+            className="mini-button"
+            onClick={undo}
+            disabled={!canUndo}
+            title="Undo">
+            <Undo2 size={14} />
+          </button>
+          <button
+            className="mini-button"
+            onClick={redo}
+            disabled={!canRedo}
+            title="Redo">
+            <Redo2 size={14} />
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-1">
@@ -514,26 +618,33 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
                 {selectedLayerId === layer.id && !layer.locked && (
                   <>
                     <div
-                      className="absolute -bottom-1 -right-1 z-10 h-3 w-3 rounded-full border-2 border-white bg-[#0f766e]"
+                      className="absolute -bottom-3 -right-3 z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#0f766e] text-white shadow-md"
                       style={{ touchAction: "none", cursor: "nwse-resize" }}
                       onPointerDown={(e) => handleResizeStart(e, layer.id, "se")}
-                    />
+                      title="Resize">
+                      <Move size={12} />
+                    </div>
                     <div
-                      className="absolute -bottom-1 left-1/2 z-10 h-3 w-3 -translate-x-1/2 rounded-full border-2 border-white bg-[#0f766e]"
+                      className="absolute -bottom-3 left-1/2 z-10 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-[#0f766e] text-white shadow-md"
                       style={{ touchAction: "none", cursor: "ns-resize" }}
                       onPointerDown={(e) => handleResizeStart(e, layer.id, "s")}
-                    />
+                      title="Resize vertically">
+                      <Move size={12} className="rotate-90" />
+                    </div>
                     <div
-                      className="absolute -right-1 top-1/2 z-10 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white bg-[#0f766e]"
+                      className="absolute -right-3 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-[#0f766e] text-white shadow-md"
                       style={{ touchAction: "none", cursor: "ew-resize" }}
                       onPointerDown={(e) => handleResizeStart(e, layer.id, "e")}
-                    />
+                      title="Resize horizontally">
+                      <Move size={12} />
+                    </div>
                     <div
-                      className="absolute -top-4 left-1/2 z-10 h-3 w-3 -translate-x-1/2 cursor-grab rounded-full border-2 border-white bg-orange-500"
+                      className="absolute -top-8 left-1/2 z-10 flex h-7 w-7 -translate-x-1/2 cursor-grab items-center justify-center rounded-full border-2 border-white bg-orange-500 text-white shadow-md"
                       style={{ touchAction: "none" }}
                       onPointerDown={(e) => handleRotateStart(e, layer.id)}
-                      title="Rotate"
-                    />
+                      title="Rotate">
+                      <RotateCcw size={12} />
+                    </div>
                   </>
                 )}
               </div>
@@ -805,6 +916,11 @@ function renderLayerPreview(layer: TemplateLayer) {
     }
     case "image": {
       const p = layer.props as ImageLayerProps;
+      const imgStyle: React.CSSProperties = {};
+      if (p.glassmorphism?.enabled) {
+        imgStyle.backdropFilter = `blur(${p.glassmorphism.blur}px)`;
+        imgStyle.WebkitBackdropFilter = `blur(${p.glassmorphism.blur}px)`;
+      }
       if (p.src) {
         return (
           <img
@@ -814,6 +930,8 @@ function renderLayerPreview(layer: TemplateLayer) {
             style={{
               objectFit: p.objectFit,
               borderRadius: p.borderRadius,
+              border: p.borderWidth && p.borderWidth > 0 ? `${p.borderWidth}px ${p.borderStyle ?? "solid"} ${p.borderColor ?? "#111827"}` : undefined,
+              ...imgStyle,
             }}
           />
         );
@@ -826,12 +944,27 @@ function renderLayerPreview(layer: TemplateLayer) {
     }
     case "shape": {
       const p = layer.props as ShapeLayerProps;
+      const bgStyle: React.CSSProperties = {};
+      if (p.backgroundGradient && p.backgroundGradient.type !== "none") {
+        const colors = p.backgroundGradient.colors.join(", ");
+        if (p.backgroundGradient.type === "linear") {
+          bgStyle.background = `linear-gradient(${p.backgroundGradient.angle}deg, ${colors})`;
+        } else {
+          bgStyle.background = `radial-gradient(circle, ${colors})`;
+        }
+      } else {
+        bgStyle.backgroundColor = p.backgroundColor;
+      }
+      if (p.glassmorphism?.enabled) {
+        bgStyle.backdropFilter = `blur(${p.glassmorphism.blur}px)`;
+        bgStyle.WebkitBackdropFilter = `blur(${p.glassmorphism.blur}px)`;
+      }
       return (
         <div
           className="h-full w-full"
           style={{
-            backgroundColor: p.backgroundColor,
-            border: p.borderWidth > 0 ? `${p.borderWidth}px solid ${p.borderColor}` : undefined,
+            ...bgStyle,
+            border: p.borderWidth > 0 ? `${p.borderWidth}px ${p.borderStyle ?? "solid"} ${p.borderColor}` : undefined,
             borderRadius: p.borderRadius,
           }}
         />
@@ -926,6 +1059,8 @@ function ImageLayerPropsPanel({
 }) {
   const set = (patch: Partial<ImageLayerProps>) => onChange({ ...props, ...patch });
 
+  const glass = props.glassmorphism ?? { enabled: false, blur: 10, opacity: 0.3 };
+
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -967,15 +1102,180 @@ function ImageLayerPropsPanel({
           <option value="fill">Fill</option>
         </select>
       </div>
-      <div>
-        <label className="text-[10px] font-bold text-[var(--muted)]">Border Radius</label>
-        <input
-          type="number"
-          className="field-input mt-1 py-1.5 text-xs"
-          value={props.borderRadius}
-          onChange={(e) => set({ borderRadius: Number(e.target.value) })}
-        />
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Border Radius</label>
+          <input
+            type="number"
+            className="field-input mt-1 py-1.5 text-xs"
+            value={props.borderRadius}
+            onChange={(e) => set({ borderRadius: Number(e.target.value) })}
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-[var(--muted)]">Border Width</label>
+          <input
+            type="number"
+            className="field-input mt-1 py-1.5 text-xs"
+            value={props.borderWidth ?? 0}
+            onChange={(e) => set({ borderWidth: Number(e.target.value) })}
+          />
+        </div>
       </div>
+      {props.borderWidth && props.borderWidth > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-bold text-[var(--muted)]">Border Color</label>
+            <input
+              type="color"
+              className="color-input mt-1"
+              value={props.borderColor ?? "#111827"}
+              onChange={(e) => set({ borderColor: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-[var(--muted)]">Border Style</label>
+            <select
+              className="field-input mt-1 py-1.5 text-xs"
+              value={props.borderStyle ?? "solid"}
+              onChange={(e) => set({ borderStyle: e.target.value as "solid" | "dashed" | "dotted" })}>
+              <option value="solid">Solid</option>
+              <option value="dashed">Dashed</option>
+              <option value="dotted">Dotted</option>
+            </select>
+          </div>
+        </div>
+      )}
+      <div className="space-y-2">
+        <label className="text-[10px] font-bold text-[var(--muted)]">Glassmorphism</label>
+        <select
+          className="field-input mt-1 py-1.5 text-xs"
+          value={glass.enabled ? "yes" : "no"}
+          onChange={(e) => set({ glassmorphism: { ...glass, enabled: e.target.value === "yes" } })}>
+          <option value="no">Disabled</option>
+          <option value="yes">Enabled</option>
+        </select>
+        {glass.enabled && (
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-bold text-[var(--muted)]">Blur</label>
+              <input
+                type="number"
+                className="field-input mt-1 py-1.5 text-xs"
+                value={glass.blur}
+                min={1}
+                max={50}
+                onChange={(e) => set({ glassmorphism: { ...glass, blur: Number(e.target.value) } })}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-[var(--muted)]">Opacity</label>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                className="field-range mt-1"
+                value={glass.opacity}
+                onChange={(e) => set({ glassmorphism: { ...glass, opacity: Number(e.target.value) } })}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GradientControls({ props, set }: { props: ShapeLayerProps; set: (patch: Partial<ShapeLayerProps>) => void }) {
+  const grad = props.backgroundGradient ?? { type: "none", angle: 0, colors: ["#0f766e", "#0f4761"] };
+  return (
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold text-[var(--muted)]">Background Gradient</label>
+      <select
+        className="field-input mt-1 py-1.5 text-xs"
+        value={grad.type}
+        onChange={(e) => set({ backgroundGradient: { ...grad, type: e.target.value as "none" | "linear" | "radial" } })}>
+        <option value="none">None</option>
+        <option value="linear">Linear</option>
+        <option value="radial">Radial</option>
+      </select>
+      {grad.type !== "none" && (
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-bold text-[var(--muted)]">Angle</label>
+              <input
+                type="number"
+                className="field-input mt-1 py-1.5 text-xs"
+                value={grad.angle}
+                onChange={(e) => set({ backgroundGradient: { ...grad, angle: Number(e.target.value) } })}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-[var(--muted)]">Color 1</label>
+              <input
+                type="color"
+                className="color-input mt-1"
+                value={grad.colors[0] ?? "#0f766e"}
+                onChange={(e) => set({ backgroundGradient: { ...grad, colors: [e.target.value, grad.colors[1] ?? "#0f4761"] } })}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-[var(--muted)]">Color 2</label>
+            <input
+              type="color"
+              className="color-input mt-1"
+              value={grad.colors[1] ?? "#0f4761"}
+              onChange={(e) => set({ backgroundGradient: { ...grad, colors: [grad.colors[0] ?? "#0f766e", e.target.value] } })}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GlassmorphismControls({ props, set }: { props: ShapeLayerProps; set: (patch: Partial<ShapeLayerProps>) => void }) {
+  const glass = props.glassmorphism ?? { enabled: false, blur: 10, opacity: 0.3 };
+  return (
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold text-[var(--muted)]">Glassmorphism</label>
+      <select
+        className="field-input mt-1 py-1.5 text-xs"
+        value={glass.enabled ? "yes" : "no"}
+        onChange={(e) => set({ glassmorphism: { ...glass, enabled: e.target.value === "yes" } })}>
+        <option value="no">Disabled</option>
+        <option value="yes">Enabled</option>
+      </select>
+      {glass.enabled && (
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-bold text-[var(--muted)]">Blur</label>
+            <input
+              type="number"
+              className="field-input mt-1 py-1.5 text-xs"
+              value={glass.blur}
+              min={1}
+              max={50}
+              onChange={(e) => set({ glassmorphism: { ...glass, blur: Number(e.target.value) } })}
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-[var(--muted)]">Opacity</label>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              className="field-range mt-1"
+              value={glass.opacity}
+              onChange={(e) => set({ glassmorphism: { ...glass, opacity: Number(e.target.value) } })}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1043,6 +1343,19 @@ function ShapeLayerPropsPanel({
           />
         </div>
       </div>
+      <div>
+        <label className="text-[10px] font-bold text-[var(--muted)]">Border Style</label>
+        <select
+          className="field-input mt-1 py-1.5 text-xs"
+          value={props.borderStyle ?? "solid"}
+          onChange={(e) => set({ borderStyle: e.target.value as "solid" | "dashed" | "dotted" })}>
+          <option value="solid">Solid</option>
+          <option value="dashed">Dashed</option>
+          <option value="dotted">Dotted</option>
+        </select>
+      </div>
+      <GradientControls props={props} set={set} />
+      <GlassmorphismControls props={props} set={set} />
     </div>
   );
 }
