@@ -67,10 +67,22 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
   const [showImportMenu, setShowImportMenu] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<TemplateLayer[][]>([]);
   const historyIndexRef = useRef(-1);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+
+  const setActiveLayers = useCallback(
+    (layers: TemplateLayer[]) => {
+      if (activeSide === "front") {
+        onChange({ ...template, layers });
+      } else {
+        onChange({ ...template, backLayers: layers });
+      }
+    },
+    [template, activeSide, onChange],
+  );
 
   const pushHistory = useCallback((layers: TemplateLayer[]) => {
     const history = historyRef.current;
@@ -111,19 +123,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       setActiveLayers(JSON.parse(JSON.stringify(next)));
     }
   }, [template, activeSide, setActiveLayers]);
-  const canvasRef = useRef<HTMLDivElement>(null);
 
-  const activeLayers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
-  const setActiveLayers = useCallback(
-    (layers: TemplateLayer[]) => {
-      if (activeSide === "front") {
-        onChange({ ...template, layers });
-      } else {
-        onChange({ ...template, backLayers: layers });
-      }
-    },
-    [template, activeSide, onChange],
-  );
   const toggleSide = useCallback(() => {
     setActiveSide((s) => (s === "front" ? "back" : "front"));
     setSelectedLayerId(null);
