@@ -30,6 +30,7 @@ main.tsx
         │     ├── localStorage
         │     └── IndexedDB
         ├── lib/templateStore.ts (getConsented, loadTemplate, migrateCardConfigToDesignerTemplate)
+        ├── lib/exportRenderer.ts (renderDesignerTemplateToCanvas, renderDesignerTemplateSideToCanvas)
         └── lib/seo.ts (injectMetaTags)
 
 External Dependencies:

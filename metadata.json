@@ -19,6 +19,10 @@
     "Dynamic SEO meta tag injection (Open Graph, Twitter Cards, JSON-LD)",
     "Full backward compatibility with legacy CardConfig template format",
     "Rotation property in layout panel for element positioning",
-    "Dark/light theme with local persistence"
+    "Dark/light theme with local persistence",
+    "Dynamic employee data entry fields based on template variables ({{fullName}}, {{department}}, {{role}}, {{idNumber}}, {{issueDate}})",
+    "Canvas-based export renderer that faithfully reproduces designer template layers (gradients, glassmorphism, borders, rotation) in PDF and DOCX",
+    "Back-of-card export: templates with hasBackSide flag render back layers as separate pages in PDF/DOCX",
+    "End-to-end template-export pipeline: designer template → canvas renderer → PDF/DOCX image embedding"
   ]
 }

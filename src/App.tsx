@@ -26,17 +26,13 @@ import {
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import {
-  AlignmentType,
   Document,
   ImageRun,
   Packer,
   PageBreak,
   Paragraph,
   Table,
-  TableCell,
-  TableRow,
   TextRun,
-  WidthType,
 } from "docx";
 import { CardConfig, EmployeeRecord, ExportProgress, UserData, DesignerTemplate } from "./types";
 import DataEntry from "./components/DataEntry";
@@ -63,7 +59,9 @@ import {
   getActiveTemplateId,
   setActiveTemplateId,
   migrateCardConfigToDesignerTemplate,
+  getTemplateVariables,
 } from "./lib/templateStore";
+import { renderDesignerTemplateSideToCanvas, renderDesignerTemplateToCanvas } from "./lib/exportRenderer";
 import { injectMetaTags } from "./lib/seo";
 import { ToastProvider, useToast } from "./components/Toast";
 
@@ -265,6 +263,10 @@ function AppInner() {
 
   const selectedEmployee = employees[selectedIndex] ?? employees[0];
   const queuedCount = employees.length;
+  const templateVariables = useMemo(
+    () => designerTemplate ? getTemplateVariables(designerTemplate) : [],
+    [designerTemplate],
+  );
 
   const updateSelectedEmployee = (next: UserData) => {
     setEmployees((current) =>
@@ -575,7 +577,7 @@ function AppInner() {
 
     setProgress({
       phase: "Preparing PDF export",
-      percent: 10,
+      percent: 5,
       status: "working",
     });
     await nextFrame();
@@ -587,89 +589,88 @@ function AppInner() {
     });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 14;
-    const contentWidth = pageWidth - margin * 2;
+    const margin = 10;
+
+    const tpl = designerTemplate;
 
     for (const [index, employee] of employees.entries()) {
       if (index > 0) {
         doc.addPage();
       }
 
-      const baseTop = 12;
-
-      doc.setDrawColor(17, 24, 39);
-      doc.setLineWidth(0.4);
-      doc.rect(margin, margin, contentWidth, pageHeight - margin * 2);
-
-      const columnY = baseTop + 8;
-      const tableHeight = 18;
-      const columns = [64, 32, contentWidth - 96];
-      const cells = [
-        employee.fullName || "Employee Name",
-        employee.idNumber || "EMP-001",
-        `${employee.department || "Department"} • ${employee.role || "Role"}`,
-      ];
-
-      let currentX = margin;
-      columns.forEach((width, columnIndex) => {
-        doc.rect(currentX, columnY, width, tableHeight);
-        doc.setFontSize(columnIndex === 2 ? 10 : 11);
-        doc.setTextColor(17, 24, 39);
-        const text = doc.splitTextToSize(cells[columnIndex], width - 4);
-        doc.text(text, currentX + 2, columnY + 7);
-        currentX += width;
+      setProgress({
+        phase: `Rendering PDF page ${index + 1} of ${employees.length}`,
+        percent: Math.round(((index + 1) / employees.length) * 70),
+        status: "working",
       });
+      await nextFrame();
 
-      const imageTop = columnY + tableHeight + 8;
-      const imageHeight = 118;
-      doc.rect(margin, imageTop, contentWidth, imageHeight);
+      try {
+        const renderedImage = await renderTransformedImage(
+          employee.imageUrl || "",
+          employee.imageTransform,
+          tpl?.canvasWidth ?? 920,
+          tpl?.canvasHeight ?? 520,
+          employee.imageCrop,
+        );
 
-      if (employee.imageUrl) {
-        try {
-          const renderedImage = await renderTransformedImage(
-            employee.imageUrl,
-            employee.imageTransform,
-            Math.round((contentWidth - 2) * 8),
-            Math.round((imageHeight - 2) * 8),
-            employee.imageCrop,
-          );
+        if (tpl && tpl.layers.length > 0) {
+          const frontCanvas = await renderDesignerTemplateToCanvas(tpl, employee, renderedImage);
+          const frontDataUrl = frontCanvas.toDataURL("image/png");
+          const frontW = frontCanvas.width;
+          const frontH = frontCanvas.height;
+          const maxW = pageWidth - margin * 2;
+          const maxH = pageHeight - margin * 2;
+          const scale = Math.min(maxW / frontW, maxH / frontH);
+          const imgW = frontW * scale;
+          const imgH = frontH * scale;
+          const imgX = (pageWidth - imgW) / 2;
+          const imgY = (pageHeight - imgH) / 2;
+          doc.addImage(frontDataUrl, "PNG", imgX, imgY, imgW, imgH, undefined, "FAST");
 
-          doc.addImage(
-            renderedImage,
-            "PNG",
-            margin + 1,
-            imageTop + 1,
-            contentWidth - 2,
-            imageHeight - 2,
-            undefined,
-            "FAST",
-          );
-        } catch {
-          doc.setFontSize(12);
-          doc.setTextColor(102, 112, 133);
-          doc.text(
-            "Photo could not be embedded in PDF preview.",
-            margin + 10,
-            imageTop + 58,
-          );
+          if (tpl.hasBackSide && tpl.backLayers && tpl.backLayers.length > 0) {
+            doc.addPage();
+            const backCanvas = await renderDesignerTemplateSideToCanvas(tpl, employee, "back", renderedImage);
+            const backDataUrl = backCanvas.toDataURL("image/png");
+            doc.addImage(backDataUrl, "PNG", imgX, imgY, imgW, imgH, undefined, "FAST");
+          }
+        } else {
+          const cardW = pageWidth - margin * 2;
+          const cardH = 80;
+          const cardY = margin + 20;
+
+          doc.setDrawColor(17, 24, 39);
+          doc.setLineWidth(0.4);
+          doc.rect(margin, margin, cardW, pageHeight - margin * 2);
+
+          doc.setFontSize(14);
+          doc.setTextColor(17, 24, 39);
+          doc.text(employee.fullName || "Employee Name", margin + 4, cardY + 6);
+
+          doc.setFontSize(11);
+          doc.setTextColor(75, 85, 99);
+          const combined = `${employee.department || "Department"} • ${employee.role || "Role"}`;
+          doc.text(combined, margin + 4, cardY + 16);
+
+          doc.setFontSize(10);
+          doc.setTextColor(15, 118, 110);
+          doc.text(`ID: ${employee.idNumber || "EMP-001"}`, margin + 4, cardY + 26);
+          doc.text(`Issue Date: ${employee.issueDate}`, margin + 4, cardY + 34);
+
+          if (renderedImage) {
+            try {
+              const imgHeight = 100;
+              doc.addImage(renderedImage, "PNG", margin + 4, cardY + 40, cardW - 8, imgHeight, undefined, "FAST");
+            } catch {
+              // skip image on error
+            }
+          }
         }
-      } else {
+      } catch {
         doc.setFontSize(12);
         doc.setTextColor(102, 112, 133);
-        doc.text(
-          "Photo placeholder - upload an image to embed it here.",
-          margin + 10,
-          imageTop + 58,
-        );
+        doc.text(`Error rendering card for ${employee.fullName}`, margin + 10, pageHeight / 2);
       }
-
-      doc.setFontSize(9);
-      doc.setTextColor(15, 118, 110);
-      doc.text(
-        `Issue Date: ${employee.issueDate}`,
-        margin + 2,
-        imageTop + imageHeight + 8,
-      );
 
       if (index < employees.length - 1) {
         doc.setFontSize(8);
@@ -678,18 +679,9 @@ function AppInner() {
           `Batch ${index + 1} of ${employees.length}`,
           pageWidth / 2,
           pageHeight - 8,
-          {
-            align: "center",
-          },
+          { align: "center" },
         );
       }
-
-      setProgress({
-        phase: `Rendering PDF page ${index + 1} of ${employees.length}`,
-        percent: Math.round(((index + 1) / employees.length) * 80),
-        status: "working",
-      });
-      await nextFrame();
     }
 
     setProgress({ phase: "Saving PDF", percent: 85, status: "working" });
@@ -710,98 +702,106 @@ function AppInner() {
 
     setProgress({
       phase: "Preparing DOCX export",
-      percent: 10,
+      percent: 5,
       status: "working",
     });
     await nextFrame();
 
     const children: Array<Paragraph | Table> = [];
+    const tpl = designerTemplate;
 
     for (const [index, employee] of employees.entries()) {
-      children.push(
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            new TableRow({
-              children: [
-                new TableCell({
-                  width: { size: 35, type: WidthType.PERCENTAGE },
-                  children: [
-                    new Paragraph(employee.fullName || "Employee Name"),
-                  ],
-                }),
-                new TableCell({
-                  width: { size: 18, type: WidthType.PERCENTAGE },
-                  children: [new Paragraph(employee.idNumber || "EMP-001")],
-                }),
-                new TableCell({
-                  width: { size: 47, type: WidthType.PERCENTAGE },
-                  children: [
-                    new Paragraph(
-                      `${employee.department || "Department"} • ${employee.role || "Role"}`,
-                    ),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        }),
-      );
+      setProgress({
+        phase: `Rendering DOCX page ${index + 1} of ${employees.length}`,
+        percent: Math.round(((index + 1) / employees.length) * 70),
+        status: "working",
+      });
+      await nextFrame();
 
-      if (employee.imageUrl) {
-        try {
-          const renderedImage = await renderTransformedImage(
-            employee.imageUrl,
-            employee.imageTransform,
-            1400,
-            980,
-            employee.imageCrop,
-          );
+      try {
+        const renderedImage = await renderTransformedImage(
+          employee.imageUrl || "",
+          employee.imageTransform,
+          tpl?.canvasWidth ?? 920,
+          tpl?.canvasHeight ?? 520,
+          employee.imageCrop,
+        );
+
+        if (tpl && tpl.layers.length > 0) {
+          const frontCanvas = await renderDesignerTemplateToCanvas(tpl, employee, renderedImage);
+          const frontBytes = dataUrlToBytes(frontCanvas.toDataURL("image/png"));
+          const imgW = Math.round(frontCanvas.width * 0.4);
+          const imgH = Math.round(frontCanvas.height * 0.4);
 
           children.push(
             new Paragraph({
               children: [
                 new ImageRun({
-                  data: dataUrlToBytes(renderedImage) as any,
-                  transformation: { width: 600, height: 420 },
+                  data: frontBytes as any,
+                  transformation: { width: imgW, height: imgH },
                 } as any),
               ],
             }),
           );
-        } catch {
+
+          if (tpl.hasBackSide && tpl.backLayers && tpl.backLayers.length > 0) {
+            const backCanvas = await renderDesignerTemplateSideToCanvas(tpl, employee, "back", renderedImage);
+            const backBytes = dataUrlToBytes(backCanvas.toDataURL("image/png"));
+            children.push(
+              new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: backBytes as any,
+                    transformation: { width: imgW, height: imgH },
+                  } as any),
+                ],
+              }),
+            );
+          }
+        } else {
           children.push(
-            new Paragraph("Photo could not be embedded in DOCX export."),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: employee.fullName || "Employee Name",
+                  bold: true,
+                  size: 28,
+                }),
+              ],
+            }),
           );
+          const combined = `${employee.department || "Department"} • ${employee.role || "Role"}`;
+          children.push(new Paragraph(combined));
+          children.push(new Paragraph(`ID: ${employee.idNumber || "EMP-001"}`));
+          children.push(new Paragraph(`Issue Date: ${employee.issueDate}`));
+
+          if (renderedImage) {
+            try {
+              const fallbackBytes = dataUrlToBytes(renderedImage);
+              children.push(
+                new Paragraph({
+                  children: [
+                    new ImageRun({
+                      data: fallbackBytes as any,
+                      transformation: { width: 400, height: 300 },
+                    } as any),
+                  ],
+                }),
+              );
+            } catch {
+              children.push(new Paragraph("Photo could not be embedded."));
+            }
+          }
         }
-      } else {
+      } catch {
         children.push(
-          new Paragraph(
-            "Photo placeholder - upload an image to embed it here.",
-          ),
+          new Paragraph(`Error rendering card for ${employee.fullName}`),
         );
       }
-
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `Issue Date: ${employee.issueDate}`,
-              size: 16,
-            }),
-          ],
-        }),
-      );
 
       if (index < employees.length - 1) {
         children.push(new Paragraph({ children: [new PageBreak()] }));
       }
-
-      setProgress({
-        phase: `Rendering DOCX page ${index + 1} of ${employees.length}`,
-        percent: Math.round(((index + 1) / employees.length) * 80),
-        status: "working",
-      });
-      await nextFrame();
     }
 
     const doc = new Document({ sections: [{ children }] });
@@ -970,6 +970,7 @@ function AppInner() {
                   <DataEntry
                     data={selectedEmployee}
                     onChange={updateSelectedEmployee}
+                    templateVariables={templateVariables}
                   />
                 </div>
 

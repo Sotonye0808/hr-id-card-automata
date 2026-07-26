@@ -37,6 +37,13 @@
 - [x] Touch-enabled controls (drag, resize, rotate) via unified pointer events
 - [x] Single canvas instance (no duplicate designer in sidebar)
 
+### Recently Completed
+- [x] Dynamic data entry fields based on template variables (getTemplateVariables → DataEntry templateVariables prop)
+- [x] Canvas-based export renderer (exportRenderer.ts) — faithfully reproduces all layer types with gradients, glassmorphism, borders, rotation
+- [x] Back side in export — front and back rendered as separate pages in PDF and DOCX
+- [x] End-to-end template-export pipeline: designer template → canvas renderer → PDF/DOCX
+- [x] Removed unused imports (TableCell, TableRow, WidthType, AlignmentType from docx)
+
 ### In Progress
 - [ ] Import wizard polish (validation edge cases)
 - [ ] Export pipeline stabilization (progress reporting, error handling)

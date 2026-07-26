@@ -46,6 +46,11 @@
 | P1 | M | **Enhanced design panel** — element weight/rounded controls, additional palette color | Complete |
 | P0 | M | **Fix TemplateDesigner blank page crash** — `undo`/`redo` useCallback referenced `setActiveLayers` before declaration (TDZ ReferenceError). Reordered hook definitions. | Complete |
 | P3 | S | **Clean up unused deps** — express, @google/genai, dotenv (not in package.json — already clean) | N/A |
+| P0 | L | **Canvas-based export renderer** — `exportRenderer.ts` that draws all layer types (text with variable substitution, images, shapes, barcodes) with gradients/glassmorphism/borders/rotation onto canvas for PDF/DOCX embedding | Complete |
+| P0 | M | **Dynamic data entry fields** — `DataEntry` shows fields based on `getTemplateVariables()` so only variables used in active template are displayed | Complete |
+| P0 | M | **End-to-end template export** — PDF and DOCX exports now render designer template via canvas renderer instead of hardcoded layout | Complete |
+| P0 | M | **Back side in export** — front and back rendered as separate pages per employee in both PDF and DOCX | Complete |
+| P0 | S | **Remove unused docx imports** — AlignmentType, TableCell, TableRow, WidthType no longer needed after export rewrite | Complete |
 | P3 | M | **Service Worker / PWA manifest** — offline support, app icon, theme-color | Pending |
 | P2 | M | Wire ActivityBoard component to real app state | Pending |
 | P2 | S | Add export progress error states | Pending |

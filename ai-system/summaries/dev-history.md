@@ -121,3 +121,16 @@
 - Fixed responsive canvas overflow by restructuring with wrapper div that dimensions to `canvasWidth * zoom` × `canvasHeight * zoom`
 - Updated dependency-graph.md to reflect TemplateDesigner is now rendered directly in App.tsx (right panel) rather than inside TemplateEditor
 - Updated all ai-system docs, README, metadata.json to reflect text layer design features and simplified component relationships
+
+## v0.8 — End-to-End Template-Export Wiring & Dynamic Data Entry
+
+**Date:** 2026-07-26
+
+**Summary:**
+- Created `exportRenderer.ts` — canvas-based renderer that draws all designer template layers (text with `{{variable}}` substitution, images with crop/transform, shapes with gradients/glassmorphism/borders, barcodes) onto a `<canvas>` for embedding in PDF/DOCX exports
+- Rewrote PDF export (`exportPdf`) in App.tsx to use `renderDesignerTemplateToCanvas()` — renders front side layers per employee, with back side as separate page when `hasBackSide` is true; falls back to simple text layout when no designer template exists
+- Rewrote DOCX export (`exportDocx`) in App.tsx to use `renderDesignerTemplateSideToCanvas()` — embeds canvas images as docx `ImageRun` per employee with front/back support
+- Added `getTemplateVariables()` to `templateStore.ts` — scans all text layers in a DesignerTemplate for `{{variable}}` patterns and returns known fields used
+- Updated `DataEntry.tsx` to accept `templateVariables` prop — each input field (fullName, role, department, idNumber, issueDate) is now conditionally rendered based on template usage; all fields shown when no template uses variables (backward compatible)
+- Removed unused docx imports (`AlignmentType`, `TableCell`, `TableRow`, `WidthType`) from App.tsx
+- Updated all documentation: README (dynamic fields, export renderer, back side export), metadata.json (new capabilities), system-architecture.md (exportRenderer module, updated export flow), project-context.md (in-scope items), repo-map.md (new file), dependency-graph.md (new dependency), project-plan.md (completed items), dev-history.md (this entry)
