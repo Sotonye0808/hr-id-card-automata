@@ -8,8 +8,8 @@ A privacy-first, offline-capable web application for designing, customizing, and
 
 ## Features
 
-- **Drag-and-Drop Template Designer** — Add text fields, images (logos, signatures, photos), shapes, and barcodes on a visual canvas. Drag, resize, and reorder layers with snap-to-grid support.
-- **Layer Panel** — Toggle visibility, lock/unlock, reorder (z-index), and delete layers. Each layer has a dedicated property inspector (font, color, size, position, image source).
+- **Drag-and-Drop Template Designer** — Add text fields, images (logos, signatures, photos), shapes, and barcodes on a visual canvas. Drag, resize, rotate, and reorder layers with snap-to-grid support. **Touch-enabled** — drag, resize handles, and rotation work on mobile via unified pointer events.
+- **Layer Panel** — Toggle visibility, lock/unlock, reorder (z-index), reset rotation, and delete layers. Each layer has a dedicated property inspector (font, color, size, position, rotation, opacity, image source).
 - **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, and import from JSON files.
 - **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
 - **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings.

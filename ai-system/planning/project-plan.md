@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: update-ai-system
-> - last-verified-against-code: 2026-07-25
+> - last-verified-against-code: 2026-07-26
 > - staleness-policy: update after each sprint
 
 > **Overview:** High-level feature checklist and development roadmap.
