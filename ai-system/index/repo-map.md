@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: update-ai-system
-> - last-verified-against-code: 2026-07-25
+> - last-verified-against-code: 2026-07-26
 > - staleness-policy: auto-regenerable — update when project structure changes
 
 > **Overview:** Directory structure with purpose of each folder and key files.

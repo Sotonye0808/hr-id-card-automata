@@ -8,14 +8,15 @@ export function getConsented(): boolean {
   return localStorage.getItem("hr-id-card-automata.consent") === "true";
 }
 
-function checkConsent(): void {
+function checkConsent(): boolean {
   if (!getConsented()) {
-    throw new Error("localStorage consent not given");
+    return false;
   }
+  return true;
 }
 
 export function listTemplates(): TemplateMeta[] {
-  checkConsent();
+  if (!checkConsent()) return [];
   const raw = localStorage.getItem(TEMPLATES_KEY);
   if (!raw) return [];
   try {
@@ -26,7 +27,7 @@ export function listTemplates(): TemplateMeta[] {
 }
 
 export function saveTemplateMeta(meta: TemplateMeta): void {
-  checkConsent();
+  if (!checkConsent()) return;
   const list = listTemplates();
   const idx = list.findIndex((t) => t.id === meta.id);
   if (idx >= 0) {
@@ -38,7 +39,7 @@ export function saveTemplateMeta(meta: TemplateMeta): void {
 }
 
 export function deleteTemplateMeta(id: string): void {
-  checkConsent();
+  if (!checkConsent()) return;
   const list = listTemplates().filter((t) => t.id !== id);
   localStorage.setItem(TEMPLATES_KEY, JSON.stringify(list));
   const active = getActiveTemplateId();
@@ -48,7 +49,7 @@ export function deleteTemplateMeta(id: string): void {
 }
 
 export function renameTemplate(id: string, name: string): void {
-  checkConsent();
+  if (!checkConsent()) return;
   const list = listTemplates();
   const entry = list.find((t) => t.id === id);
   if (entry) {
@@ -59,7 +60,7 @@ export function renameTemplate(id: string, name: string): void {
 }
 
 export function saveTemplate(template: DesignerTemplate): void {
-  checkConsent();
+  if (!checkConsent()) return;
   const key = `hr-id-card-automata.template.${template.id}`;
   localStorage.setItem(key, JSON.stringify(template));
   const meta: TemplateMeta = {
@@ -74,7 +75,7 @@ export function saveTemplate(template: DesignerTemplate): void {
 }
 
 export function loadTemplate(id: string): DesignerTemplate | null {
-  checkConsent();
+  if (!checkConsent()) return null;
   const key = `hr-id-card-automata.template.${id}`;
   const raw = localStorage.getItem(key);
   if (!raw) return null;
@@ -86,7 +87,7 @@ export function loadTemplate(id: string): DesignerTemplate | null {
 }
 
 export function deleteTemplate(id: string): void {
-  checkConsent();
+  if (!checkConsent()) return;
   const key = `hr-id-card-automata.template.${id}`;
   localStorage.removeItem(key);
   deleteTemplateMeta(id);

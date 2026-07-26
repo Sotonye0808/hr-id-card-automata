@@ -14,6 +14,7 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  RotateCcw,
 } from "lucide-react";
 import type {
   DesignerTemplate,
@@ -51,6 +52,12 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
     startY: number;
     startW: number;
     startH: number;
+  } | null>(null);
+  const [rotating, setRotating] = useState<{
+    layerId: string;
+    startAngle: number;
+    centerX: number;
+    centerY: number;
   } | null>(null);
   const [showImportMenu, setShowImportMenu] = useState(false);
 
@@ -195,12 +202,13 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
     [template, activeSide, setActiveLayers],
   );
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent, layerId: string) => {
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent, layerId: string) => {
       if (e.button !== 0) return;
       const layer = currentLayers.find((l) => l.id === layerId);
       if (!layer || layer.locked) return;
       setSelectedLayerId(layerId);
+      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
       setDragging({
         layerId,
         startX: e.clientX,
@@ -213,10 +221,11 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
   );
 
   const handleResizeStart = useCallback(
-    (e: React.MouseEvent, layerId: string, handle: string) => {
+    (e: React.PointerEvent, layerId: string, handle: string) => {
       e.stopPropagation();
       const layer = currentLayers.find((l) => l.id === layerId);
       if (!layer || layer.locked) return;
+      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
       setResizing({
         layerId,
         handle,
@@ -229,9 +238,28 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
     [currentLayers],
   );
 
+  const handleRotateStart = useCallback(
+    (e: React.PointerEvent, layerId: string) => {
+      e.stopPropagation();
+      const layer = currentLayers.find((l) => l.id === layerId);
+      if (!layer || layer.locked) return;
+      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      const cx = layer.x + layer.width / 2;
+      const cy = layer.y + layer.height / 2;
+      const startAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI);
+      setRotating({
+        layerId,
+        startAngle: startAngle - layer.rotation,
+        centerX: cx,
+        centerY: cy,
+      });
+    },
+    [currentLayers],
+  );
+
   useEffect(() => {
     if (!dragging) return;
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       const dx = Math.round((e.clientX - dragging.startX) / SNAP) * SNAP;
       const dy = Math.round((e.clientY - dragging.startY) / SNAP) * SNAP;
       updateLayer(dragging.layerId, {
@@ -239,18 +267,21 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
         y: dragging.startLayerY + dy,
       });
     };
-    const handleMouseUp = () => setDragging(null);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    const handlePointerUp = () => setDragging(null);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    document.body.style.userSelect = "none";
+    document.body.style.pointerEvents = "auto";
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      document.body.style.userSelect = "";
     };
   }, [dragging, updateLayer]);
 
   useEffect(() => {
     if (!resizing) return;
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       const dx = Math.round((e.clientX - resizing.startX) / SNAP) * SNAP;
       const dy = Math.round((e.clientY - resizing.startY) / SNAP) * SNAP;
       let newW = resizing.startW;
@@ -265,14 +296,34 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       }
       updateLayer(resizing.layerId, { width: newW, height: newH });
     };
-    const handleMouseUp = () => setResizing(null);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    const handlePointerUp = () => setResizing(null);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    document.body.style.userSelect = "none";
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      document.body.style.userSelect = "";
     };
   }, [resizing, updateLayer]);
+
+  useEffect(() => {
+    if (!rotating) return;
+    const handlePointerMove = (e: PointerEvent) => {
+      const angle = Math.atan2(e.clientY - rotating.centerY, e.clientX - rotating.centerX) * (180 / Math.PI);
+      const newRotation = Math.round((angle - rotating.startAngle) / 5) * 5;
+      updateLayer(rotating.layerId, { rotation: newRotation });
+    };
+    const handlePointerUp = () => setRotating(null);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    document.body.style.userSelect = "none";
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      document.body.style.userSelect = "";
+    };
+  }, [rotating, updateLayer]);
 
   const sortedLayers = [...currentLayers].sort((a, b) => a.zIndex - b.zIndex);
 
@@ -412,16 +463,12 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
         <div
           ref={containerRef}
           data-canvas="true"
-          className="relative flex min-h-[250px] flex-1 items-start justify-center overflow-auto rounded-2xl border border-[var(--border)] bg-white sm:min-h-[300px]"
+          className="designer-canvas-container relative flex min-h-[250px] flex-1 items-start justify-center overflow-auto rounded-2xl border border-[var(--border)] sm:min-h-[300px]"
           onClick={handleCanvasClick}
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(0deg, transparent, transparent 7px, rgba(0,0,0,0.03) 7px, rgba(0,0,0,0.03) 8px), repeating-linear-gradient(90deg, transparent, transparent 7px, rgba(0,0,0,0.03) 7px, rgba(0,0,0,0.03) 8px)",
-            backgroundSize: "8px 8px",
-          }}>
+          style={{ touchAction: "manipulation" }}>
           <div
             ref={canvasRef}
-            className="relative shrink-0"
+            className="designer-canvas relative shrink-0"
             style={{
               width: template.canvasWidth,
               height: template.canvasHeight,
@@ -429,15 +476,16 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
               margin: "24px auto",
               borderRadius: "12px",
               boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
-              maxWidth: `${template.canvasWidth}px`,
+              maxWidth: "100%",
               transform: `scale(${zoom})`,
               transformOrigin: "top center",
               overflow: "hidden",
+              touchAction: "none",
             }}>
             {sortedLayers.map((layer) => (
               <div
                 key={layer.id}
-                className={`absolute cursor-move ${!layer.visible ? "hidden" : ""}`}
+                className={`absolute ${!layer.visible ? "hidden" : ""}`}
                 style={{
                   left: layer.x,
                   top: layer.y,
@@ -456,23 +504,35 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
                       : layer.type === "shape"
                         ? (layer.props as ShapeLayerProps).borderRadius
                         : undefined,
+                  cursor: layer.locked ? "default" : "grab",
+                  transform: layer.rotation ? `rotate(${layer.rotation}deg)` : undefined,
+                  touchAction: "none",
                 }}
-                onMouseDown={(e) => handleMouseDown(e, layer.id)}>
+                onPointerDown={(e) => handlePointerDown(e, layer.id)}>
                 {renderLayerPreview(layer)}
 
                 {selectedLayerId === layer.id && !layer.locked && (
                   <>
                     <div
-                      className="absolute -bottom-1 -right-1 z-10 h-3 w-3 cursor-se-resize rounded-full border-2 border-white bg-[#0f766e]"
-                      onMouseDown={(e) => handleResizeStart(e, layer.id, "se")}
+                      className="absolute -bottom-1 -right-1 z-10 h-3 w-3 rounded-full border-2 border-white bg-[#0f766e]"
+                      style={{ touchAction: "none", cursor: "nwse-resize" }}
+                      onPointerDown={(e) => handleResizeStart(e, layer.id, "se")}
                     />
                     <div
-                      className="absolute -bottom-1 left-1/2 z-10 h-3 w-3 -translate-x-1/2 cursor-s-resize rounded-full border-2 border-white bg-[#0f766e]"
-                      onMouseDown={(e) => handleResizeStart(e, layer.id, "s")}
+                      className="absolute -bottom-1 left-1/2 z-10 h-3 w-3 -translate-x-1/2 rounded-full border-2 border-white bg-[#0f766e]"
+                      style={{ touchAction: "none", cursor: "ns-resize" }}
+                      onPointerDown={(e) => handleResizeStart(e, layer.id, "s")}
                     />
                     <div
-                      className="absolute -right-1 top-1/2 z-10 h-3 w-3 -translate-y-1/2 cursor-e-resize rounded-full border-2 border-white bg-[#0f766e]"
-                      onMouseDown={(e) => handleResizeStart(e, layer.id, "e")}
+                      className="absolute -right-1 top-1/2 z-10 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white bg-[#0f766e]"
+                      style={{ touchAction: "none", cursor: "ew-resize" }}
+                      onPointerDown={(e) => handleResizeStart(e, layer.id, "e")}
+                    />
+                    <div
+                      className="absolute -top-4 left-1/2 z-10 h-3 w-3 -translate-x-1/2 cursor-grab rounded-full border-2 border-white bg-orange-500"
+                      style={{ touchAction: "none" }}
+                      onPointerDown={(e) => handleRotateStart(e, layer.id)}
+                      title="Rotate"
                     />
                   </>
                 )}
@@ -481,7 +541,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
           </div>
         </div>
 
-        <div className="w-full shrink-0 lg:w-64 flex-col gap-3 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 max-lg:max-h-[250px] sm:max-lg:max-h-[300px]">
+        <div className="w-full shrink-0 lg:w-64 flex-col gap-3 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 max-lg:max-h-[200px] sm:max-lg:max-h-[250px]">
           <div className="flex items-center justify-between">
             <p className="eyebrow">Layers - {activeSide === "front" ? "Front" : "Back"}</p>
           </div>
@@ -543,6 +603,14 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
                   onClick={() => moveLayer(selectedLayer.id, "down")}
                   title="Move down">
                   <ChevronDown size={12} />
+                </button>
+                <button
+                  className="mini-button"
+                  onClick={() =>
+                    updateLayer(selectedLayer.id, { rotation: 0 })
+                  }
+                  title="Reset rotation">
+                  <RotateCcw size={12} />
                 </button>
                 <button
                   className="mini-button text-red-500"
@@ -622,6 +690,21 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
                       onChange={(e) =>
                         updateLayer(selectedLayer.id, {
                           height: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--muted)]">
+                      Rotation
+                    </label>
+                    <input
+                      type="number"
+                      className="field-input mt-1 py-1.5 text-xs"
+                      value={selectedLayer.rotation}
+                      onChange={(e) =>
+                        updateLayer(selectedLayer.id, {
+                          rotation: Number(e.target.value),
                         })
                       }
                     />

@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: update-ai-system
-> - last-verified-against-code: 2026-07-25
+> - last-verified-against-code: 2026-07-26
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
 > **Overview:** Why this project exists, who it serves, and what constraints govern development. Agents should read this to understand the "why" behind the work.
@@ -63,11 +63,14 @@ Active sprint focus: Template designer overhaul — drag-and-drop canvas editor,
 ## In Scope
 
 - Drag-and-drop visual template designer with text/image/shape/barcode layers
+- Touch-enabled drag, resize, and rotate via unified pointer events (mouse + touch + pen)
+- Rotation handle and rotation reset in layer properties
 - Front/back dual-sided template support with side toggle
 - Template library with save/load/rename/delete/export/import (JSON)
 - Import templates from images (PNG/JPG), DOCX, PDF as tracing backgrounds
-- Responsive canvas auto-scaling with zoom controls
-- GDPR-compliant cookie/localStorage consent banner
+- Responsive canvas auto-scaling with zoom controls; non-overflowing on mobile via max-width constraints
+- Wide-screen preview shows interactive template canvas when designer tab is active
+- GDPR-compliant cookie/localStorage consent banner with graceful fallback (no crash when consent is missing)
 - Dynamic SEO meta tag injection (Open Graph, Twitter Cards, JSON-LD)
 - Dark/light theme with local persistence
 - Backward compatibility with legacy CardConfig template format

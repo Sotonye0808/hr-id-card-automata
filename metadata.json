@@ -1,10 +1,13 @@
 {
   "name": "hr-id-card-automata",
-  "description": "Progressive Web App to generate HR ID cards from employee data. Local-first, template-driven, exportable to PDF and DOCX. Features a drag-and-drop template designer with layer-based editing, template library, cookie consent, and SEO optimization.",
+  "description": "Progressive Web App to generate HR ID cards from employee data. Local-first, template-driven, exportable to PDF and DOCX. Features a drag-and-drop template designer with layer-based editing, touch controls, rotation support, template library, cookie consent, and SEO optimization.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "Drag-and-drop visual template designer with text, image, shape, and barcode layers",
-    "Canvas-based layer editing with snap-to-grid, resize handles, and property inspector",
+    "Canvas-based layer editing with snap-to-grid, resize handles, rotation handle, and property inspector",
+    "Touch-enabled controls for drag, resize, and rotate via unified pointer events",
+    "Front/back dual-sided template support with side toggle",
+    "Responsive canvas with auto-scaling zoom and mobile-friendly layout",
     "Template library with save, load, rename, delete, export/import JSON",
     "Import templates from image files (PNG/JPG) as tracing backgrounds",
     "GDPR-compliant cookie/localStorage consent banner",

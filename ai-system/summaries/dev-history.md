@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: update-ai-system
-> - last-verified-against-code: 2026-07-25
+> - last-verified-against-code: 2026-07-26
 > - staleness-policy: append at the end of each significant development phase
 
 > **Overview:** High-level summary of development milestones and phases.
@@ -64,3 +64,21 @@
 - Synced `designerTemplate` state between App.tsx and TemplateEditor via lifted state + `onDesignerTemplateChange` callback so IDCard preview always reflects current designer changes
 - Improved desktop preview section to use `max-w-full` wrapper and pass `designerTemplate` to IDCard
 - Updated all ai-system docs: system-architecture (front/back flow, responsive zoom), project-context (back-of-card scope), project-plan (completed items), dev-history (this entry), project-decisions (back-of-card decision added)
+
+## v0.5 — Touch Controls, Rotation & Responsive Canvas Sprint
+
+**Date:** 2026-07-26
+
+**Summary:**
+- Replaced mouse-only event handlers in TemplateDesigner with unified pointer events (`onPointerDown`/`pointermove`/`pointerup`) that work across mouse, touch, and pen — no redundant mouse + touch handler code
+- Added rotation handle (orange dot above each selected layer) for visual rotation; rotation snaps to 5-degree increments
+- Added rotation reset button in layer properties panel
+- Rotation is now rendered in both TemplateDesigner canvas and IDCard preview via `transform: rotate()`
+- Canvas now shows in the right preview panel on wide screens when Template Designer tab is active — full interactive editing instead of static preview
+- Fixed mobile canvas overflow: replaced hardcoded `maxWidth` with `maxWidth: 100%` plus `!important` CSS override; container uses `overflow: auto` with `-webkit-overflow-scrolling: touch`
+- Fixed TemplateLibrary blank-screen bug: changed `checkConsent()` from throwing to returning boolean, all storage functions now silently return on missing consent instead of crashing
+- Added `useMemo` protection in TemplateEditor to prevent designer template re-computation on every render
+- Made DesignerIDCard preview responsive with `aspectRatio` CSS instead of fixed height
+- Added `touch-action: none` on canvas elements and `touch-action: manipulation` on container to prevent browser gesture interference
+- `document.body.style.userSelect = "none"` during drag/resize/rotate to prevent text selection
+- Updated all ai-system docs and README to reflect new capabilities

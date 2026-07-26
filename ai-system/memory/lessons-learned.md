@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: update-ai-system
-> - last-verified-against-code: 2026-07-25
+> - last-verified-against-code: 2026-07-26
 > - staleness-policy: append each time a lesson is identified
 
 > **Overview:** Lessons learned during development. Add entries as new insights arise.
@@ -38,3 +38,9 @@ A function passed to `useState(fn)` runs during render. If it throws (e.g., `lis
 **Date:** 2026-07-25
 
 When a child component (TemplateEditor) manages state that a sibling or parent (IDCard preview in App.tsx) needs to display, lift the state to the common ancestor and pass it down via props. Otherwise, the two components drift out of sync and the preview shows stale data. Use a callback prop (`onDesignerTemplateChange`) to let the child notify the parent of changes.
+
+## Lesson 6 — Unified Pointer Events Over Mouse + Touch
+
+**Date:** 2026-07-26
+
+For drag-and-drop interactions that need to work across mouse, touch, and pen, use the Pointer Events API (`pointerdown`, `pointermove`, `pointerup`) instead of maintaining separate mouse and touch event handlers. `pointerdown` on elements + `window.addEventListener("pointermove"/"pointerup")` provides a single code path. Use `setPointerCapture` if available, or attach listeners to `window`. Always set `touch-action: none` on draggable elements to prevent browser gesture interference, and set `document.body.style.userSelect = "none"` during drag to prevent text selection.
