@@ -8,8 +8,12 @@ A privacy-first, offline-capable web application for designing, customizing, and
 
 ## Features
 
-- **Drag-and-Drop Template Designer** — Add text fields, images (logos, signatures, photos), shapes, and barcodes on a visual canvas. Drag, resize, rotate, and reorder layers with snap-to-grid support. **Touch-enabled** — drag, resize handles, and rotation work on mobile via unified pointer events.
-- **Layer Panel** — Toggle visibility, lock/unlock, reorder (z-index), reset rotation, and delete layers. Each layer has a dedicated property inspector (font, color, size, position, rotation, opacity, image source).
+- **Drag-and-Drop Template Designer** — Add text fields, images (logos, signatures, photos), shapes, and barcodes on a visual canvas. Drag, resize, rotate, and reorder layers with snap-to-grid support. **Touch-enabled** — drag, icon-based resize/rotate handles, and rotation work on mobile via unified pointer events.
+- **Undo / Redo** — Full undo/redo history (50 steps) for all layer operations (add, delete, move, resize, rotate, property changes).
+- **Gradient & Glassmorphism** — Apply linear/radial gradients and glassmorphism (backdrop blur + opacity) to shape and image layers directly from the property inspector.
+- **Border Controls** — Customize border width, color, and style (solid/dashed/dotted) for image and shape layers.
+- **Layer Panel** — Toggle visibility, lock/unlock, reorder (z-index), reset rotation, and delete layers. Each layer has a dedicated property inspector (font, color, size, position, rotation, opacity, image source, gradients, borders, glassmorphism).
+- **Toast Notifications** — Subtle feedback toasts for save, load, import, export, and other actions.
 - **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, and import from JSON files.
 - **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
 - **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings.
@@ -69,9 +73,10 @@ src/
 │   ├── DataEntry.tsx           # Employee form fields + image upload
 │   ├── IDCard.tsx              # Live preview (legacy + designer template modes)
 │   ├── TemplateEditor.tsx      # Combined editor (design/layout tabs + designer tab)
-│   ├── TemplateDesigner.tsx    # WYSIWYG canvas editor with drag/resize/layer panel
+│   ├── TemplateDesigner.tsx    # WYSIWYG canvas editor with undo/redo, icon handles, property panels
 │   ├── TemplateLibrary.tsx     # Save/load/rename/delete/import/export templates
 │   ├── CookieConsent.tsx       # GDPR consent banner
+│   ├── Toast.tsx               # Toast notification system with context provider
 │   ├── ImportWizard.tsx        # CSV/XLSX field mapping wizard
 │   └── ActivityBoard.tsx       # Decorative batch processor UI
 └── lib/
@@ -106,10 +111,11 @@ Template Library (save/load) → localStorage (named templates)
 ## Usage
 
 1. **Add Employees** — Use the Employees tab to enter employee data manually or import from CSV/XLSX.
-2. **Design Template** — Go to the Template tab. Use the "Designer" tab to open the drag-and-drop canvas. Add text, image, shape, and barcode layers. Drag to position, resize handles to adjust.
-3. **Save Template** — Click the library icon to save your design. Export as JSON for sharing.
-4. **Preview** — The right panel shows a live preview of the card with employee data.
-5. **Export** — Go to the Export tab to generate PDF or DOCX for all employees.
+2. **Design Template** — Go to the Template tab. Use the "Designer" tab to open the drag-and-drop canvas. Add text, image, shape, and barcode layers. Drag to position, use icon-based handles to resize/rotate. Undo/redo via toolbar buttons.
+3. **Style Elements** — Apply gradients, glassmorphism effects, and borders to shape and image layers from the Properties panel. Set rotation in the Layout tab.
+4. **Save Template** — Click the library icon to save your design. Export as JSON for sharing. Toast notifications confirm saves.
+5. **Preview** — The right panel shows a live preview of the card with employee data.
+6. **Export** — Go to the Export tab to generate PDF or DOCX for all employees.
 
 ---
 

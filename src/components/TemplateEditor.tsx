@@ -183,6 +183,7 @@ export default function TemplateEditor({ config, onChange, onReset, designerTemp
                   { label: "Card Background", key: "secondary" },
                   { label: "Accent Color", key: "primary" },
                   { label: "Text Content", key: "text" },
+                  { label: "Accent Highlight", key: "accent" },
                 ].map((item) => (
                   <div key={item.key} className="flex items-center justify-between gap-4">
                     <span className="text-[11px] text-[var(--muted)]">{item.label}</span>
@@ -197,41 +198,78 @@ export default function TemplateEditor({ config, onChange, onReset, designerTemp
                 ))}
               </div>
             </div>
+
+            <div className="space-y-3 border-t border-[var(--border)] pt-4">
+              <label className="eyebrow">Element Styles</label>
+              {(Object.entries(config.elements) as [keyof CardConfig["elements"], any][]).map(([key, value]) => (
+                <div key={key} className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
+                  <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--accent)]">
+                    {key} style
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-[var(--muted)]">Weight</label>
+                      <select
+                        className="field-input mt-1 py-1.5 text-xs"
+                        value={value.weight ?? "normal"}
+                        onChange={(e) => updateElement(key, "weight", e.target.value)}>
+                        <option value="normal">Normal</option>
+                        <option value="medium">Medium</option>
+                        <option value="bold">Bold</option>
+                        <option value="black">Black</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-[var(--muted)]">Rounded</label>
+                      <input
+                        type="number"
+                        className="field-input mt-1 py-1.5 text-xs"
+                        value={value.rounded ?? 0}
+                        min={0}
+                        max={50}
+                        onChange={(e) => updateElement(key, "rounded", parseInt(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {activeTab === "layout" && (
           <div className="space-y-4">
-            {(Object.entries(config.elements) as [keyof CardConfig["elements"], any][]).map(([key, value]) => (
-              <div key={key} className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
-                <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--accent)]">
-                  {key} control
-                </label>
-                <div className="space-y-4">
-                  {[
-                    { label: "POSITION X", key: "x", max: 400 },
-                    { label: "POSITION Y", key: "y", max: 250 },
-                    { label: "SCALE / SIZE", key: "size", max: 120 },
-                  ].map((field) => (
-                    <div key={field.key}>
-                      <div className="mb-1 flex justify-between text-[10px] text-[var(--muted)]">
-                        <span>{field.label}</span>
-                        <span>{value[field.key]}px</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max={field.max}
-                        value={value[field.key]}
-                        onChange={(e) => updateElement(key, field.key, parseInt(e.target.value))}
-                        aria-label={`${key} ${field.label}`}
-                        className="field-range h-1 w-full cursor-pointer appearance-none rounded-lg bg-[var(--border)] accent-[var(--accent)]"
-                      />
+                {(Object.entries(config.elements) as [keyof CardConfig["elements"], any][]).map(([key, value]) => (
+                  <div key={key} className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
+                    <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--accent)]">
+                      {key} control
+                    </label>
+                    <div className="space-y-4">
+                      {[
+                        { label: "POSITION X", key: "x", max: 400 },
+                        { label: "POSITION Y", key: "y", max: 250 },
+                        { label: "SCALE / SIZE", key: "size", max: 120 },
+                        { label: "ROTATION", key: "rotation", max: 360 },
+                      ].map((field) => (
+                        <div key={field.key}>
+                          <div className="mb-1 flex justify-between text-[10px] text-[var(--muted)]">
+                            <span>{field.label}</span>
+                            <span>{(value[field.key] ?? (field.key === "rotation" ? 0 : 0))}{field.key === "rotation" ? "°" : "px"}</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max={field.max}
+                            value={value[field.key] ?? (field.key === "rotation" ? 0 : 0)}
+                            onChange={(e) => updateElement(key, field.key, parseInt(e.target.value))}
+                            aria-label={`${key} ${field.label}`}
+                            className="field-range h-1 w-full cursor-pointer appearance-none rounded-lg bg-[var(--border)] accent-[var(--accent)]"
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                  </div>
+                ))}
           </div>
         )}
 

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Save, Upload, Download, Trash2, Edit3, X, Check } from "lucide-react";
+import { useToast } from "./Toast";
 import type { DesignerTemplate, TemplateMeta } from "../types";
 import {
   listTemplates,
@@ -24,6 +25,7 @@ export default function TemplateLibrary({
   onLoadTemplate,
   onClose,
 }: TemplateLibraryProps) {
+  const { toast } = useToast();
   const [templates, setTemplates] = useState<TemplateMeta[]>(() => {
     try { return listTemplates(); } catch { return []; }
   });
@@ -47,6 +49,7 @@ export default function TemplateLibrary({
     setActiveTemplateId(updated.id);
     setActiveId(updated.id);
     refresh();
+    toast("Template saved", "success");
   };
 
   const handleLoad = (meta: TemplateMeta) => {
@@ -55,6 +58,7 @@ export default function TemplateLibrary({
       onLoadTemplate(tpl);
       setActiveTemplateId(meta.id);
       setActiveId(meta.id);
+      toast("Template loaded", "info");
     }
   };
 
@@ -66,6 +70,7 @@ export default function TemplateLibrary({
       setActiveTemplateId(null);
     }
     refresh();
+    toast("Template deleted", "info");
   };
 
   const handleRename = (id: string) => {
@@ -74,11 +79,15 @@ export default function TemplateLibrary({
     }
     setEditingId(null);
     refresh();
+    toast("Template renamed", "success");
   };
 
   const handleExport = (meta: TemplateMeta) => {
     const tpl = loadTemplate(meta.id);
-    if (tpl) exportTemplateAsJson(tpl);
+    if (tpl) {
+      exportTemplateAsJson(tpl);
+      toast("Template exported", "success");
+    }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +98,7 @@ export default function TemplateLibrary({
       const tpl = await importTemplateFromJson(file);
       saveTemplate(tpl);
       refresh();
+      toast("Template imported", "success");
     } catch (err) {
       alert(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     }

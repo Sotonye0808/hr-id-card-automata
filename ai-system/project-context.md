@@ -1,7 +1,7 @@
 # Project Context
 
 > **Metadata**
-> - last-updated-by: update-ai-system
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-26
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
@@ -41,7 +41,7 @@ HR ID Card Automata is a privacy-first, offline-capable web application that ena
 
 Phase: Active Development
 
-Active sprint focus: Template designer overhaul — drag-and-drop canvas editor, layer-based templates, template library with import/export, cookie consent, SEO optimization.
+Active sprint focus: Template designer enhancements — undo/redo history, icon-based resize/rotate handles, gradient/glassmorphism/border design features, toast notifications, responsive improvements.
 
 ---
 
@@ -64,9 +64,16 @@ Active sprint focus: Template designer overhaul — drag-and-drop canvas editor,
 
 - Drag-and-drop visual template designer with text/image/shape/barcode layers
 - Touch-enabled drag, resize, and rotate via unified pointer events (mouse + touch + pen)
+- Icon-based resize/rotate handles (28px touch targets using Move/RotateCcw icons)
+- Undo/redo history stack (50 steps) for all layer operations
+- Gradient backgrounds (linear/radial) for shape layers
+- Glassmorphism effects (backdrop blur + opacity) for shape and image layers
+- Border customization (width, color, style: solid/dashed/dotted) for shape and image layers
 - Rotation handle and rotation reset in layer properties
+- Rotation property in layout panel for legacy element positioning
 - Front/back dual-sided template support with side toggle
 - Template library with save/load/rename/delete/export/import (JSON)
+- Toast notification system for save/load/import/export feedback
 - Import templates from images (PNG/JPG), DOCX, PDF as tracing backgrounds
 - Responsive canvas auto-scaling with zoom controls; non-overflowing on mobile via max-width constraints
 - Wide-screen preview shows interactive template canvas when designer tab is active

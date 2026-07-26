@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-25
+> - last-verified-against-code: 2026-07-26
 > - staleness-policy: re-verify if design tokens change
 
 > **Overview:** Documented UI patterns, design tokens, and conventions used in the HR ID Card Automata.
@@ -19,8 +19,9 @@
 ## Component Patterns
 
 - **Tab Navigation**: Segmented control (pill-style) for switching views — now includes "Designer" tab for canvas editor
-- **Canvas Editor**: Drag-and-drop layer positioning with snap-to-grid (8px), resize handles (SE, S, E), layer panel for z-index/visibility/lock management
-- **Layer Property Panels**: Context-sensitive property inspectors per layer type (text: content/font/color/size, image: upload/fit/radius, shape: type/fill/border/radius, barcode: format/value/color)
+- **Canvas Editor**: Drag-and-drop layer positioning with snap-to-grid (8px), icon-based resize/rotate handles (28px touch targets with lucide-react icons Move/RotateCcw), undo/redo toolbar buttons, keyboard shortcuts (Cmd/Ctrl+Z / +Shift+Z), layer panel for z-index/visibility/lock management
+- **Layer Property Panels**: Context-sensitive property inspectors per layer type (text: content/font/color/size, image: upload/fit/radius/border/glassmorphism, shape: type/fill/gradient/border/radius/glassmorphism, barcode: format/value/color)
+- **Toast Notifications**: Animated success/error/info toasts, auto-dismiss after 3.5 seconds, positioned at bottom-right with z-[100]
 - **Template Library**: Modal with save/load/rename/delete/export/import actions
 - **Cookie Consent**: Fixed bottom banner with Accept/Dismiss, only shown before consent given
 - **Modal Wizard**: Two-step import wizard with back/next navigation
@@ -38,10 +39,10 @@
 
 ## Z-Index Layering
 
-Three-tier convention:
+Four-tier convention:
 - **z-50**: In-page modals (TemplateLibrary, ImportWizard)
 - **z-[60]**: Full-screen overrides (mobile preview overlay, CookieConsent banner)
-- **z-[70]+**: Reserved for future use (toasts, notifications)
+- **z-[100]**: Toast notifications (above everything, fixed position bottom-right)
 
 This prevents overlap issues caused by `backdrop-filter` creating stacking contexts on parent elements.
 
