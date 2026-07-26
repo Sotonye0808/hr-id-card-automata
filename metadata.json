@@ -19,8 +19,6 @@
     "Dynamic SEO meta tag injection (Open Graph, Twitter Cards, JSON-LD)",
     "Full backward compatibility with legacy CardConfig template format",
     "Rotation property in layout panel for element positioning",
-    "Dark/light theme with local persistence",
-    "End-to-end template rendering in PDF/DOCX export: renders designer template layers (gradients, glassmorphism, borders, rotation, front/back sides) via canvas instead of hardcoded layouts",
-    "Full backward-compatible fallback to legacy CardConfig table layout when no designer template layers exist"
+    "Dark/light theme with local persistence"
   ]
 }

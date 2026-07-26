@@ -65,7 +65,6 @@ import {
   migrateCardConfigToDesignerTemplate,
 } from "./lib/templateStore";
 import { injectMetaTags } from "./lib/seo";
-import { renderDesignerTemplateToCanvas } from "./lib/renderTemplateToCanvas";
 import { ToastProvider, useToast } from "./components/Toast";
 
 type WorkspaceTab = "employees" | "template" | "export";
@@ -569,15 +568,6 @@ function AppInner() {
     return `hr-id-cards-${stamp}`;
   }, []);
 
-  const renderEmployeeToCanvas = async (
-    employee: EmployeeRecord,
-    side: "front" | "back",
-  ): Promise<HTMLCanvasElement | null> => {
-    const tpl = designerTemplate;
-    if (!tpl || tpl.layers.length === 0) return null;
-    return renderDesignerTemplateToCanvas(tpl, employee, { side, scale: 2 });
-  };
-
   const exportPdf = async () => {
     if (!employees.length) {
       return;
@@ -599,111 +589,87 @@ function AppInner() {
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
     const contentWidth = pageWidth - margin * 2;
-    const hasDesigner = !!(designerTemplate && designerTemplate.layers.length > 0);
-    const hasBack = hasDesigner && designerTemplate!.hasBackSide && (designerTemplate!.backLayers?.length ?? 0) > 0;
 
     for (const [index, employee] of employees.entries()) {
       if (index > 0) {
         doc.addPage();
       }
 
-      if (hasDesigner) {
-        const frontCanvas = await renderEmployeeToCanvas(employee, "front");
-        if (frontCanvas) {
-          const frontDataUrl = frontCanvas.toDataURL("image/png");
-          const imgWidth = contentWidth;
-          const imgHeight = (frontCanvas.height / frontCanvas.width) * imgWidth;
-          const totalHeight = imgHeight + (hasBack ? imgHeight + 4 : 0);
-          let topOffset = margin;
-          if (totalHeight < pageHeight - margin * 2) {
-            topOffset = margin + (pageHeight - margin * 2 - totalHeight) / 2;
-          }
-          doc.addImage(frontDataUrl, "PNG", margin, topOffset, imgWidth, imgHeight, undefined, "FAST");
-          if (hasBack) {
-            const backCanvas = await renderEmployeeToCanvas(employee, "back");
-            if (backCanvas) {
-              const backDataUrl = backCanvas.toDataURL("image/png");
-              doc.addImage(backDataUrl, "PNG", margin, topOffset + imgHeight + 4, imgWidth, imgHeight, undefined, "FAST");
-            }
-          }
-        }
-      } else {
-        const baseTop = 12;
+      const baseTop = 12;
 
-        doc.setDrawColor(17, 24, 39);
-        doc.setLineWidth(0.4);
-        doc.rect(margin, margin, contentWidth, pageHeight - margin * 2);
+      doc.setDrawColor(17, 24, 39);
+      doc.setLineWidth(0.4);
+      doc.rect(margin, margin, contentWidth, pageHeight - margin * 2);
 
-        const columnY = baseTop + 8;
-        const tableHeight = 18;
-        const columns = [64, 32, contentWidth - 96];
-        const cells = [
-          employee.fullName || "Employee Name",
-          employee.idNumber || "EMP-001",
-          `${employee.department || "Department"} • ${employee.role || "Role"}`,
-        ];
+      const columnY = baseTop + 8;
+      const tableHeight = 18;
+      const columns = [64, 32, contentWidth - 96];
+      const cells = [
+        employee.fullName || "Employee Name",
+        employee.idNumber || "EMP-001",
+        `${employee.department || "Department"} • ${employee.role || "Role"}`,
+      ];
 
-        let currentX = margin;
-        columns.forEach((width, columnIndex) => {
-          doc.rect(currentX, columnY, width, tableHeight);
-          doc.setFontSize(columnIndex === 2 ? 10 : 11);
-          doc.setTextColor(17, 24, 39);
-          const text = doc.splitTextToSize(cells[columnIndex], width - 4);
-          doc.text(text, currentX + 2, columnY + 7);
-          currentX += width;
-        });
+      let currentX = margin;
+      columns.forEach((width, columnIndex) => {
+        doc.rect(currentX, columnY, width, tableHeight);
+        doc.setFontSize(columnIndex === 2 ? 10 : 11);
+        doc.setTextColor(17, 24, 39);
+        const text = doc.splitTextToSize(cells[columnIndex], width - 4);
+        doc.text(text, currentX + 2, columnY + 7);
+        currentX += width;
+      });
 
-        const imageTop = columnY + tableHeight + 8;
-        const imageHeight = 118;
-        doc.rect(margin, imageTop, contentWidth, imageHeight);
+      const imageTop = columnY + tableHeight + 8;
+      const imageHeight = 118;
+      doc.rect(margin, imageTop, contentWidth, imageHeight);
 
-        if (employee.imageUrl) {
-          try {
-            const renderedImage = await renderTransformedImage(
-              employee.imageUrl,
-              employee.imageTransform,
-              Math.round((contentWidth - 2) * 8),
-              Math.round((imageHeight - 2) * 8),
-              employee.imageCrop,
-            );
+      if (employee.imageUrl) {
+        try {
+          const renderedImage = await renderTransformedImage(
+            employee.imageUrl,
+            employee.imageTransform,
+            Math.round((contentWidth - 2) * 8),
+            Math.round((imageHeight - 2) * 8),
+            employee.imageCrop,
+          );
 
-            doc.addImage(
-              renderedImage,
-              "PNG",
-              margin + 1,
-              imageTop + 1,
-              contentWidth - 2,
-              imageHeight - 2,
-              undefined,
-              "FAST",
-            );
-          } catch {
-            doc.setFontSize(12);
-            doc.setTextColor(102, 112, 133);
-            doc.text(
-              "Photo could not be embedded in PDF preview.",
-              margin + 10,
-              imageTop + 58,
-            );
-          }
-        } else {
+          doc.addImage(
+            renderedImage,
+            "PNG",
+            margin + 1,
+            imageTop + 1,
+            contentWidth - 2,
+            imageHeight - 2,
+            undefined,
+            "FAST",
+          );
+        } catch {
           doc.setFontSize(12);
           doc.setTextColor(102, 112, 133);
           doc.text(
-            "Photo placeholder - upload an image to embed it here.",
+            "Photo could not be embedded in PDF preview.",
             margin + 10,
             imageTop + 58,
           );
         }
-
-        doc.setFontSize(9);
-        doc.setTextColor(15, 118, 110);
+      } else {
+        doc.setFontSize(12);
+        doc.setTextColor(102, 112, 133);
         doc.text(
-          `Issue Date: ${employee.issueDate}`,
-          margin + 2,
-          imageTop + imageHeight + 8,
+          "Photo placeholder - upload an image to embed it here.",
+          margin + 10,
+          imageTop + 58,
         );
       }
+
+      doc.setFontSize(9);
+      doc.setTextColor(15, 118, 110);
+      doc.text(
+        `Issue Date: ${employee.issueDate}`,
+        margin + 2,
+        imageTop + imageHeight + 8,
+      );
 
       if (index < employees.length - 1) {
         doc.setFontSize(8);
@@ -750,105 +716,81 @@ function AppInner() {
     await nextFrame();
 
     const children: Array<Paragraph | Table> = [];
-    const hasDesigner = !!(designerTemplate && designerTemplate.layers.length > 0);
-    const hasBack = hasDesigner && designerTemplate!.hasBackSide && (designerTemplate!.backLayers?.length ?? 0) > 0;
 
     for (const [index, employee] of employees.entries()) {
-      if (hasDesigner) {
-        const frontCanvas = await renderEmployeeToCanvas(employee, "front");
-        if (frontCanvas) {
-          const frontDataUrl = frontCanvas.toDataURL("image/png");
+      children.push(
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  width: { size: 35, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph(employee.fullName || "Employee Name"),
+                  ],
+                }),
+                new TableCell({
+                  width: { size: 18, type: WidthType.PERCENTAGE },
+                  children: [new Paragraph(employee.idNumber || "EMP-001")],
+                }),
+                new TableCell({
+                  width: { size: 47, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph(
+                      `${employee.department || "Department"} • ${employee.role || "Role"}`,
+                    ),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+      );
+
+      if (employee.imageUrl) {
+        try {
+          const renderedImage = await renderTransformedImage(
+            employee.imageUrl,
+            employee.imageTransform,
+            1400,
+            980,
+            employee.imageCrop,
+          );
+
           children.push(
             new Paragraph({
               children: [
                 new ImageRun({
-                  data: dataUrlToBytes(frontDataUrl) as any,
-                  transformation: { width: 600, height: Math.round(600 * frontCanvas.height / frontCanvas.width) },
+                  data: dataUrlToBytes(renderedImage) as any,
+                  transformation: { width: 600, height: 420 },
                 } as any),
               ],
             }),
           );
-        }
-        if (hasBack) {
-          const backCanvas = await renderEmployeeToCanvas(employee, "back");
-          if (backCanvas) {
-            const backDataUrl = backCanvas.toDataURL("image/png");
-            children.push(
-              new Paragraph({
-                children: [
-                  new ImageRun({
-                    data: dataUrlToBytes(backDataUrl) as any,
-                    transformation: { width: 600, height: Math.round(600 * backCanvas.height / backCanvas.width) },
-                  } as any),
-                ],
-              }),
-            );
-          }
+        } catch {
+          children.push(
+            new Paragraph("Photo could not be embedded in DOCX export."),
+          );
         }
       } else {
         children.push(
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({
-                    width: { size: 35, type: WidthType.PERCENTAGE },
-                    children: [
-                      new Paragraph(employee.fullName || "Employee Name"),
-                    ],
-                  }),
-                  new TableCell({
-                    width: { size: 18, type: WidthType.PERCENTAGE },
-                    children: [new Paragraph(employee.idNumber || "EMP-001")],
-                  }),
-                  new TableCell({
-                    width: { size: 47, type: WidthType.PERCENTAGE },
-                    children: [
-                      new Paragraph(
-                        `${employee.department || "Department"} • ${employee.role || "Role"}`,
-                      ),
-                    ],
-                  }),
-                ],
-              }),
-            ],
-          }),
+          new Paragraph(
+            "Photo placeholder - upload an image to embed it here.",
+          ),
         );
-
-        if (employee.imageUrl) {
-          try {
-            const renderedImage = await renderTransformedImage(
-              employee.imageUrl,
-              employee.imageTransform,
-              1400,
-              980,
-              employee.imageCrop,
-            );
-
-            children.push(
-              new Paragraph({
-                children: [
-                  new ImageRun({
-                    data: dataUrlToBytes(renderedImage) as any,
-                    transformation: { width: 600, height: 420 },
-                  } as any),
-                ],
-              }),
-            );
-          } catch {
-            children.push(
-              new Paragraph("Photo could not be embedded in DOCX export."),
-            );
-          }
-        } else {
-          children.push(
-            new Paragraph(
-              "Photo placeholder - upload an image to embed it here.",
-            ),
-          );
-        }
       }
+
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `Issue Date: ${employee.issueDate}`,
+              size: 16,
+            }),
+          ],
+        }),
+      );
 
       if (index < employees.length - 1) {
         children.push(new Paragraph({ children: [new PageBreak()] }));
@@ -1167,8 +1109,8 @@ function AppInner() {
                     Generate one file for all selected employees
                   </h2>
                   <p className="mt-1 text-sm text-[var(--muted)]">
-                    PDF and DOCX exports render your designer template (including front/back sides if configured).
-                    Falls back to the legacy document layout if no template layers exist.
+                    PDF and DOCX exports follow the sample document structure:
+                    table row, image block, and issue date footer.
                   </p>
                 </div>
 
@@ -1267,7 +1209,7 @@ function AppInner() {
                 <div>
                   <p className="eyebrow">Live preview</p>
                   <h2 className="mt-1 text-2xl font-black text-[var(--text)]">
-                    {designerTemplate && designerTemplate.layers.length > 0 ? "Template Preview" : "Legacy Sheet Preview"}
+                    Sample-aligned document sheet
                   </h2>
                 </div>
                 <div className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-xs font-semibold text-[var(--muted)]">

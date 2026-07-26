@@ -17,7 +17,7 @@ A privacy-first, offline-capable web application for designing, customizing, and
 - **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, and import from JSON files.
 - **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
 - **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings.
-- **Batch Export** — Generate PDF or DOCX files for all employees in the queue. Export renders your designer template (all layers, gradients, glassmorphism, borders, rotation, front/back sides) via canvas — not a hardcoded table layout. Falls back to legacy format when no designer template is defined.
+- **Batch Export** — Generate PDF or DOCX files for all employees in the queue.
 - **Cookie Consent** — GDPR-compliant banner explaining localStorage usage for theme and template storage.
 - **Dark/Light Theme** — Toggle between dark and light mode with local persistence.
 - **Offline Capable** — Fully client-side. No data leaves the browser. Ready for PWA deployment.
@@ -83,7 +83,6 @@ src/
     ├── employeeStore.ts        # Employee CRUD, CSV/XLSX parse, image pipeline, IndexedDB
     ├── templateStore.ts        # Template CRUD, JSON import/export, legacy migration
     ├── templateImporter.ts     # Image/DOCX/PDF import parsers
-    ├── renderTemplateToCanvas.ts # Canvas-based template rendering for PDF/DOCX export
     └── seo.ts                  # Dynamic meta tag injection
 ```
 
@@ -102,14 +101,9 @@ Template flow:
 ```
 Template Library (save/load) → localStorage (named templates)
                                           ↓
-                               TemplateDesigner ↔ App.tsx state
+                              TemplateDesigner ↔ App.tsx state
                                           ↓
-                          ┌──────────────────┴──────────────────┐
-                          ↓                                     ↓
-                    IDCard (live preview,             Export Pipeline (PDF/DOCX)
-                    front/back toggle)                     ↓
-                                                   renderDesignerTemplateToCanvas()
-                                                   → offscreen canvas → embed in output
+                                    IDCard (live preview)
 ```
 
 ---
@@ -122,7 +116,7 @@ Template Library (save/load) → localStorage (named templates)
 4. **Configure Canvas** — Use the Design and Canvas tabs in the left panel to set canvas dimensions, background color, and typography presets.
 5. **Save Template** — Click the library icon to save your design. Export as JSON for sharing. Toast notifications confirm saves.
 6. **Preview** — The right panel shows a live preview of the card with employee data, including dual-sided front/back support.
-7. **Export** — Go to the Export tab to generate PDF or DOCX for all employees. The export renders your designer template (all layers, gradients, glassmorphism, borders, rotation, front/back sides) via canvas. Falls back to the legacy table layout if no designer template layers exist.
+7. **Export** — Go to the Export tab to generate PDF or DOCX for all employees.
 
 ---
 
