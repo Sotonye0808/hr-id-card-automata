@@ -1,11 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Settings, RotateCcw, Layers, Library, Palette, Move } from "lucide-react";
 import { CardConfig } from "../types";
-import { DesignerTemplate, TemplateMeta } from "../types";
+import { DesignerTemplate } from "../types";
 import TemplateDesigner from "./TemplateDesigner";
 import TemplateLibrary from "./TemplateLibrary";
 import {
-  listTemplates,
   saveTemplate,
   loadTemplate,
   getActiveTemplateId,
@@ -42,18 +41,25 @@ const PALETTE_COLORS: Record<string, string> = {
   Amethyst: "bg-violet-500",
 };
 
-export default function TemplateEditor({ config, onChange, onReset, designerTemplate: externalDesignerTemplate, onDesignerTemplateChange }: TemplateEditorProps) {
-  const [activeTab, setActiveTab] = useState<"design" | "layout" | "designer">("design");
-  const [showLibrary, setShowLibrary] = useState(false);
-
-  const designerTemplate = externalDesignerTemplate ?? (() => {
+function getOrCreateTemplate(config: CardConfig): DesignerTemplate {
+  try {
     const activeId = getActiveTemplateId();
     if (activeId) {
       const saved = loadTemplate(activeId);
       if (saved) return saved;
     }
-    return migrateCardConfigToDesignerTemplate("Default", config);
-  })();
+  } catch {}
+  return migrateCardConfigToDesignerTemplate("Default", config);
+}
+
+export default function TemplateEditor({ config, onChange, onReset, designerTemplate: externalDesignerTemplate, onDesignerTemplateChange }: TemplateEditorProps) {
+  const [activeTab, setActiveTab] = useState<"design" | "layout" | "designer">("design");
+  const [showLibrary, setShowLibrary] = useState(false);
+
+  const designerTemplate = useMemo(
+    () => externalDesignerTemplate ?? getOrCreateTemplate(config),
+    [externalDesignerTemplate, config],
+  );
 
   const handleDesignerChange = useCallback(
     (tpl: DesignerTemplate) => {

@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: update-ai-system
-> - last-verified-against-code: 2026-07-25
+> - last-verified-against-code: 2026-07-26
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
 > **Overview:** High-level architecture of the HR ID Card Automata application — a fully client-side SPA for generating, customizing, and batch-exporting employee ID cards.
@@ -71,7 +71,7 @@ Central state management via React `useState`. Manages:
 | `DataEntry` | Employee form fields + image upload + transform controls | `data, onChange` |
 | `IDCard` | Live card rendering — supports legacy CardConfig and new DesignerTemplate | `config, data, designerTemplate?` |
 | `TemplateEditor` | Combined editor: design tab (fonts/colors), layout tab (sliders), designer tab (canvas editor) | `config, onChange, onReset, designerTemplate?, onDesignerTemplateChange?` |
-| `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate, layer panel, property inspector per layer type, front/back side toggle, responsive auto-zoom | `template, onChange` |
+| `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), layer panel, property inspector per layer type, front/back side toggle, responsive auto-zoom, rotation handle | `template, onChange` |
 | `TemplateLibrary` | Save/load/rename/delete templates, export/import JSON files | `currentTemplate, onLoadTemplate, onClose` |
 | `CookieConsent` | GDPR-compliant banner with Accept/Dismiss, persists consent flag | `onAccept, onDismiss` |
 | `ImportWizard` | Two-step modal: field mapping → row selection | `headers, rawRows, onConfirm, onCancel` |
@@ -123,6 +123,7 @@ Template Library (save/load) → localStorage (named templates list + active tem
 | localStorage + IndexedDB | localStorage for metadata (small), IndexedDB for images (large) |
 | Tab-based navigation | Simple, no routing library needed for single-view app |
 | Canvas-based image pipeline | Full control over crop/scale/offset without external lib |
+| Unified pointer events for drag/resize/rotate | Single event model (`pointerdown`/`pointermove`/`pointerup`) works across mouse, touch, and pen; avoids redundant mouse + touch handler code |
 | All-in-one App.tsx | Single state hub for simplicity (no state management lib) |
 | Layer-based template model | Flexible composition of text/image/shape/barcode elements |
 | Front/back template sides | `hasBackSide` flag + optional `backLayers[]` for dual-sided ID cards |

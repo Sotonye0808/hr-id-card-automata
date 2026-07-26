@@ -41,6 +41,7 @@ import {
 import { CardConfig, EmployeeRecord, ExportProgress, UserData, DesignerTemplate } from "./types";
 import DataEntry from "./components/DataEntry";
 import TemplateEditor from "./components/TemplateEditor";
+import TemplateDesigner from "./components/TemplateDesigner";
 import IDCard from "./components/IDCard.tsx";
 import ImportWizard from "./components/ImportWizard";
 import CookieConsent from "./components/CookieConsent";
@@ -1173,53 +1174,80 @@ export default function App() {
         </section>
 
         <section className="panel hidden min-h-0 flex-col border border-[var(--border)] p-3 shadow-xl lg:flex lg:p-4">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="eyebrow">Live preview</p>
-              <h2 className="mt-1 text-2xl font-black text-[var(--text)]">
-                Sample-aligned document sheet
-              </h2>
-            </div>
-            <div className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-xs font-semibold text-[var(--muted)]">
-              <Clock3 size={14} />
-              {employees.length} item batch
-            </div>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-auto rounded-[28px] border border-[var(--border)] bg-[var(--paper-bg)] p-4 shadow-inner">
-            {selectedEmployee ? (
-              <div className="mx-auto max-w-full">
-                <IDCard config={template} data={selectedEmployee} designerTemplate={designerTemplate ?? undefined} />
-              </div>
-            ) : (
-              <div className="flex h-full min-h-[520px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)]">
-                Add an employee to preview the sheet here.
-              </div>
-            )}
-
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {employees.map((employee, index) => (
-                <div
-                  key={employee.id}
-                  className="rounded-[22px] border border-[var(--border)] bg-white p-4 shadow-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-bold text-[var(--paper-text)]">
-                      {employee.fullName}
-                    </p>
-                    {index === selectedIndex ? (
-                      <CheckCircle2 size={16} className="text-emerald-600" />
-                    ) : null}
-                  </div>
-                  <p className="mt-2 text-xs text-[var(--paper-muted)]">
-                    {employee.idNumber}
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--paper-text)]">
-                    {employee.department || "Department"}
-                  </p>
+          {activeTab === "template" ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="eyebrow">Template Designer</p>
+                  <h2 className="mt-1 text-lg font-black text-[var(--text)]">
+                    Drag, resize & rotate layers
+                  </h2>
                 </div>
-              ))}
+              </div>
+              <div className="min-h-0 flex-1 overflow-hidden rounded-[20px] border border-[var(--border)] bg-white p-2 shadow-inner">
+                {designerTemplate ? (
+                  <TemplateDesigner
+                    template={designerTemplate}
+                    onChange={handleDesignerTemplateChange}
+                  />
+                ) : (
+                  <div className="flex h-full min-h-[400px] items-center justify-center text-sm text-[var(--muted)]">
+                    No template loaded
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="eyebrow">Live preview</p>
+                  <h2 className="mt-1 text-2xl font-black text-[var(--text)]">
+                    Sample-aligned document sheet
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-xs font-semibold text-[var(--muted)]">
+                  <Clock3 size={14} />
+                  {employees.length} item batch
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-auto rounded-[28px] border border-[var(--border)] bg-[var(--paper-bg)] p-4 shadow-inner">
+                {selectedEmployee ? (
+                  <div className="mx-auto max-w-full">
+                    <IDCard config={template} data={selectedEmployee} designerTemplate={designerTemplate ?? undefined} />
+                  </div>
+                ) : (
+                  <div className="flex h-full min-h-[520px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-white/60 text-[var(--muted)]">
+                    Add an employee to preview the sheet here.
+                  </div>
+                )}
+
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  {employees.map((employee, index) => (
+                    <div
+                      key={employee.id}
+                      className="rounded-[22px] border border-[var(--border)] bg-white p-4 shadow-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-bold text-[var(--paper-text)]">
+                          {employee.fullName}
+                        </p>
+                        {index === selectedIndex ? (
+                          <CheckCircle2 size={16} className="text-emerald-600" />
+                        ) : null}
+                      </div>
+                      <p className="mt-2 text-xs text-[var(--paper-muted)]">
+                        {employee.idNumber}
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--paper-text)]">
+                        {employee.department || "Department"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </section>
 
         {isPreviewOpen ? (

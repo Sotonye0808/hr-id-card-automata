@@ -456,6 +456,26 @@
   accent-color: var(--accent);
 }
 
+.designer-canvas-container {
+  touch-action: manipulation;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  overflow: auto !important;
+}
+
+.designer-canvas {
+  touch-action: none;
+  max-width: 100% !important;
+}
+
+@media (max-width: 639px) {
+  .designer-canvas-container {
+    max-width: 100%;
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .color-input {
   width: 100%;
   height: 44px;

@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: update-ai-system
-> - last-verified-against-code: 2026-07-25
+> - last-verified-against-code: 2026-07-26
 > - staleness-policy: auto-regenerable — update when module relationships change
 
 > **Overview:** Module relationships and dependency flow within the HR ID Card Automata codebase.

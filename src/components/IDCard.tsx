@@ -203,10 +203,10 @@ function DesignerIDCard({ template, data, renderedImageUrl, side }: { template: 
         className="relative mx-auto overflow-hidden rounded-[28px] border"
         style={{
           width: template.canvasWidth,
-          height: template.canvasHeight,
+          maxWidth: "100%",
           backgroundColor: template.canvasColor,
           borderColor: "#111827",
-          maxWidth: "100%",
+          aspectRatio: `${template.canvasWidth} / ${template.canvasHeight}`,
         }}>
         {sortedLayers.map((layer) => {
           if (!layer.visible) return null;
@@ -221,6 +221,7 @@ function DesignerIDCard({ template, data, renderedImageUrl, side }: { template: 
                 height: layer.height,
                 zIndex: layer.zIndex,
                 opacity: layer.opacity,
+                transform: layer.rotation ? `rotate(${layer.rotation}deg)` : undefined,
               }}>
               <LayerRenderer layer={layer} data={data} renderedImageUrl={renderedImageUrl} />
             </div>
