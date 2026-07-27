@@ -41,7 +41,7 @@ HR ID Card Automata is a privacy-first, offline-capable web application that ena
 
 Phase: Active Development
 
-Active sprint focus: End-to-end template-export wiring — export renders designer template faithfully via canvas renderer, including front/back sides; employee data entry fields adapt dynamically to template variables.
+Active sprint focus: Custom template variables integration — DataEntry dynamically renders inputs for all {{variable}} placeholders; CSV/XLSX/clipboard import captures unknown columns as customFields; export renderer and preview resolve both standard and custom variables.
 
 ---
 
@@ -81,10 +81,11 @@ Active sprint focus: End-to-end template-export wiring — export renders design
 - Dynamic SEO meta tag injection (Open Graph, Twitter Cards, JSON-LD)
 - Dark/light theme with local persistence
 - Backward compatibility with legacy CardConfig template format
-- Dynamic employee data entry fields based on template text layer variables ({{fullName}}, {{department}}, {{role}}, {{idNumber}}, {{issueDate}})
-- Canvas-based export renderer (`exportRenderer.ts`) that faithfully reproduces designer template layers in PDF/DOCX via canvas drawing
+- Dynamic employee data entry fields based on template text layer variables — standard ({{fullName}}, {{department}}, {{role}}, {{idNumber}}, {{issueDate}}) and custom (any {{variable}} placeholder)
+- Custom template variables stored in `UserData.customFields: Record<string, string>`, auto-captured from CSV/XLSX/clipboard import for unknown header columns
+- Canvas-based export renderer (`exportRenderer.ts`) that faithfully reproduces designer template layers in PDF/DOCX via canvas drawing, resolving both standard and custom variables
 - End-to-end template-export pipeline: designer template → canvas renderer → PDF/DOCX image embedding
-- Back-of-card export: front and back sides rendered as separate pages per employee in both PDF and DOCX
+- Back-of-card export: front and back sides rendered as separate pages per employee in both PDF and DOCX; `hasBackSide` auto-set when back layers added
 
 ---
 

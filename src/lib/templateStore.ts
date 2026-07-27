@@ -152,8 +152,12 @@ export function getTemplateVariables(template: DesignerTemplate): string[] {
       }
     }
   }
-  const known = ["fullName", "department", "role", "idNumber", "issueDate"];
-  return known.filter((v) => vars.has(v));
+  return Array.from(vars);
+}
+
+export function getCustomTemplateVariables(template: DesignerTemplate): string[] {
+  const known = new Set(["fullName", "department", "role", "idNumber", "issueDate"]);
+  return getTemplateVariables(template).filter((v) => !known.has(v));
 }
 
 export function migrateCardConfigToDesignerTemplate(

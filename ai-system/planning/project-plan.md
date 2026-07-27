@@ -44,6 +44,14 @@
 - [x] End-to-end template-export pipeline: designer template → canvas renderer → PDF/DOCX
 - [x] Removed unused imports (TableCell, TableRow, WidthType, AlignmentType from docx)
 
+### Recently Completed
+- [x] Custom template variables: DataEntry dynamically renders inputs for all `{{variable}}` placeholders including custom ones beyond the 5 standard fields
+- [x] CSV/XLSX/clipboard import captures unknown header columns as `customFields` for custom template variables
+- [x] ImportWizard unmapped columns flow into `customFields` instead of being dropped
+- [x] Export renderer resolves arbitrary `{{variable}}` placeholders via `data.customFields`
+- [x] IDCard preview resolves custom variables with extracted `resolveTextVariables()` helper
+- [x] TemplateDesigner auto-sets `hasBackSide` when back layers are added
+
 ### In Progress
 - [ ] Import wizard polish (validation edge cases)
 - [ ] Export pipeline stabilization (progress reporting, error handling)

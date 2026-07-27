@@ -441,54 +441,46 @@ function AppInner() {
         return;
       }
 
-      // Build a map of which columns map to which template fields
-      // headerMapping maps: column index -> column index (the mapping)
-      // We need to determine which columns contain which data
+      const mappedColumnIndices = new Set(headerMapping.values());
+      const handledFields = new Set(["fullName", "department", "role", "idNumber", "issueDate"]);
 
-      // Detect field mappings from headers
-      const detected = detectFieldMappings(headerRow);
-      const fieldToColumnMap = new Map<string, number>();
-
-      // For each detected mapping, record which column index contains that field
-      detected.forEach((mapping) => {
-        const columnIndex = headerRow.indexOf(mapping.sourceHeader);
-        if (columnIndex !== -1) {
-          fieldToColumnMap.set(mapping.targetField, columnIndex);
-        }
-      });
-
-      // Parse the selected data using the detected field mappings
       const importedRows = dataRows.map((row) => {
         const record: Partial<EmployeeRecord> = {};
 
-        // Extract fullName
-        const fullNameIdx = fieldToColumnMap.get("fullName") ?? 0;
-        if (fullNameIdx < row.length && row[fullNameIdx]) {
-          record.fullName = String(row[fullNameIdx]).trim();
+        for (const [field, colIdx] of headerMapping) {
+          if (colIdx === null || colIdx >= row.length) continue;
+          const val = String(row[colIdx]).trim();
+          if (!val) continue;
+
+          switch (field) {
+            case "fullName":
+              record.fullName = val;
+              break;
+            case "department":
+              record.department = val;
+              break;
+            case "role":
+              record.role = val;
+              break;
+            case "idNumber":
+              record.idNumber = val;
+              break;
+            case "issueDate":
+              record.issueDate = val;
+              break;
+          }
         }
 
-        // Extract department
-        const deptIdx = fieldToColumnMap.get("department") ?? -1;
-        if (deptIdx >= 0 && deptIdx < row.length && row[deptIdx]) {
-          record.department = String(row[deptIdx]).trim();
-        }
-
-        // Extract role
-        const roleIdx = fieldToColumnMap.get("role") ?? -1;
-        if (roleIdx >= 0 && roleIdx < row.length && row[roleIdx]) {
-          record.role = String(row[roleIdx]).trim();
-        }
-
-        // Extract idNumber
-        const idIdx = fieldToColumnMap.get("idNumber") ?? -1;
-        if (idIdx >= 0 && idIdx < row.length && row[idIdx]) {
-          record.idNumber = String(row[idIdx]).trim();
-        }
-
-        // Extract issueDate
-        const dateIdx = fieldToColumnMap.get("issueDate") ?? -1;
-        if (dateIdx >= 0 && dateIdx < row.length && row[dateIdx]) {
-          record.issueDate = String(row[dateIdx]).trim();
+        for (let col = 0; col < row.length; col++) {
+          if (mappedColumnIndices.has(col)) continue;
+          const header = headerRow[col];
+          if (!header) continue;
+          const val = String(row[col]).trim();
+          if (!val) continue;
+          record.customFields = {
+            ...(record.customFields ?? {}),
+            [header]: val,
+          };
         }
 
         return record;

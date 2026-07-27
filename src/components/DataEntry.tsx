@@ -83,6 +83,9 @@ export default function DataEntry({ data, onChange, templateVariables }: DataEnt
     });
   };
 
+  const knownVars = new Set(["fullName", "department", "role", "idNumber", "issueDate"]);
+  const customVars = (templateVariables ?? []).filter((v) => !knownVars.has(v));
+
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex items-center justify-between mb-2">
@@ -235,6 +238,28 @@ export default function DataEntry({ data, onChange, templateVariables }: DataEnt
             </div>
             )}
           </div>
+
+          {customVars.map((v) => (
+            <div key={v} className="space-y-1.5">
+              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
+                <UserCircle size={10} /> {v.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}
+              </label>
+              <input
+                type="text"
+                value={data.customFields?.[v] ?? ""}
+                onChange={(e) =>
+                  onChange({
+                    ...data,
+                    customFields: { ...data.customFields, [v]: e.target.value },
+                  })
+                }
+                placeholder={`Enter ${v}`}
+                aria-label={v}
+                title={v}
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+              />
+            </div>
+          ))}
 
           <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
             <div className="flex items-center justify-between gap-3">

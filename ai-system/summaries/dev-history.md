@@ -134,3 +134,18 @@
 - Updated `DataEntry.tsx` to accept `templateVariables` prop — each input field (fullName, role, department, idNumber, issueDate) is now conditionally rendered based on template usage; all fields shown when no template uses variables (backward compatible)
 - Removed unused docx imports (`AlignmentType`, `TableCell`, `TableRow`, `WidthType`) from App.tsx
 - Updated all documentation: README (dynamic fields, export renderer, back side export), metadata.json (new capabilities), system-architecture.md (exportRenderer module, updated export flow), project-context.md (in-scope items), repo-map.md (new file), dependency-graph.md (new dependency), project-plan.md (completed items), dev-history.md (this entry)
+
+## v0.9 — Custom Template Variables & Import Flow Integration
+
+**Date:** 2026-07-26
+
+**Summary:**
+- Added `customFields: Record<string, string>` to `UserData` and `EmployeeRecord` types to support arbitrary template variables beyond the 5 standard fields
+- Updated `getTemplateVariables()` in templateStore.ts to return ALL variables found in text layer `{{placeholders}}`, not just the known subset; added `getCustomTemplateVariables()` helper to separate standard from custom variables
+- `DataEntry.tsx` now dynamically renders inputs for ALL template variables — standard fields (conditional on template usage) plus custom variables with auto-generated labels
+- CSV/XLSX/clipboard parsers (`parseEmployeeCsv`, `parseEmployeeXlsx`, `parseRowsWithHeaders`) now capture unknown header columns into `customFields` instead of being silently dropped
+- `handleImportWizardConfirm` in App.tsx rewritten to use `headerMapping` directly and flow unmapped columns into `customFields`, fixing the gap where wizard-imported data lost custom fields
+- `exportRenderer.ts` `resolveTemplateText()` extended to iterate over `data.customFields` entries and resolve arbitrary `{{variable}}` placeholders in addition to the standard 5
+- `IDCard.tsx` `LayerRenderer` extracted `resolveTextVariables()` helper with the same custom fields resolution logic for consistent live preview
+- `TemplateDesigner` auto-sets `hasBackSide: true` when back layers are added (via `setActiveLayers` and `addLayer`) so back-side exports and preview work without manual flag toggling
+- Updated all documentation to reflect custom variables support, import flow integration, and auto back-side flag

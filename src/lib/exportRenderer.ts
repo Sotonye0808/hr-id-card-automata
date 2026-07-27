@@ -68,12 +68,18 @@ async function renderLayerToContext(
 }
 
 function resolveTemplateText(text: string, data: UserData): string {
-  return text
+  let resolved = text
     .replace(/\{\{fullName\}\}/g, data.fullName)
     .replace(/\{\{department\}\}/g, data.department)
     .replace(/\{\{role\}\}/g, data.role)
     .replace(/\{\{idNumber\}\}/g, data.idNumber)
     .replace(/\{\{issueDate\}\}/g, data.issueDate);
+  if (data.customFields) {
+    for (const [key, value] of Object.entries(data.customFields)) {
+      resolved = resolved.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value ?? "");
+    }
+  }
+  return resolved;
 }
 
 function renderTextLayer(ctx: CanvasRenderingContext2D, layer: TemplateLayer, data: UserData): void {

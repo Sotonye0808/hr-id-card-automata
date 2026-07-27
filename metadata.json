@@ -23,6 +23,7 @@
     "Dynamic employee data entry fields based on template variables ({{fullName}}, {{department}}, {{role}}, {{idNumber}}, {{issueDate}})",
     "Canvas-based export renderer that faithfully reproduces designer template layers (gradients, glassmorphism, borders, rotation) in PDF and DOCX",
     "Back-of-card export: templates with hasBackSide flag render back layers as separate pages in PDF/DOCX",
-    "End-to-end template-export pipeline: designer template → canvas renderer → PDF/DOCX image embedding"
+    "End-to-end template-export pipeline: designer template → canvas renderer → PDF/DOCX image embedding",
+    "Custom template variables: text layers support arbitrary {{variable}} placeholders beyond the 5 standard fields; DataEntry dynamically renders inputs for all template variables; CSV/XLSX import captures unknown columns as customFields"
   ]
 }

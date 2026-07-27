@@ -78,7 +78,11 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       if (activeSide === "front") {
         onChange({ ...template, layers });
       } else {
-        onChange({ ...template, backLayers: layers });
+        onChange({
+          ...template,
+          backLayers: layers,
+          hasBackSide: layers.length > 0,
+        });
       }
     },
     [template, activeSide, onChange],
@@ -186,6 +190,9 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
     (type: LayerType) => {
       const id = crypto.randomUUID?.() ?? `layer-${Date.now()}`;
       const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      if (activeSide === "back" && layers.length === 0) {
+        onChange({ ...template, hasBackSide: true });
+      }
       const maxZ = Math.max(...layers.map((l) => l.zIndex), 0);
       let props: TextLayerProps | ImageLayerProps | ShapeLayerProps | BarcodeLayerProps;
 

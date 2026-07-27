@@ -72,6 +72,7 @@ export function createEmployeeRecord(
             ...createDefaultImageCrop(),
             ...(seed.imageCrop ?? {}),
         },
+        customFields: seed.customFields ?? {},
     };
 }
 
@@ -166,15 +167,18 @@ export function parseEmployeeCsv(text: string): Partial<EmployeeRecord>[] {
 
         row.forEach((cell, index) => {
             const header = headers[index];
+            if (!header) return;
 
             switch (header) {
                 case "fullname":
                 case "name":
                 case "employeename":
+                case "employeenames":
                     record.fullName = cell;
                     break;
                 case "department":
                 case "dept":
+                case "departmentname":
                     record.department = cell;
                     break;
                 case "role":
@@ -244,8 +248,14 @@ export function parseEmployeeCsv(text: string): Partial<EmployeeRecord>[] {
                         height: Number.parseFloat(cell) || 100,
                     };
                     break;
-                default:
+                default: {
+                    const originalHeader = headerRow[index];
+                    record.customFields = {
+                        ...(record.customFields ?? {}),
+                        [originalHeader]: cell,
+                    };
                     break;
+                }
             }
         });
 
@@ -438,7 +448,6 @@ export function parseEmployeeXlsx(buffer: ArrayBuffer): Partial<EmployeeRecord>[
             return [];
         }
 
-        // Get the data as an array of arrays
         const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, {
             header: 1,
             defval: "",
@@ -448,7 +457,6 @@ export function parseEmployeeXlsx(buffer: ArrayBuffer): Partial<EmployeeRecord>[
             return [];
         }
 
-        // Process like CSV: first row is headers, rest are data
         const [headerRow, ...dataRows] = rows;
         const headers = headerRow.map(normalizeHeader);
 
@@ -457,6 +465,7 @@ export function parseEmployeeXlsx(buffer: ArrayBuffer): Partial<EmployeeRecord>[
 
             row.forEach((cell, index) => {
                 const header = headers[index];
+                if (!header) return;
                 const cellValue = String(cell ?? "").trim();
 
                 switch (header) {
@@ -539,8 +548,14 @@ export function parseEmployeeXlsx(buffer: ArrayBuffer): Partial<EmployeeRecord>[
                             height: Number.parseFloat(cellValue) || 100,
                         };
                         break;
-                    default:
+                    default: {
+                        const originalHeader = headerRow[index];
+                        record.customFields = {
+                            ...(record.customFields ?? {}),
+                            [originalHeader]: cellValue,
+                        };
                         break;
+                    }
                 }
             });
 
@@ -593,6 +608,7 @@ function parseRowsWithHeaders(rows: string[][]): Partial<EmployeeRecord>[] {
 
         row.forEach((cell, index) => {
             const header = headers[index];
+            if (!header) return;
             const cellValue = String(cell ?? "").trim();
 
             switch (header) {
@@ -675,8 +691,14 @@ function parseRowsWithHeaders(rows: string[][]): Partial<EmployeeRecord>[] {
                         height: Number.parseFloat(cellValue) || 100,
                     };
                     break;
-                default:
+                default: {
+                    const originalHeader = headerRow[index];
+                    record.customFields = {
+                        ...(record.customFields ?? {}),
+                        [originalHeader]: cellValue,
+                    };
                     break;
+                }
             }
         });
 

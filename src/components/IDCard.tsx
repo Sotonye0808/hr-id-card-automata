@@ -250,16 +250,26 @@ function DesignerIDCard({ template, data, renderedImageUrl, side }: { template: 
   );
 }
 
+function resolveTextVariables(text: string, data: UserData): string {
+  let resolved = text
+    .replace(/\{\{fullName\}\}/g, data.fullName)
+    .replace(/\{\{department\}\}/g, data.department)
+    .replace(/\{\{role\}\}/g, data.role)
+    .replace(/\{\{idNumber\}\}/g, data.idNumber)
+    .replace(/\{\{issueDate\}\}/g, data.issueDate);
+  if (data.customFields) {
+    for (const [key, value] of Object.entries(data.customFields)) {
+      resolved = resolved.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value ?? "");
+    }
+  }
+  return resolved;
+}
+
 function LayerRenderer({ layer, data, renderedImageUrl }: { layer: TemplateLayer; data: UserData; renderedImageUrl: string | null }) {
   switch (layer.type) {
     case "text": {
       const p = layer.props as TextLayerProps;
-      const resolved = p.text
-        .replace(/\{\{fullName\}\}/g, data.fullName)
-        .replace(/\{\{department\}\}/g, data.department)
-        .replace(/\{\{role\}\}/g, data.role)
-        .replace(/\{\{idNumber\}\}/g, data.idNumber)
-        .replace(/\{\{issueDate\}\}/g, data.issueDate);
+      const resolved = resolveTextVariables(p.text, data);
       const bgStyle: React.CSSProperties = {};
       if (p.backgroundGradient && p.backgroundGradient.type !== "none") {
         const colors = p.backgroundGradient.colors.join(", ");

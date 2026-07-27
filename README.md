@@ -18,7 +18,7 @@ A privacy-first, offline-capable web application for designing, customizing, and
 - **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
 - **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings.
 - **Batch Export** — Generate PDF or DOCX files for all employees in the queue.
-- **Dynamic Data Entry** — Employee form fields automatically adapt to variables used in the active template (e.g., `{{fullName}}`, `{{department}}`). Unused fields are hidden for a streamlined workflow.
+- **Dynamic Data Entry** — Employee form fields automatically adapt to variables used in the active template (e.g., `{{fullName}}`, `{{department}}`, `{{location}}`, `{{emergencyContact}}`). Unused fields hidden, custom variables rendered as dynamic inputs.
 - **Canvas-Based Export** — PDF and DOCX exports render the designer template faithfully using a canvas-based renderer, preserving gradients, glassmorphism, borders, and layer layout.
 - **Back Side Export** — Templates with back-of-card layers (`hasBackSide`) are exported as separate pages for each employee in both PDF and DOCX.
 - **Cookie Consent** — GDPR-compliant banner explaining localStorage usage for theme and template storage.
@@ -118,7 +118,7 @@ Export flow:
 Employee data + DesignerTemplate → exportRenderer (canvas draw)
        ↓
   For each employee:
-    render front side layers (text variable substitution: {{fullName}}, {{department}}, etc.)
+    render front side layers (text variable substitution: standard + custom {{variables}})
     render back side layers if hasBackSide
        ↓
   Canvas → data URL → jsPDF (PDF) / docx ImageRun (DOCX)
@@ -128,7 +128,7 @@ Employee data + DesignerTemplate → exportRenderer (canvas draw)
 
 ## Usage
 
-1. **Add Employees** — Use the Employees tab to enter employee data manually or import from CSV/XLSX. Fields shown depend on the active template's variables ({{fullName}}, {{department}}, {{role}}, {{idNumber}}, {{issueDate}}).
+1. **Add Employees** — Use the Employees tab to enter employee data manually or import from CSV/XLSX. Fields shown depend on the active template's variables (both standard: {{fullName}}, {{department}}, {{role}}, {{idNumber}}, {{issueDate}} and any custom variables like {{location}}). Unknown CSV/XLSX columns are automatically captured as custom fields.
 2. **Design Template** — Go to the Template tab. The right panel shows the interactive drag-and-drop canvas. Add text, image, shape, and barcode layers. Drag to position, use icon-based handles to resize/rotate. Undo/redo via toolbar buttons or Ctrl+Z/Ctrl+Shift+Z.
 3. **Style Elements** — Apply gradients, glassmorphism effects, borders, and colors to text, shape, and image layers from the Properties panel on the right.
 4. **Configure Canvas** — Use the Design and Canvas tabs in the left panel to set canvas dimensions, background color, and typography presets.

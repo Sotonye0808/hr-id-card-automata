@@ -95,8 +95,9 @@ Central state management via React `useState`. Manages:
 ### Export Pipeline
 - **PDF**: `jsPDF` — renders designer template to canvas via `exportRenderer.ts`, then embeds canvas image per employee; supports front and back sides (separate pages)
 - **DOCX**: `docx` — renders designer template to canvas via `exportRenderer.ts`, then embeds canvas as `ImageRun` per employee; supports front and back sides
-- **Data Entry**: `DataEntry` component dynamically shows fields based on `getTemplateVariables()` — only variables used in the active template's text layers are displayed
-- **Template Variables**: Text layers support `{{fullName}}`, `{{department}}`, `{{role}}`, `{{idNumber}}`, `{{issueDate}}` substitution in both preview and export
+- **Data Entry**: `DataEntry` component dynamically shows fields based on `getTemplateVariables()` — only variables used in the active template's text layers are displayed, including custom `{{variable}}` placeholders via `customFields: Record<string, string>` on `UserData`
+- **Template Variables**: Text layers support `{{fullName}}`, `{{department}}`, `{{role}}`, `{{idNumber}}`, `{{issueDate}}`, and arbitrary custom `{{variable}}` placeholders substitution in both preview and export; resolved via `resolveTemplateText()` which loops over `data.customFields` entries
+- **Custom Field Import**: CSV/XLSX/clipboard parsers capture unknown header columns as `customFields` entries; ImportWizard flows unmapped columns into `customFields`
 
 ---
 
