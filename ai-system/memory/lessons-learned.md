@@ -52,3 +52,9 @@ For drag-and-drop interactions that need to work across mouse, touch, and pen, u
 When multiple `const` hooks (useCallback, useState, etc.) reference each other, the order of declaration matters. `useCallback` dependency arrays are evaluated immediately when the hook runs. If a dependency refers to a `const` declared **after** the current hook, it is in the temporal dead zone and accessing it throws a `ReferenceError`, causing the component to unmount with a blank page.
 
 Always define dependencies (e.g., `setActiveLayers`) before the callbacks that reference them (`undo`/`redo`). React hooks run in order, so a `useCallback` can safely use a `const` declared earlier in the same render, but not one declared later.
+
+## Lesson 8 — Canvas Rendering for PDF/DOCX Export Embedding
+
+**Date:** 2026-07-28
+
+For PDF/DOCX exports that need to render visual templates, the most reliable approach without external dependencies (html2canvas) is to render layers onto an offscreen `<canvas>` element using native Canvas 2D API, then embed the resulting data URL (PNG) via `jsPDF.addImage()` or `docx` `ImageRun`. Text rendering on canvas requires explicit `ctx.font` setup. Use `ctx.save()`/`ctx.restore()` around each layer for isolated transforms (rotation, opacity). Handle barcodes as styled placeholder text since actual barcode generation would require an additional library. Handle gradients via `createLinearGradient`/`createRadialGradient` and image objectFit via manual aspect-ratio calculations.

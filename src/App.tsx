@@ -424,7 +424,7 @@ function AppInner() {
     }
   };
 
-  const handleImportWizardConfirm = (
+  const handleImportWizardConfirm = async (
     selectedData: string[][],
     headerMapping: Map<string, number | null>,
   ) => {
@@ -444,6 +444,11 @@ function AppInner() {
       // headerMapping maps: column index -> column index (the mapping)
       // We need to determine which columns contain which data
 
+      const { extractTemplateFields } = await import("./lib/templateRenderer");
+      const templateFields = designerTemplate ? extractTemplateFields(designerTemplate) : [];
+      const standardFields = new Set(["fullName", "department", "role", "idNumber", "issueDate", "imageUrl", "imageTransform", "imageCrop", "imagescale", "imageoffsetx", "imageoffsety", "imagecropx", "imagecropy", "imagecropwidth", "imagecropheight"]);
+      const extraTemplateFields = templateFields.filter((f) => !standardFields.has(f));
+
       // Detect field mappings from headers
       const detected = detectFieldMappings(headerRow);
       const fieldToColumnMap = new Map<string, number>();
@@ -456,9 +461,21 @@ function AppInner() {
         }
       });
 
+      // Also detect extra template fields from headers
+      const extraFieldToColumnMap = new Map<string, number>();
+      const normalizedHeaders = headerRow.map((h) => h.trim().toLowerCase().replace(/[^a-z0-9]+/g, ""));
+      for (const field of extraTemplateFields) {
+        const normField = field.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+        const colIdx = normalizedHeaders.findIndex((h) => h === normField || h.includes(normField) || normField.includes(h));
+        if (colIdx >= 0) {
+          extraFieldToColumnMap.set(field, colIdx);
+        }
+      }
+
       // Parse the selected data using the detected field mappings
       const importedRows = dataRows.map((row) => {
         const record: Partial<EmployeeRecord> = {};
+        const extraFields: Record<string, string> = {};
 
         // Extract fullName
         const fullNameIdx = fieldToColumnMap.get("fullName") ?? 0;
@@ -488,6 +505,17 @@ function AppInner() {
         const dateIdx = fieldToColumnMap.get("issueDate") ?? -1;
         if (dateIdx >= 0 && dateIdx < row.length && row[dateIdx]) {
           record.issueDate = String(row[dateIdx]).trim();
+        }
+
+        // Extract extra template fields
+        extraFieldToColumnMap.forEach((colIdx, fieldName) => {
+          if (colIdx < row.length && row[colIdx]) {
+            extraFields[fieldName] = String(row[colIdx]).trim();
+          }
+        });
+
+        if (Object.keys(extraFields).length > 0) {
+          record.extraFields = extraFields;
         }
 
         return record;
@@ -591,97 +619,143 @@ function AppInner() {
     const margin = 14;
     const contentWidth = pageWidth - margin * 2;
 
+    const useDesigner = designerTemplate && designerTemplate.layers.length > 0;
+    const cardWidth = useDesigner ? Math.min(190, contentWidth) : contentWidth;
+    const cardRatio = useDesigner ? designerTemplate!.canvasHeight / designerTemplate!.canvasWidth : 0.65;
+    const cardHeight = useDesigner ? cardWidth * cardRatio : 170;
+
     for (const [index, employee] of employees.entries()) {
       if (index > 0) {
         doc.addPage();
       }
 
-      const baseTop = 12;
-
-      doc.setDrawColor(17, 24, 39);
-      doc.setLineWidth(0.4);
-      doc.rect(margin, margin, contentWidth, pageHeight - margin * 2);
-
-      const columnY = baseTop + 8;
-      const tableHeight = 18;
-      const columns = [64, 32, contentWidth - 96];
-      const cells = [
-        employee.fullName || "Employee Name",
-        employee.idNumber || "EMP-001",
-        `${employee.department || "Department"} • ${employee.role || "Role"}`,
-      ];
-
-      let currentX = margin;
-      columns.forEach((width, columnIndex) => {
-        doc.rect(currentX, columnY, width, tableHeight);
-        doc.setFontSize(columnIndex === 2 ? 10 : 11);
-        doc.setTextColor(17, 24, 39);
-        const text = doc.splitTextToSize(cells[columnIndex], width - 4);
-        doc.text(text, currentX + 2, columnY + 7);
-        currentX += width;
-      });
-
-      const imageTop = columnY + tableHeight + 8;
-      const imageHeight = 118;
-      doc.rect(margin, imageTop, contentWidth, imageHeight);
-
-      if (employee.imageUrl) {
+      if (useDesigner) {
         try {
-          const renderedImage = await renderTransformedImage(
-            employee.imageUrl,
-            employee.imageTransform,
-            Math.round((contentWidth - 2) * 8),
-            Math.round((imageHeight - 2) * 8),
-            employee.imageCrop,
+          const { renderTemplateToCanvas } = await import("./lib/templateRenderer");
+          const frontCanvas = await renderTemplateToCanvas(
+            designerTemplate!,
+            employee,
+            "front",
+            Math.round(cardWidth * 4),
+            Math.round(cardHeight * 4),
           );
+          const frontImage = frontCanvas.toDataURL("image/png");
 
-          doc.addImage(
-            renderedImage,
-            "PNG",
-            margin + 1,
-            imageTop + 1,
-            contentWidth - 2,
-            imageHeight - 2,
-            undefined,
-            "FAST",
+          const cardX = (pageWidth - cardWidth) / 2;
+          const cardY = margin + 8;
+
+          doc.addImage(frontImage, "PNG", cardX, cardY, cardWidth, cardHeight, undefined, "FAST");
+
+          const hasBack = designerTemplate!.hasBackSide && (designerTemplate!.backLayers?.length ?? 0) > 0;
+
+          if (hasBack) {
+            const backCanvas = await renderTemplateToCanvas(
+              designerTemplate!,
+              employee,
+              "back",
+              Math.round(cardWidth * 4),
+              Math.round(cardHeight * 4),
+            );
+            const backImage = backCanvas.toDataURL("image/png");
+
+            doc.addPage();
+            doc.addImage(backImage, "PNG", cardX, cardY, cardWidth, cardHeight, undefined, "FAST");
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text("Back of card", pageWidth / 2, pageHeight - 8, { align: "center" });
+          }
+
+          doc.setFontSize(9);
+          doc.setTextColor(15, 118, 110);
+          doc.text(
+            `${employee.fullName || "Employee"} — ${employee.issueDate || ""}`,
+            margin + 2,
+            pageHeight - 8,
           );
-        } catch {
+        } catch (err) {
           doc.setFontSize(12);
           doc.setTextColor(102, 112, 133);
           doc.text(
-            "Photo could not be embedded in PDF preview.",
+            `Template render failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+            margin + 10,
+            margin + 40,
+          );
+        }
+      } else {
+        const baseTop = 12;
+
+        doc.setDrawColor(17, 24, 39);
+        doc.setLineWidth(0.4);
+        doc.rect(margin, margin, contentWidth, pageHeight - margin * 2);
+
+        const columnY = baseTop + 8;
+        const tableHeight = 18;
+        const columns = [64, 32, contentWidth - 96];
+        const cells = [
+          employee.fullName || "Employee Name",
+          employee.idNumber || "EMP-001",
+          `${employee.department || "Department"} • ${employee.role || "Role"}`,
+        ];
+
+        let currentX = margin;
+        columns.forEach((width, columnIndex) => {
+          doc.rect(currentX, columnY, width, tableHeight);
+          doc.setFontSize(columnIndex === 2 ? 10 : 11);
+          doc.setTextColor(17, 24, 39);
+          const text = doc.splitTextToSize(cells[columnIndex], width - 4);
+          doc.text(text, currentX + 2, columnY + 7);
+          currentX += width;
+        });
+
+        const imageTop = columnY + tableHeight + 8;
+        const imageHeight = 118;
+        doc.rect(margin, imageTop, contentWidth, imageHeight);
+
+        if (employee.imageUrl) {
+          try {
+            const renderedImage = await renderTransformedImage(
+              employee.imageUrl,
+              employee.imageTransform,
+              Math.round((contentWidth - 2) * 8),
+              Math.round((imageHeight - 2) * 8),
+              employee.imageCrop,
+            );
+
+            doc.addImage(
+              renderedImage,
+              "PNG",
+              margin + 1,
+              imageTop + 1,
+              contentWidth - 2,
+              imageHeight - 2,
+              undefined,
+              "FAST",
+            );
+          } catch {
+            doc.setFontSize(12);
+            doc.setTextColor(102, 112, 133);
+            doc.text(
+              "Photo could not be embedded in PDF preview.",
+              margin + 10,
+              imageTop + 58,
+            );
+          }
+        } else {
+          doc.setFontSize(12);
+          doc.setTextColor(102, 112, 133);
+          doc.text(
+            "Photo placeholder - upload an image to embed it here.",
             margin + 10,
             imageTop + 58,
           );
         }
-      } else {
-        doc.setFontSize(12);
-        doc.setTextColor(102, 112, 133);
-        doc.text(
-          "Photo placeholder - upload an image to embed it here.",
-          margin + 10,
-          imageTop + 58,
-        );
-      }
 
-      doc.setFontSize(9);
-      doc.setTextColor(15, 118, 110);
-      doc.text(
-        `Issue Date: ${employee.issueDate}`,
-        margin + 2,
-        imageTop + imageHeight + 8,
-      );
-
-      if (index < employees.length - 1) {
-        doc.setFontSize(8);
-        doc.setTextColor(100, 116, 139);
+        doc.setFontSize(9);
+        doc.setTextColor(15, 118, 110);
         doc.text(
-          `Batch ${index + 1} of ${employees.length}`,
-          pageWidth / 2,
-          pageHeight - 8,
-          {
-            align: "center",
-          },
+          `Issue Date: ${employee.issueDate}`,
+          margin + 2,
+          imageTop + imageHeight + 8,
         );
       }
 
@@ -717,76 +791,143 @@ function AppInner() {
     await nextFrame();
 
     const children: Array<Paragraph | Table> = [];
+    const useDesigner = designerTemplate && designerTemplate.layers.length > 0;
 
     for (const [index, employee] of employees.entries()) {
-      children.push(
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            new TableRow({
-              children: [
-                new TableCell({
-                  width: { size: 35, type: WidthType.PERCENTAGE },
-                  children: [
-                    new Paragraph(employee.fullName || "Employee Name"),
-                  ],
-                }),
-                new TableCell({
-                  width: { size: 18, type: WidthType.PERCENTAGE },
-                  children: [new Paragraph(employee.idNumber || "EMP-001")],
-                }),
-                new TableCell({
-                  width: { size: 47, type: WidthType.PERCENTAGE },
-                  children: [
-                    new Paragraph(
-                      `${employee.department || "Department"} • ${employee.role || "Role"}`,
-                    ),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        }),
-      );
-
-      if (employee.imageUrl) {
+      if (useDesigner) {
         try {
-          const renderedImage = await renderTransformedImage(
-            employee.imageUrl,
-            employee.imageTransform,
-            1400,
-            980,
-            employee.imageCrop,
+          const { renderTemplateToCanvas } = await import("./lib/templateRenderer");
+          const imgWidth = 600;
+          const imgHeight = Math.round(imgWidth * (designerTemplate!.canvasHeight / designerTemplate!.canvasWidth));
+
+          const frontCanvas = await renderTemplateToCanvas(
+            designerTemplate!,
+            employee,
+            "front",
+            imgWidth * 2,
+            imgHeight * 2,
           );
+          const frontImage = frontCanvas.toDataURL("image/png");
 
           children.push(
             new Paragraph({
               children: [
                 new ImageRun({
-                  data: dataUrlToBytes(renderedImage) as any,
-                  transformation: { width: 600, height: 420 },
+                  data: dataUrlToBytes(frontImage) as any,
+                  transformation: { width: imgWidth, height: imgHeight },
                 } as any),
               ],
             }),
           );
-        } catch {
+
+          const hasBack = designerTemplate!.hasBackSide && (designerTemplate!.backLayers?.length ?? 0) > 0;
+
+          if (hasBack) {
+            const backCanvas = await renderTemplateToCanvas(
+              designerTemplate!,
+              employee,
+              "back",
+              imgWidth * 2,
+              imgHeight * 2,
+            );
+            const backImage = backCanvas.toDataURL("image/png");
+
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Back of card", size: 16, bold: true }),
+                ],
+              }),
+            );
+
+            children.push(
+              new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: dataUrlToBytes(backImage) as any,
+                    transformation: { width: imgWidth, height: imgHeight },
+                  } as any),
+                ],
+              }),
+            );
+          }
+        } catch (err) {
           children.push(
-            new Paragraph("Photo could not be embedded in DOCX export."),
+            new Paragraph(
+              `Template render failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+            ),
           );
         }
       } else {
         children.push(
-          new Paragraph(
-            "Photo placeholder - upload an image to embed it here.",
-          ),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 35, type: WidthType.PERCENTAGE },
+                    children: [
+                      new Paragraph(employee.fullName || "Employee Name"),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 18, type: WidthType.PERCENTAGE },
+                    children: [new Paragraph(employee.idNumber || "EMP-001")],
+                  }),
+                  new TableCell({
+                    width: { size: 47, type: WidthType.PERCENTAGE },
+                    children: [
+                      new Paragraph(
+                        `${employee.department || "Department"} • ${employee.role || "Role"}`,
+                      ),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
         );
+
+        if (employee.imageUrl) {
+          try {
+            const renderedImage = await renderTransformedImage(
+              employee.imageUrl,
+              employee.imageTransform,
+              1400,
+              980,
+              employee.imageCrop,
+            );
+
+            children.push(
+              new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: dataUrlToBytes(renderedImage) as any,
+                    transformation: { width: 600, height: 420 },
+                  } as any),
+                ],
+              }),
+            );
+          } catch {
+            children.push(
+              new Paragraph("Photo could not be embedded in DOCX export."),
+            );
+          }
+        } else {
+          children.push(
+            new Paragraph(
+              "Photo placeholder - upload an image to embed it here.",
+            ),
+          );
+        }
       }
 
       children.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: `Issue Date: ${employee.issueDate}`,
+              text: `${employee.fullName || "Employee"} — ${employee.issueDate}`,
               size: 16,
             }),
           ],
@@ -971,6 +1112,7 @@ function AppInner() {
                   <DataEntry
                     data={selectedEmployee}
                     onChange={updateSelectedEmployee}
+                    designerTemplate={designerTemplate}
                   />
                 </div>
 

@@ -16,8 +16,11 @@ A privacy-first, offline-capable web application for designing, customizing, and
 - **Toast Notifications** — Subtle feedback toasts for save, load, import, export, and other actions.
 - **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, and import from JSON files.
 - **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
-- **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings.
-- **Batch Export** — Generate PDF or DOCX files for all employees in the queue.
+- **Dynamic Employee Data Entry** — Employee form dynamically shows input fields based on `{{variable}}` placeholders found in template text layers. Supports custom fields beyond the standard 5.
+- **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings including extra template fields.
+- **Template-Based Batch Export** — PDF and DOCX exports render the designer template (front and back) per employee using a canvas-based renderer. Falls back to legacy layout when no designer template exists.
+- **Front/Back Card Export** — When templates have a back side, PDF and DOCX exports automatically include the back of each card.
+- **Live Preview with Front/Back Toggle** — Preview cards with front and back side toggling.
 - **Cookie Consent** — GDPR-compliant banner explaining localStorage usage for theme and template storage.
 - **Dark/Light Theme** — Toggle between dark and light mode with local persistence.
 - **Offline Capable** — Fully client-side. No data leaves the browser. Ready for PWA deployment.
@@ -82,6 +85,7 @@ src/
 └── lib/
     ├── employeeStore.ts        # Employee CRUD, CSV/XLSX parse, image pipeline, IndexedDB
     ├── templateStore.ts        # Template CRUD, JSON import/export, legacy migration
+    ├── templateRenderer.ts     # Canvas-based template rendering for PDF/DOCX exports
     ├── templateImporter.ts     # Image/DOCX/PDF import parsers
     └── seo.ts                  # Dynamic meta tag injection
 ```
@@ -114,8 +118,9 @@ Template Library (save/load) → localStorage (named templates)
 2. **Design Template** — Go to the Template tab. Use the "Designer" tab to open the drag-and-drop canvas. Add text, image, shape, and barcode layers. Drag to position, use icon-based handles to resize/rotate. Undo/redo via toolbar buttons.
 3. **Style Elements** — Apply gradients, glassmorphism effects, and borders to shape and image layers from the Properties panel. Set rotation in the Layout tab.
 4. **Save Template** — Click the library icon to save your design. Export as JSON for sharing. Toast notifications confirm saves.
-5. **Preview** — The right panel shows a live preview of the card with employee data.
-6. **Export** — Go to the Export tab to generate PDF or DOCX for all employees.
+5. **Preview** — The right panel shows a live preview of the card with employee data. Toggle between front and back when the template has both sides.
+6. **Dynamic Fields** — If the template has `{{variable}}` placeholders in text layers (e.g., `{{bloodGroup}}`, `{{employeeCode}}`), the employee form automatically shows input fields for those. No manual setup needed.
+7. **Export** — Go to the Export tab to generate PDF or DOCX for all employees. Exports render the full designer template (front and back) as embedded card images.
 
 ---
 

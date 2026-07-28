@@ -8,6 +8,7 @@ import {
     EmployeeImageCrop,
     EmployeeImageTransform,
     EmployeeRecord,
+    UserData,
 } from "../types";
 
 export interface PersistedBatchState {
@@ -50,14 +51,14 @@ export function createEmployeeId() {
 }
 
 export function createEmployeeRecord(
-    seed: Partial<EmployeeRecord>,
+    seed: Partial<EmployeeRecord> | Partial<UserData>,
     index: number,
 ): EmployeeRecord {
-    const id = seed.id ?? createEmployeeId();
+    const id = (seed as Partial<EmployeeRecord>).id ?? createEmployeeId();
 
     return {
         id,
-        employeeId: seed.employeeId ?? seed.idNumber ?? id,
+        employeeId: (seed as Partial<EmployeeRecord>).employeeId ?? (seed as Partial<UserData>).idNumber ?? id,
         fullName: seed.fullName ?? `New Employee ${index + 1}`,
         department: seed.department ?? "",
         role: seed.role ?? "",
@@ -72,6 +73,7 @@ export function createEmployeeRecord(
             ...createDefaultImageCrop(),
             ...(seed.imageCrop ?? {}),
         },
+        extraFields: seed.extraFields ?? {},
     };
 }
 

@@ -103,3 +103,17 @@
 - Fixed critical blank-page crash in TemplateDesigner: `undo`/`redo` `useCallback` deps referenced `setActiveLayers` before its `const` declaration, hitting the temporal dead zone and throwing a `ReferenceError` during render. Reordered hook definitions so `setActiveLayers` is defined before `undo`/`redo`.
 - Removed duplicate `activeLayers`/`setActiveLayers`/`currentLayers` variables that were left after the reorder.
 - Updated all ai-system docs: dev-history (this entry), lessons-learned (TDZ lesson), task-queue (fix item), repo-map freshness
+
+## v0.7 — Dynamic DataEntry & Template-Based Exports
+
+**Date:** 2026-07-28
+
+**Summary:**
+- Made employee DataEntry dynamic: accepts `designerTemplate` prop, scans text layers for `{{variable}}` placeholders, and renders input fields for non-standard variables automatically
+- Added `extraFields: Record<string, string>` to `UserData`/`EmployeeRecord` types for storing custom template field values
+- Created `templateRenderer.ts` — canvas-based renderer for designer templates that renders text/shape/image/barcode layers (with gradient and glassmorphism support) to offscreen canvas for PDF/DOCX embedding
+- Updated PDF export to use `templateRenderer.ts`: renders front and back of card as embedded images per employee, with fallback to legacy layout
+- Updated DOCX export to use `templateRenderer.ts`: embeds front and back card images, with legacy fallback
+- Updated CSV/XLSX import: extra template fields detected and mapped to `extraFields` on employee records during import wizard confirmation
+- Updated IDCard text layer resolution to handle `{{extraField}}` variables via `data.extraFields`
+- All ai-system docs refreshed: system-architecture (templateRenderer, export pipeline), project-context (dynamic DataEntry, template-based exports), task-queue (new tasks), project-plan (completed items), dev-history (this entry)

@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-26
+> - last-verified-against-code: 2026-07-28
 > - staleness-policy: update after each sprint
 
 > **Overview:** High-level feature checklist and development roadmap.
@@ -31,6 +31,10 @@
 - [x] Responsive mobile layout with overlay preview
 - [x] Responsive canvas auto-scaling with zoom controls
 - [x] Front/back dual-sided template support
+- [x] Dynamic DataEntry based on template text layer variables
+- [x] Canvas-based template renderer for exports
+- [x] Front/back card sides in PDF/DOCX exports
+- [x] Template-aware CSV import with extra field mapping
 
 ### In Progress
 - [ ] Import wizard polish (validation edge cases)

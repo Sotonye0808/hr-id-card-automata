@@ -16,15 +16,23 @@ import {
   RotateCcw,
   ZoomIn,
   Crop,
+  Variable,
 } from "lucide-react";
-import { UserData } from "../types";
+import { UserData, DesignerTemplate, TextLayerProps } from "../types";
+import { extractTemplateFields } from "../lib/templateRenderer";
 
 interface DataEntryProps {
   data: UserData;
   onChange: (data: UserData) => void;
+  designerTemplate?: DesignerTemplate | null;
 }
 
-export default function DataEntry({ data, onChange }: DataEntryProps) {
+const STANDARD_FIELDS = new Set(["fullName", "department", "role", "idNumber", "issueDate"]);
+
+export default function DataEntry({ data, onChange, designerTemplate }: DataEntryProps) {
+  const templateFields = designerTemplate ? extractTemplateFields(designerTemplate) : [];
+  const extraFields = templateFields.filter((f) => !STANDARD_FIELDS.has(f));
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -79,6 +87,13 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
     onChange({
       ...data,
       imageCrop: nextCrop,
+    });
+  };
+
+  const updateExtraField = (fieldName: string, value: string) => {
+    onChange({
+      ...data,
+      extraFields: { ...(data.extraFields ?? {}), [fieldName]: value },
     });
   };
 
@@ -224,6 +239,33 @@ export default function DataEntry({ data, onChange }: DataEntryProps) {
               />
             </div>
           </div>
+
+          {extraFields.length > 0 && (
+            <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--accent-soft)]/10 p-3">
+              <div className="flex items-center gap-2">
+                <Variable size={10} className="text-[var(--accent)]" />
+                <label className="text-[10px] font-bold text-[var(--muted)] uppercase">
+                  Template Fields
+                </label>
+              </div>
+              {extraFields.map((field) => (
+                <div key={field} className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
+                    <Variable size={10} /> {field.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}
+                  </label>
+                  <input
+                    type="text"
+                    value={data.extraFields?.[field] ?? ""}
+                    onChange={(e) => updateExtraField(field, e.target.value)}
+                    placeholder={`Enter ${field}`}
+                    aria-label={field}
+                    title={field}
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
             <div className="flex items-center justify-between gap-3">

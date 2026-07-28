@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-26
+> - last-verified-against-code: 2026-07-28
 > - staleness-policy: update as tasks are completed or added
 
 > **Overview:** Immediate actionable tasks, ordered by priority.
@@ -45,6 +45,11 @@
 | P1 | M | **Rotation in layout panel** — added rotation slider to legacy element position controls | Complete |
 | P1 | M | **Enhanced design panel** — element weight/rounded controls, additional palette color | Complete |
 | P0 | M | **Fix TemplateDesigner blank page crash** — `undo`/`redo` useCallback referenced `setActiveLayers` before declaration (TDZ ReferenceError). Reordered hook definitions. | Complete |
+| P0 | M | **Dynamic employee DataEntry based on template** — DataEntry now accepts `designerTemplate`, extracts `{{variable}}` placeholders from text layers, and dynamically shows input fields for non-standard variables. Extra fields stored in `data.extraFields`. | Complete |
+| P0 | M | **Canvas-based template renderer** — new `src/lib/templateRenderer.ts` renders designer template layers (text/shape/image/barcode) to offscreen canvas with gradient/glassmorphism support for PDF/DOCX export embedding | Complete |
+| P0 | M | **Template-based PDF/DOCX exports** — PDF and DOCX exports now use `templateRenderer.ts` to render designer template (front + back) as embedded images per employee. Falls back to legacy layout when no designer template. | Complete |
+| P0 | M | **Template-aware CSV import** — extra template fields detected during CSV import and mapped to `extraFields` on employee records | Complete |
+| P2 | M | **PDF/DOCX export progress refinements** — better progress reporting during canvas-based rendering | Pending |
 | P3 | S | **Clean up unused deps** — express, @google/genai, dotenv (not in package.json — already clean) | N/A |
 | P3 | M | **Service Worker / PWA manifest** — offline support, app icon, theme-color | Pending |
 | P2 | M | Wire ActivityBoard component to real app state | Pending |
