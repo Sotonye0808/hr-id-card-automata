@@ -241,7 +241,8 @@ function LayerRenderer({ layer, data, renderedImageUrl }: { layer: TemplateLayer
         .replace(/\{\{department\}\}/g, data.department)
         .replace(/\{\{role\}\}/g, data.role)
         .replace(/\{\{idNumber\}\}/g, data.idNumber)
-        .replace(/\{\{issueDate\}\}/g, data.issueDate);
+        .replace(/\{\{issueDate\}\}/g, data.issueDate)
+        .replace(/\{\{(\w+)\}\}/g, (_, name) => data.extraFields?.[name] ?? "");
       return (
         <div
           className="flex h-full w-full items-center overflow-hidden px-1"

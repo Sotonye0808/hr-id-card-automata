@@ -39,6 +39,7 @@ export interface UserData {
   issueDate: string;
   imageTransform: EmployeeImageTransform;
   imageCrop: EmployeeImageCrop;
+  extraFields?: Record<string, string>;
 }
 
 export interface EmployeeImageTransform {
