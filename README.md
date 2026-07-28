@@ -16,7 +16,7 @@ A privacy-first, offline-capable web application for designing, customizing, and
 - **Toast Notifications** — Subtle feedback toasts for save, load, import, export, and other actions.
 - **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, and import from JSON files.
 - **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
-- **Dynamic Employee Data Entry** — Employee form dynamically shows input fields based on `{{variable}}` placeholders found in template text layers. Supports custom fields beyond the standard 5.
+- **Dynamic Employee Data Entry** — Employee form dynamically shows input fields based on `{{variable}}` placeholders found in template text layers. Only fields used in the active template are shown. Supports custom fields beyond the standard 5.
 - **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings including extra template fields.
 - **Template-Based Batch Export** — PDF and DOCX exports render the designer template (front and back) per employee using a canvas-based renderer. Falls back to legacy layout when no designer template exists.
 - **Front/Back Card Export** — When templates have a back side, PDF and DOCX exports automatically include the back of each card.
@@ -114,12 +114,12 @@ Template Library (save/load) → localStorage (named templates)
 
 ## Usage
 
-1. **Add Employees** — Use the Employees tab to enter employee data manually or import from CSV/XLSX.
+1. **Add Employees** — Use the Employees tab to enter employee data manually or import from CSV/XLSX. Start with an empty batch and add rows as needed.
 2. **Design Template** — Go to the Template tab. Use the "Designer" tab to open the drag-and-drop canvas. Add text, image, shape, and barcode layers. Drag to position, use icon-based handles to resize/rotate. Undo/redo via toolbar buttons.
 3. **Style Elements** — Apply gradients, glassmorphism effects, and borders to shape and image layers from the Properties panel. Set rotation in the Layout tab.
 4. **Save Template** — Click the library icon to save your design. Export as JSON for sharing. Toast notifications confirm saves.
 5. **Preview** — The right panel shows a live preview of the card with employee data. Toggle between front and back when the template has both sides.
-6. **Dynamic Fields** — If the template has `{{variable}}` placeholders in text layers (e.g., `{{bloodGroup}}`, `{{employeeCode}}`), the employee form automatically shows input fields for those. No manual setup needed.
+6. **Dynamic Fields** — The employee entry form shows only fields that are referenced in the active designer template's text layers via `{{variable}}` placeholders. Both standard (fullName, department, role, idNumber, issueDate) and custom fields appear automatically based on template content. When no designer template is active, all standard fields are shown for backward compatibility.
 7. **Export** — Go to the Export tab to generate PDF or DOCX for all employees. Exports render the full designer template (front and back) as embedded card images.
 
 ---

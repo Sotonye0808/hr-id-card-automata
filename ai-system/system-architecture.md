@@ -68,7 +68,7 @@ Central state management via React `useState`. Manages:
 ### Components
 | Component | Responsibility | Props |
 |-----------|---------------|-------|
-| `DataEntry` | Employee form fields + image upload + transform controls — dynamically shows fields based on template text layer variables | `data, onChange, designerTemplate?` |
+| `DataEntry` | Employee form fields + image upload + transform controls — shows only fields referenced in active designer template text layers (`{{variable}}` placeholders); falls back to all standard fields when no template | `data, onChange, designerTemplate?` |
 | `IDCard` | Live card rendering — supports legacy CardConfig and new DesignerTemplate | `config, data, designerTemplate?` |
 | `TemplateEditor` | Combined editor: design tab (fonts/colors), layout tab (sliders), designer tab (canvas editor) | `config, onChange, onReset, designerTemplate?, onDesignerTemplateChange?` |
 | `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), undo/redo history (50 steps), icon-based resize/rotate handles (larger for touch), layer panel, property inspector per layer type (including gradient, glassmorphism, border controls), front/back side toggle, responsive auto-zoom | `template, onChange` |

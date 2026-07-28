@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from "react";
 import {
   UserCircle,
@@ -18,7 +13,7 @@ import {
   Crop,
   Variable,
 } from "lucide-react";
-import { UserData, DesignerTemplate, TextLayerProps } from "../types";
+import { UserData, DesignerTemplate } from "../types";
 import { extractTemplateFields } from "../lib/templateRenderer";
 
 interface DataEntryProps {
@@ -27,11 +22,27 @@ interface DataEntryProps {
   designerTemplate?: DesignerTemplate | null;
 }
 
-const STANDARD_FIELDS = new Set(["fullName", "department", "role", "idNumber", "issueDate"]);
+const STANDARD_FIELDS: Record<string, { label: string; icon: React.ReactNode; placeholder: string; type?: string }> = {
+  fullName: { label: "Full Legal Name", icon: <UserCircle size={10} />, placeholder: "e.g. Alexandru Sterling" },
+  role: { label: "Professional Role", icon: <Briefcase size={10} />, placeholder: "e.g. Systems Architect" },
+  department: { label: "Department", icon: <Building2 size={10} />, placeholder: "e.g. Communications" },
+  idNumber: { label: "Serial ID", icon: <Hash size={10} />, placeholder: "AIS-01" },
+  issueDate: { label: "Date Issued", icon: <Calendar size={10} />, placeholder: "", type: "date" },
+};
 
 export default function DataEntry({ data, onChange, designerTemplate }: DataEntryProps) {
   const templateFields = designerTemplate ? extractTemplateFields(designerTemplate) : [];
-  const extraFields = templateFields.filter((f) => !STANDARD_FIELDS.has(f));
+  const templateFieldSet = new Set(templateFields);
+
+  const hasDesigner = designerTemplate && designerTemplate.layers.length > 0;
+
+  const activeStandardFields = hasDesigner
+    ? Object.entries(STANDARD_FIELDS).filter(([key]) => templateFieldSet.has(key))
+    : Object.entries(STANDARD_FIELDS);
+
+  const extraFields = hasDesigner
+    ? templateFields.filter((f) => !STANDARD_FIELDS[f])
+    : [];
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,11 +101,24 @@ export default function DataEntry({ data, onChange, designerTemplate }: DataEntr
     });
   };
 
-  const updateExtraField = (fieldName: string, value: string) => {
-    onChange({
-      ...data,
-      extraFields: { ...(data.extraFields ?? {}), [fieldName]: value },
-    });
+  const updateField = (field: string, value: string) => {
+    if (field in STANDARD_FIELDS) {
+      onChange({ ...data, [field]: value });
+    } else {
+      onChange({
+        ...data,
+        extraFields: { ...(data.extraFields ?? {}), [field]: value },
+      });
+    }
+  };
+
+  const getFieldValue = (field: string): string => {
+    if (field === "fullName") return data.fullName;
+    if (field === "department") return data.department;
+    if (field === "role") return data.role;
+    if (field === "idNumber") return data.idNumber;
+    if (field === "issueDate") return data.issueDate;
+    return data.extraFields?.[field] ?? "";
   };
 
   return (
@@ -104,10 +128,62 @@ export default function DataEntry({ data, onChange, designerTemplate }: DataEntr
           <UserCircle size={12} className="text-[var(--accent)]" />
           Employee Entry
         </h2>
+        {hasDesigner && (
+          <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-wider">
+            Template-driven
+          </span>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-5">
-        {/* Profile Image Upload */}
+        {activeStandardFields.length > 0 && (
+          <div className="space-y-4">
+            {activeStandardFields.map(([key, field]) => (
+              <div key={key} className="space-y-1.5">
+                <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
+                  {field.icon} {field.label}
+                </label>
+                <input
+                  type={field.type || "text"}
+                  value={getFieldValue(key)}
+                  onChange={(e) => updateField(key, e.target.value)}
+                  placeholder={field.placeholder}
+                  aria-label={field.label}
+                  title={field.label}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {extraFields.length > 0 && (
+          <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--accent-soft)]/10 p-3">
+            <div className="flex items-center gap-2">
+              <Variable size={10} className="text-[var(--accent)]" />
+              <label className="text-[10px] font-bold text-[var(--muted)] uppercase">
+                Template Fields
+              </label>
+            </div>
+            {extraFields.map((field) => (
+              <div key={field} className="space-y-1.5">
+                <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
+                  <Variable size={10} /> {field.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}
+                </label>
+                <input
+                  type="text"
+                  value={getFieldValue(field)}
+                  onChange={(e) => updateField(field, e.target.value)}
+                  placeholder={`Enter ${field}`}
+                  aria-label={field}
+                  title={field}
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="space-y-3">
           <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
             <ImageIcon size={12} /> Profile Media
@@ -157,272 +233,161 @@ export default function DataEntry({ data, onChange, designerTemplate }: DataEntr
           </div>
         </div>
 
-        {/* Text Inputs */}
-        <div className="space-y-4">
-          <div className="space-y-1.5">
+        <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
+          <div className="flex items-center justify-between gap-3">
             <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
-              <UserCircle size={10} /> Full Legal Name
+              <MoveHorizontal size={10} /> Image Position
             </label>
-            <input
-              type="text"
-              value={data.fullName}
-              onChange={(e) => onChange({ ...data, fullName: e.target.value })}
-              placeholder="e.g. Alexandru Sterling"
-              aria-label="Full legal name"
-              title="Full legal name"
-              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
-              <Briefcase size={10} /> Professional Role
-            </label>
-            <input
-              type="text"
-              value={data.role}
-              onChange={(e) => onChange({ ...data, role: e.target.value })}
-              placeholder="e.g. Systems Architect"
-              aria-label="Professional role"
-              title="Professional role"
-              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
-              <Building2 size={10} /> Department
-            </label>
-            <input
-              type="text"
-              value={data.department}
-              onChange={(e) =>
-                onChange({ ...data, department: e.target.value })
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...data,
+                  imageTransform: { scale: 1, offsetX: 0, offsetY: 0 },
+                })
               }
-              placeholder="e.g. Communications"
-              aria-label="Department"
-              title="Department"
-              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-            />
+              className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1">
+              <RotateCcw size={10} /> Reset
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
-                <Hash size={10} /> Serial ID
-              </label>
+          {[
+            {
+              label: "Scale",
+              key: "scale" as const,
+              icon: ZoomIn,
+              min: 0.75,
+              max: 1.75,
+              step: 0.05,
+              value: data.imageTransform.scale,
+            },
+            {
+              label: "Offset X",
+              key: "offsetX" as const,
+              icon: MoveHorizontal,
+              min: -100,
+              max: 100,
+              step: 1,
+              value: data.imageTransform.offsetX,
+            },
+            {
+              label: "Offset Y",
+              key: "offsetY" as const,
+              icon: MoveHorizontal,
+              min: -100,
+              max: 100,
+              step: 1,
+              value: data.imageTransform.offsetY,
+            },
+          ].map((control) => (
+            <div key={control.label} className="space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                <span className="flex items-center gap-1.5">
+                  <control.icon size={10} /> {control.label}
+                </span>
+                <span>
+                  {control.key === "scale"
+                    ? `${control.value.toFixed(2)}x`
+                    : `${control.value}px`}
+                </span>
+              </div>
               <input
-                type="text"
-                value={data.idNumber}
-                onChange={(e) =>
-                  onChange({ ...data, idNumber: e.target.value })
+                type="range"
+                min={control.min}
+                max={control.max}
+                step={control.step}
+                value={control.value}
+                onChange={(event) =>
+                  updateTransform(
+                    control.key,
+                    control.key === "scale"
+                      ? Number.parseFloat(event.target.value)
+                      : Number.parseInt(event.target.value, 10),
+                  )
                 }
-                placeholder="AIS-01"
-                aria-label="Employee ID"
-                title="Employee ID"
-                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] font-mono focus:outline-none focus:border-[var(--accent)] transition-colors"
+                aria-label={control.label}
+                title={control.label}
+                className="w-full accent-[var(--accent)] h-1 bg-[var(--border)] rounded-lg appearance-none cursor-pointer"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
-                <Calendar size={10} /> Date Issued
-              </label>
+          ))}
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
+              <Crop size={10} /> Crop Window
+            </label>
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...data,
+                  imageCrop: { x: 0, y: 0, width: 100, height: 100 },
+                })
+              }
+              className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1">
+              <RotateCcw size={10} /> Reset
+            </button>
+          </div>
+
+          {[
+            {
+              label: "Crop X",
+              key: "x" as const,
+              min: 0,
+              max: Math.max(5, 100 - data.imageCrop.width),
+              step: 1,
+              value: data.imageCrop.x,
+            },
+            {
+              label: "Crop Y",
+              key: "y" as const,
+              min: 0,
+              max: Math.max(5, 100 - data.imageCrop.height),
+              step: 1,
+              value: data.imageCrop.y,
+            },
+            {
+              label: "Crop Width",
+              key: "width" as const,
+              min: 20,
+              max: 100 - data.imageCrop.x,
+              step: 1,
+              value: data.imageCrop.width,
+            },
+            {
+              label: "Crop Height",
+              key: "height" as const,
+              min: 20,
+              max: 100 - data.imageCrop.y,
+              step: 1,
+              value: data.imageCrop.height,
+            },
+          ].map((control) => (
+            <div key={control.label} className="space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                <span>{control.label}</span>
+                <span>{control.value}%</span>
+              </div>
               <input
-                type="date"
-                value={data.issueDate}
-                onChange={(e) =>
-                  onChange({ ...data, issueDate: e.target.value })
+                type="range"
+                min={control.min}
+                max={control.max}
+                step={control.step}
+                value={control.value}
+                onChange={(event) =>
+                  updateCrop(
+                    control.key,
+                    Number.parseInt(event.target.value, 10),
+                  )
                 }
-                aria-label="Date issued"
-                title="Date issued"
-                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                aria-label={control.label}
+                title={control.label}
+                className="w-full accent-[var(--accent)] h-1 bg-[var(--border)] rounded-lg appearance-none cursor-pointer"
               />
             </div>
-          </div>
-
-          {extraFields.length > 0 && (
-            <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--accent-soft)]/10 p-3">
-              <div className="flex items-center gap-2">
-                <Variable size={10} className="text-[var(--accent)]" />
-                <label className="text-[10px] font-bold text-[var(--muted)] uppercase">
-                  Template Fields
-                </label>
-              </div>
-              {extraFields.map((field) => (
-                <div key={field} className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
-                    <Variable size={10} /> {field.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}
-                  </label>
-                  <input
-                    type="text"
-                    value={data.extraFields?.[field] ?? ""}
-                    onChange={(e) => updateExtraField(field, e.target.value)}
-                    placeholder={`Enter ${field}`}
-                    aria-label={field}
-                    title={field}
-                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] transition-colors"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
-            <div className="flex items-center justify-between gap-3">
-              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
-                <MoveHorizontal size={10} /> Image Position
-              </label>
-              <button
-                type="button"
-                onClick={() =>
-                  onChange({
-                    ...data,
-                    imageTransform: { scale: 1, offsetX: 0, offsetY: 0 },
-                  })
-                }
-                className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1">
-                <RotateCcw size={10} /> Reset
-              </button>
-            </div>
-
-            {[
-              {
-                label: "Scale",
-                key: "scale" as const,
-                icon: ZoomIn,
-                min: 0.75,
-                max: 1.75,
-                step: 0.05,
-                value: data.imageTransform.scale,
-              },
-              {
-                label: "Offset X",
-                key: "offsetX" as const,
-                icon: MoveHorizontal,
-                min: -100,
-                max: 100,
-                step: 1,
-                value: data.imageTransform.offsetX,
-              },
-              {
-                label: "Offset Y",
-                key: "offsetY" as const,
-                icon: MoveHorizontal,
-                min: -100,
-                max: 100,
-                step: 1,
-                value: data.imageTransform.offsetY,
-              },
-            ].map((control) => (
-              <div key={control.label} className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
-                  <span className="flex items-center gap-1.5">
-                    <control.icon size={10} /> {control.label}
-                  </span>
-                  <span>
-                    {control.key === "scale"
-                      ? `${control.value.toFixed(2)}x`
-                      : `${control.value}px`}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  value={control.value}
-                  onChange={(event) =>
-                    updateTransform(
-                      control.key,
-                      control.key === "scale"
-                        ? Number.parseFloat(event.target.value)
-                        : Number.parseInt(event.target.value, 10),
-                    )
-                  }
-                  aria-label={control.label}
-                  title={control.label}
-                  className="w-full accent-[var(--accent)] h-1 bg-[var(--border)] rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
-            <div className="flex items-center justify-between gap-3">
-              <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
-                <Crop size={10} /> Crop Window
-              </label>
-              <button
-                type="button"
-                onClick={() =>
-                  onChange({
-                    ...data,
-                    imageCrop: { x: 0, y: 0, width: 100, height: 100 },
-                  })
-                }
-                className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1">
-                <RotateCcw size={10} /> Reset
-              </button>
-            </div>
-
-            {[
-              {
-                label: "Crop X",
-                key: "x" as const,
-                min: 0,
-                max: Math.max(5, 100 - data.imageCrop.width),
-                step: 1,
-                value: data.imageCrop.x,
-              },
-              {
-                label: "Crop Y",
-                key: "y" as const,
-                min: 0,
-                max: Math.max(5, 100 - data.imageCrop.height),
-                step: 1,
-                value: data.imageCrop.y,
-              },
-              {
-                label: "Crop Width",
-                key: "width" as const,
-                min: 20,
-                max: 100 - data.imageCrop.x,
-                step: 1,
-                value: data.imageCrop.width,
-              },
-              {
-                label: "Crop Height",
-                key: "height" as const,
-                min: 20,
-                max: 100 - data.imageCrop.y,
-                step: 1,
-                value: data.imageCrop.height,
-              },
-            ].map((control) => (
-              <div key={control.label} className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
-                  <span>{control.label}</span>
-                  <span>{control.value}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  value={control.value}
-                  onChange={(event) =>
-                    updateCrop(
-                      control.key,
-                      Number.parseInt(event.target.value, 10),
-                    )
-                  }
-                  aria-label={control.label}
-                  title={control.label}
-                  className="w-full accent-[var(--accent)] h-1 bg-[var(--border)] rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
     </div>
