@@ -50,21 +50,33 @@ export function createEmployeeId() {
     return `employee-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+export interface TemplateFieldDefault {
+  fieldName: string;
+  defaultValue: string;
+}
+
 export function createEmployeeRecord(
     seed: Partial<EmployeeRecord> | Partial<UserData>,
     index: number,
+    fieldDefaults?: TemplateFieldDefault[],
 ): EmployeeRecord {
     const id = (seed as Partial<EmployeeRecord>).id ?? createEmployeeId();
+    const defaults: Record<string, string> = {};
+    if (fieldDefaults) {
+      for (const fd of fieldDefaults) {
+        defaults[fd.fieldName] = fd.defaultValue;
+      }
+    }
 
     return {
         id,
         employeeId: (seed as Partial<EmployeeRecord>).employeeId ?? (seed as Partial<UserData>).idNumber ?? id,
-        fullName: seed.fullName ?? "",
-        department: seed.department ?? "",
-        role: seed.role ?? "",
-        idNumber: seed.idNumber ?? "",
-        imageUrl: seed.imageUrl ?? null,
-        issueDate: seed.issueDate ?? today(),
+        fullName: seed.fullName ?? defaults.fullName ?? "",
+        department: seed.department ?? defaults.department ?? "",
+        role: seed.role ?? defaults.role ?? "",
+        idNumber: seed.idNumber ?? defaults.idNumber ?? "",
+        imageUrl: seed.imageUrl ?? defaults.imageUrl ?? null,
+        issueDate: seed.issueDate ?? defaults.issueDate ?? today(),
         imageTransform: {
             ...createDefaultImageTransform(),
             ...(seed.imageTransform ?? {}),
@@ -73,7 +85,7 @@ export function createEmployeeRecord(
             ...createDefaultImageCrop(),
             ...(seed.imageCrop ?? {}),
         },
-        extraFields: seed.extraFields ?? {},
+        extraFields: { ...defaults, ...(seed.extraFields ?? {}) },
     };
 }
 

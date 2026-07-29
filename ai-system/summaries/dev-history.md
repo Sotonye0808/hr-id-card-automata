@@ -130,3 +130,17 @@
 - When no designer template is active, DataEntry falls back to showing all standard fields for backward compatibility
 - Added empty-state UI for batch list and employee entry panel when no employees exist
 - Updated all ai-system docs and README
+
+## v0.9 — Dynamic Data Wiring, Multi-Template Save & Undo/Redo Fixes
+
+**Date:** 2026-07-28
+
+**Summary:**
+- Made employee DataEntry image-layer-aware: profile media upload and image position/crop controls are now only shown when the active designer template contains image layers (via `hasImageLayers()` helper); shapes require no input
+- Added `extractTemplateDefaults()` to `templateRenderer.ts` — extracts field names with their surrounding text context as default values from template text layers
+- Updated `createEmployeeRecord()` to accept field defaults — when adding a new employee, defaults from the template's text are pre-filled
+- Debounced auto-save in `handleDesignerTemplateChange` (500ms) to avoid excessive localStorage writes and toast spam on every canvas interaction
+- Fixed undo/redo in TemplateDesigner: dragging, resizing, and rotating now only push to history when the layer actually changed position/size/rotation — grabbing without moving no longer creates an undo entry
+- Added "Save as New" button in TemplateLibrary — creates a copy with a new ID, enabling true multi-template saves instead of overwriting the same template
+- Added `Copy` icon (lucide-react) for the Save as New button
+- Updated all ai-system docs and README

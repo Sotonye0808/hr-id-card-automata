@@ -346,7 +346,10 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
     const handlePointerUp = () => {
       setDragging(null);
       const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
-      pushHistory(layers);
+      const layer = layers.find((l) => l.id === dragging.layerId);
+      if (layer && (layer.x !== dragging.startLayerX || layer.y !== dragging.startLayerY)) {
+        pushHistory(layers);
+      }
     };
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
@@ -379,7 +382,10 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
     const handlePointerUp = () => {
       setResizing(null);
       const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
-      pushHistory(layers);
+      const layer = layers.find((l) => l.id === resizing.layerId);
+      if (layer && (layer.width !== resizing.startW || layer.height !== resizing.startH)) {
+        pushHistory(layers);
+      }
     };
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
@@ -401,7 +407,10 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
     const handlePointerUp = () => {
       setRotating(null);
       const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
-      pushHistory(layers);
+      const layer = layers.find((l) => l.id === rotating.layerId);
+      if (layer && layer.rotation !== 0) {
+        pushHistory(layers);
+      }
     };
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);

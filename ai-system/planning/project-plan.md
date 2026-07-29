@@ -43,6 +43,10 @@
 ### Recently Completed
 - [x] Clean employee defaults — empty batch on start, no seeded defaults
 - [x] Template-driven DataEntry — fields shown only when referenced in template
+- [x] Undo/redo — only tracks meaningful changes (skip grab without move)
+- [x] Multi-template save support — "Save as New" in TemplateLibrary creates copies
+- [x] Image-layer-aware DataEntry — profile media and transform controls shown only when template has image layers
+- [x] Template-default-aware employee creation — `createEmployeeRecord` accepts field defaults from template text layers
 
 ### Planned
 - [ ] ActivityBoard component wiring (batch processor, audit journal)
