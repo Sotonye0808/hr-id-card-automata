@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-28
+> - last-verified-against-code: 2026-07-29
 > - staleness-policy: append at the end of each significant development phase
 
 > **Overview:** High-level summary of development milestones and phases.
@@ -130,3 +130,16 @@
 - When no designer template is active, DataEntry falls back to showing all standard fields for backward compatibility
 - Added empty-state UI for batch list and employee entry panel when no employees exist
 - Updated all ai-system docs and README
+
+## v0.9 — Layer-Based DataEntry, Multi-Save Library & Undo/Redo Fix
+
+**Date:** 2026-07-29
+
+**Summary:**
+- Rewrote DataEntry to generate employee inputs based on ALL text and image layers in the template (not just `{{variable}}` placeholders) — each text layer gets a text input, each image layer gets an image upload, shape/barcode layers are excluded. Inputs are prefilled with template default content.
+- Added `getLayerEmployeeValue()` to `templateRenderer.ts` — resolves per-layer employee values from `extraFields` (keyed `_tl_<layerId>` / `_il_<layerId>`), falling back to template default, then to legacy `data.imageUrl` for images.
+- Updated IDCard.tsx and templateRenderer.ts rendering to use per-layer employee values for text and image layers.
+- Updated `App.tsx` `addEmployee()` to prefill new employees with template layer default values.
+- Fixed undo/redo in TemplateDesigner: drag/resize/rotate only push history when actual changes occur (clicks without movement no longer record undo actions).
+- Added "Save As New" button in TemplateLibrary — saves current template with a new ID so users can maintain multiple distinct templates. Auto-save debounced to 2s to prevent overwrites during editing.
+- Updated all ai-system docs and README.

@@ -9,14 +9,14 @@ A privacy-first, offline-capable web application for designing, customizing, and
 ## Features
 
 - **Drag-and-Drop Template Designer** — Add text fields, images (logos, signatures, photos), shapes, and barcodes on a visual canvas. Drag, resize, rotate, and reorder layers with snap-to-grid support. **Touch-enabled** — drag, icon-based resize/rotate handles, and rotation work on mobile via unified pointer events.
-- **Undo / Redo** — Full undo/redo history (50 steps) for all layer operations (add, delete, move, resize, rotate, property changes).
+- **Undo / Redo** — Full undo/redo history (50 steps) for layer operations (add, delete, move, resize, rotate). Only records actual changes — clicks without movement are ignored.
 - **Gradient & Glassmorphism** — Apply linear/radial gradients and glassmorphism (backdrop blur + opacity) to shape and image layers directly from the property inspector.
 - **Border Controls** — Customize border width, color, and style (solid/dashed/dotted) for image and shape layers.
 - **Layer Panel** — Toggle visibility, lock/unlock, reorder (z-index), reset rotation, and delete layers. Each layer has a dedicated property inspector (font, color, size, position, rotation, opacity, image source, gradients, borders, glassmorphism).
 - **Toast Notifications** — Subtle feedback toasts for save, load, import, export, and other actions.
 - **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, and import from JSON files.
 - **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
-- **Dynamic Employee Data Entry** — Employee form dynamically shows input fields based on `{{variable}}` placeholders found in template text layers. Only fields used in the active template are shown. Supports custom fields beyond the standard 5.
+- **Layer-Based Employee Data Entry** — Employee form generates inputs based on template layers: each text layer → text input, each image layer → image upload, each prefilled with the template's default content. Also shows `{{variable}}`-referenced standard fields. Shape and barcode layers are excluded from data entry.
 - **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings including extra template fields.
 - **Template-Based Batch Export** — PDF and DOCX exports render the designer template (front and back) per employee using a canvas-based renderer. Falls back to legacy layout when no designer template exists.
 - **Front/Back Card Export** — When templates have a back side, PDF and DOCX exports automatically include the back of each card.
@@ -117,9 +117,9 @@ Template Library (save/load) → localStorage (named templates)
 1. **Add Employees** — Use the Employees tab to enter employee data manually or import from CSV/XLSX. Start with an empty batch and add rows as needed.
 2. **Design Template** — Go to the Template tab. Use the "Designer" tab to open the drag-and-drop canvas. Add text, image, shape, and barcode layers. Drag to position, use icon-based handles to resize/rotate. Undo/redo via toolbar buttons.
 3. **Style Elements** — Apply gradients, glassmorphism effects, and borders to shape and image layers from the Properties panel. Set rotation in the Layout tab.
-4. **Save Template** — Click the library icon to save your design. Export as JSON for sharing. Toast notifications confirm saves.
+4. **Save Template** — Click the library icon to save your design. Use "Save As New" to keep multiple template versions. Export as JSON for sharing. Toast notifications confirm saves.
 5. **Preview** — The right panel shows a live preview of the card with employee data. Toggle between front and back when the template has both sides.
-6. **Dynamic Fields** — The employee entry form shows only fields that are referenced in the active designer template's text layers via `{{variable}}` placeholders. Both standard (fullName, department, role, idNumber, issueDate) and custom fields appear automatically based on template content. When no designer template is active, all standard fields are shown for backward compatibility.
+6. **Layer-Based Data Entry** — The employee entry form shows inputs for every text and image layer in the template, prefilled with the template's default content. Standard fields (fullName, department, role, idNumber, issueDate) are shown when referenced via `{{variable}}` placeholders. When no designer template is active, all standard fields appear.
 7. **Export** — Go to the Export tab to generate PDF or DOCX for all employees. Exports render the full designer template (front and back) as embedded card images.
 
 ---
