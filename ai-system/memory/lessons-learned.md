@@ -58,3 +58,9 @@ Always define dependencies (e.g., `setActiveLayers`) before the callbacks that r
 **Date:** 2026-07-28
 
 For PDF/DOCX exports that need to render visual templates, the most reliable approach without external dependencies (html2canvas) is to render layers onto an offscreen `<canvas>` element using native Canvas 2D API, then embed the resulting data URL (PNG) via `jsPDF.addImage()` or `docx` `ImageRun`. Text rendering on canvas requires explicit `ctx.font` setup. Use `ctx.save()`/`ctx.restore()` around each layer for isolated transforms (rotation, opacity). Handle barcodes as styled placeholder text since actual barcode generation would require an additional library. Handle gradients via `createLinearGradient`/`createRadialGradient` and image objectFit via manual aspect-ratio calculations.
+
+## Lesson 9 — Undo/Redo Must Only Track Meaningful Changes
+
+**Date:** 2026-07-28
+
+When implementing undo/redo for drag/resize/rotate operations, pushing history on `pointerup` captures every interaction — including simple clicks that select a layer without moving it. This pollutes the undo stack with "no-op" entries, making it harder to undo significant changes. Always compare the layer's current position/size/rotation against the start values before pushing to history. This ensures only actual modifications create undo steps, keeping the history stack clean and useful.

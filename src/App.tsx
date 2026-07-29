@@ -56,6 +56,7 @@ import {
   savePersistedBatch,
   detectFieldMappings,
 } from "./lib/employeeStore";
+import { extractTemplateDefaults, hasImageLayers } from "./lib/templateRenderer";
 import {
   getConsented,
   loadTemplate,
@@ -149,7 +150,18 @@ function AppInner() {
     injectMetaTags();
   }, []);
 
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleDesignerTemplateChange = (tpl: DesignerTemplate) => {
+    setDesignerTemplate(tpl);
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      saveTemplate(tpl);
+      setActiveTemplateId(tpl.id);
+    }, 500);
+  };
+
+  const handleDesignerTemplateSave = (tpl: DesignerTemplate) => {
     setDesignerTemplate(tpl);
     saveTemplate(tpl);
     setActiveTemplateId(tpl.id);
@@ -241,11 +253,15 @@ function AppInner() {
     );
   };
 
+  const templateFieldDefaults = useMemo(() => {
+    return designerTemplate ? extractTemplateDefaults(designerTemplate) : [];
+  }, [designerTemplate]);
+
   const addEmployee = () => {
     const nextIndex = employees.length;
     setEmployees((current) => [
       ...current,
-      createEmployeeRecord({}, current.length),
+      createEmployeeRecord({}, current.length, templateFieldDefaults),
     ]);
     setSelectedIndex(nextIndex);
     setActiveTab("employees");

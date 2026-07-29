@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Save, Upload, Download, Trash2, Edit3, X, Check } from "lucide-react";
+import { Save, Upload, Download, Trash2, Edit3, X, Check, Copy } from "lucide-react";
 import { useToast } from "./Toast";
 import type { DesignerTemplate, TemplateMeta } from "../types";
 import {
@@ -37,19 +37,22 @@ export default function TemplateLibrary({
 
   const refresh = () => setTemplates(listTemplates());
 
-  const handleSave = () => {
+  const handleSave = (asNew: boolean) => {
     const now = new Date().toISOString();
+    const id = asNew ? (crypto.randomUUID?.() ?? `template-${Date.now()}`) : currentTemplate.id;
     const updated: DesignerTemplate = {
       ...currentTemplate,
+      id,
       name: saveName,
+      createdAt: asNew ? now : (currentTemplate.createdAt || now),
       updatedAt: now,
     };
-    if (!updated.createdAt) updated.createdAt = now;
     saveTemplate(updated);
     setActiveTemplateId(updated.id);
     setActiveId(updated.id);
+    onLoadTemplate(updated);
     refresh();
-    toast("Template saved", "success");
+    toast(asNew ? "Template saved as new" : "Template saved", "success");
   };
 
   const handleLoad = (meta: TemplateMeta) => {
@@ -125,10 +128,13 @@ export default function TemplateLibrary({
               onChange={(e) => setSaveName(e.target.value)}
               placeholder="Template name"
             />
-            <button className="primary-button" onClick={handleSave}>
+            <button className="primary-button" onClick={() => handleSave(false)}>
               <Save size={14} /> Save
             </button>
           </div>
+          <button className="secondary-button mt-2 w-full text-sm" onClick={() => handleSave(true)}>
+            <Copy size={14} /> Save as New
+          </button>
         </div>
 
         <div className="mb-4 flex gap-2">
