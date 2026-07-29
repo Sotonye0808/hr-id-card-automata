@@ -339,7 +339,7 @@ export default function DataEntry({ data, onChange, designerTemplate }: DataEntr
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {(!hasDesigner || templateHasImages) && (
           <>
