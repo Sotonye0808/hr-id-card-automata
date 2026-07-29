@@ -1,8 +1,8 @@
 # Project AI Context
 
 > **Metadata**
-> - last-updated-by: bootstrap-project
-> - last-verified-against-code: 2026-07-22
+> - last-updated-by: update-ai-system
+> - last-verified-against-code: 2026-07-28
 > - staleness-policy: re-verify before trusting if project structure has changed
 
 > **Overview:** Local-first, single-page PWA built with React 19 + Vite + TypeScript + Tailwind CSS v4 that helps HR teams turn employee records and photos into printable, batch-exportable ID cards. Fully client-side — data persisted to localStorage and IndexedDB, exports generated in-browser via jsPDF and docx.
@@ -29,10 +29,11 @@
 | Module          | Location              | Purpose                                   |
 | --------------- | --------------------- | ----------------------------------------- |
 | App Shell       | src/App.tsx           | Main app state, routing, import/export    |
-| Data Entry      | src/components/DataEntry.tsx | Employee data form + image upload  |
-| ID Card Preview | src/components/IDCard.tsx    | Live card preview with template     |
+| Data Entry      | src/components/DataEntry.tsx | Dynamic employee data form + image upload (template-aware) |
+| ID Card Preview | src/components/IDCard.tsx    | Live card preview with front/back toggle |
 | Template Editor | src/components/TemplateEditor.tsx | Font, color, layout customization |
 | Import Wizard   | src/components/ImportWizard.tsx | CSV/XLSX/clipboard import with mapping |
+| Template Renderer | src/lib/templateRenderer.ts | Canvas-based template rendering for exports |
 | Data Layer      | src/lib/employeeStore.ts | Persistence, CSV/XLSX parsing, image transforms |
 
 ---
@@ -47,4 +48,4 @@ Start with: `ai-system/protocols/entry-protocol.md`
 
 ## Active Development Focus
 
-ID card generation and batch export with template customization — currently in active development with core features implemented and refinement ongoing.
+Dynamic template-driven data entry with image-layer-aware inputs, multi-template management via "Save as New", debounced auto-save, and clean undo/redo that only tracks meaningful changes.

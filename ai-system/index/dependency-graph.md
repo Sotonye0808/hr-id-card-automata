@@ -13,6 +13,7 @@
 main.tsx
   └── App.tsx
         ├── components/DataEntry.tsx
+        │     └── lib/templateRenderer.ts (extractTemplateFields, hasImageLayers)
         ├── components/IDCard.tsx
         │     └── lib/employeeStore.ts (renderTransformedImage)
         ├── components/TemplateEditor.tsx
@@ -26,10 +27,11 @@ main.tsx
         ├── components/CookieConsent.tsx
         │     └── lib/templateStore.ts (getConsented)
         ├── components/ActivityBoard.tsx
-        ├── lib/employeeStore.ts (loadPersistedBatch, savePersistedBatch)
+        ├── lib/employeeStore.ts (loadPersistedBatch, savePersistedBatch, createEmployeeRecord, etc.)
         │     ├── localStorage
         │     └── IndexedDB
-        ├── lib/templateStore.ts (getConsented, loadTemplate, migrateCardConfigToDesignerTemplate)
+        ├── lib/templateStore.ts (getConsented, loadTemplate, saveTemplate, etc.)
+        ├── lib/templateRenderer.ts (extractTemplateDefaults, hasImageLayers)
         └── lib/seo.ts (injectMetaTags)
 
 External Dependencies:

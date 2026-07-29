@@ -56,6 +56,7 @@ import {
   savePersistedBatch,
   detectFieldMappings,
 } from "./lib/employeeStore";
+import { extractTemplateDefaults, hasImageLayers } from "./lib/templateRenderer";
 import {
   getConsented,
   loadTemplate,
@@ -88,41 +89,7 @@ const DEFAULT_TEMPLATE: CardConfig = {
   },
 };
 
-const SAMPLE_EMPLOYEES: EmployeeRecord[] = [
-  createEmployeeRecord(
-    {
-      fullName: "Abraham Bamidele",
-      department: "Communications",
-      role: "Lead Graphics Designer (Senior Officer 3)",
-      idNumber: "COMMS021",
-      imageUrl: null,
-      issueDate: new Date().toISOString().split("T")[0],
-    },
-    0,
-  ),
-  createEmployeeRecord(
-    {
-      fullName: "Esther Adaigbe",
-      department: "Finance",
-      role: "Team Lead Supervisor 2",
-      idNumber: "FIN0831",
-      imageUrl: null,
-      issueDate: new Date().toISOString().split("T")[0],
-    },
-    1,
-  ),
-  createEmployeeRecord(
-    {
-      fullName: "Deborah",
-      department: "Creative Services",
-      role: "Copywriting & creative lead. Senior officer 1",
-      idNumber: "FIN0831",
-      imageUrl: null,
-      issueDate: new Date().toISOString().split("T")[0],
-    },
-    2,
-  ),
-];
+
 
 function nextFrame() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -145,7 +112,7 @@ function AppInner() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("employees");
   const [template, setTemplate] = useState<CardConfig>(DEFAULT_TEMPLATE);
   const [employees, setEmployees] =
-    useState<EmployeeRecord[]>(SAMPLE_EMPLOYEES);
+    useState<EmployeeRecord[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [progress, setProgress] = useState<ExportProgress>({
     phase: "Ready",
@@ -183,11 +150,15 @@ function AppInner() {
     injectMetaTags();
   }, []);
 
+  const templateSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleDesignerTemplateChange = (tpl: DesignerTemplate) => {
     setDesignerTemplate(tpl);
-    saveTemplate(tpl);
-    setActiveTemplateId(tpl.id);
-    toast("Template saved", "success");
+    if (templateSaveTimerRef.current) clearTimeout(templateSaveTimerRef.current);
+    templateSaveTimerRef.current = setTimeout(() => {
+      saveTemplate(tpl);
+      setActiveTemplateId(tpl.id);
+    }, 2000);
   };
 
   const handleCookieAccept = () => {
@@ -264,7 +235,7 @@ function AppInner() {
     });
   }, [employees, isHydrated, selectedIndex]);
 
-  const selectedEmployee = employees[selectedIndex] ?? employees[0];
+  const selectedEmployee = employees.length > 0 ? (employees[selectedIndex] ?? employees[0]) : null;
   const queuedCount = employees.length;
 
   const updateSelectedEmployee = (next: UserData) => {
@@ -275,11 +246,35 @@ function AppInner() {
     );
   };
 
+  const templateFieldDefaults = useMemo(() => {
+    return designerTemplate ? extractTemplateDefaults(designerTemplate) : [];
+  }, [designerTemplate]);
+
   const addEmployee = () => {
     const nextIndex = employees.length;
+    const seed: Partial<EmployeeRecord> = {};
+    if (designerTemplate) {
+      const extraFields: Record<string, string> = {};
+      const allLayers = [...designerTemplate.layers, ...(designerTemplate.backLayers ?? [])];
+      for (const layer of allLayers) {
+        if (layer.type === "text") {
+          const key = `_tl_${layer.id}`;
+          extraFields[key] = (layer.props as import("./types").TextLayerProps).text;
+        } else if (layer.type === "image") {
+          const src = (layer.props as import("./types").ImageLayerProps).src;
+          if (src) {
+            const key = `_il_${layer.id}`;
+            extraFields[key] = src;
+          }
+        }
+      }
+      if (Object.keys(extraFields).length > 0) {
+        seed.extraFields = extraFields;
+      }
+    }
     setEmployees((current) => [
       ...current,
-      createEmployeeRecord({}, current.length),
+      createEmployeeRecord(seed, current.length),
     ]);
     setSelectedIndex(nextIndex);
     setActiveTab("employees");
@@ -307,12 +302,6 @@ function AppInner() {
       current.filter((_, index) => index !== selectedIndex),
     );
     setSelectedIndex((current) => Math.max(0, current - 1));
-  };
-
-  const resetSampleBatch = () => {
-    setEmployees(SAMPLE_EMPLOYEES);
-    setSelectedIndex(0);
-    setActiveTab("employees");
   };
 
   const openCsvPicker = () => {
@@ -424,7 +413,7 @@ function AppInner() {
     }
   };
 
-  const handleImportWizardConfirm = (
+  const handleImportWizardConfirm = async (
     selectedData: string[][],
     headerMapping: Map<string, number | null>,
   ) => {
@@ -444,6 +433,11 @@ function AppInner() {
       // headerMapping maps: column index -> column index (the mapping)
       // We need to determine which columns contain which data
 
+      const { extractTemplateFields } = await import("./lib/templateRenderer");
+      const templateFields = designerTemplate ? extractTemplateFields(designerTemplate) : [];
+      const standardFields = new Set(["fullName", "department", "role", "idNumber", "issueDate", "imageUrl", "imageTransform", "imageCrop", "imagescale", "imageoffsetx", "imageoffsety", "imagecropx", "imagecropy", "imagecropwidth", "imagecropheight"]);
+      const extraTemplateFields = templateFields.filter((f) => !standardFields.has(f));
+
       // Detect field mappings from headers
       const detected = detectFieldMappings(headerRow);
       const fieldToColumnMap = new Map<string, number>();
@@ -456,9 +450,21 @@ function AppInner() {
         }
       });
 
+      // Also detect extra template fields from headers
+      const extraFieldToColumnMap = new Map<string, number>();
+      const normalizedHeaders = headerRow.map((h) => h.trim().toLowerCase().replace(/[^a-z0-9]+/g, ""));
+      for (const field of extraTemplateFields) {
+        const normField = field.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+        const colIdx = normalizedHeaders.findIndex((h) => h === normField || h.includes(normField) || normField.includes(h));
+        if (colIdx >= 0) {
+          extraFieldToColumnMap.set(field, colIdx);
+        }
+      }
+
       // Parse the selected data using the detected field mappings
       const importedRows = dataRows.map((row) => {
         const record: Partial<EmployeeRecord> = {};
+        const extraFields: Record<string, string> = {};
 
         // Extract fullName
         const fullNameIdx = fieldToColumnMap.get("fullName") ?? 0;
@@ -488,6 +494,17 @@ function AppInner() {
         const dateIdx = fieldToColumnMap.get("issueDate") ?? -1;
         if (dateIdx >= 0 && dateIdx < row.length && row[dateIdx]) {
           record.issueDate = String(row[dateIdx]).trim();
+        }
+
+        // Extract extra template fields
+        extraFieldToColumnMap.forEach((colIdx, fieldName) => {
+          if (colIdx < row.length && row[colIdx]) {
+            extraFields[fieldName] = String(row[colIdx]).trim();
+          }
+        });
+
+        if (Object.keys(extraFields).length > 0) {
+          record.extraFields = extraFields;
         }
 
         return record;
@@ -591,97 +608,143 @@ function AppInner() {
     const margin = 14;
     const contentWidth = pageWidth - margin * 2;
 
+    const useDesigner = designerTemplate && designerTemplate.layers.length > 0;
+    const cardWidth = useDesigner ? Math.min(190, contentWidth) : contentWidth;
+    const cardRatio = useDesigner ? designerTemplate!.canvasHeight / designerTemplate!.canvasWidth : 0.65;
+    const cardHeight = useDesigner ? cardWidth * cardRatio : 170;
+
     for (const [index, employee] of employees.entries()) {
       if (index > 0) {
         doc.addPage();
       }
 
-      const baseTop = 12;
-
-      doc.setDrawColor(17, 24, 39);
-      doc.setLineWidth(0.4);
-      doc.rect(margin, margin, contentWidth, pageHeight - margin * 2);
-
-      const columnY = baseTop + 8;
-      const tableHeight = 18;
-      const columns = [64, 32, contentWidth - 96];
-      const cells = [
-        employee.fullName || "Employee Name",
-        employee.idNumber || "EMP-001",
-        `${employee.department || "Department"} • ${employee.role || "Role"}`,
-      ];
-
-      let currentX = margin;
-      columns.forEach((width, columnIndex) => {
-        doc.rect(currentX, columnY, width, tableHeight);
-        doc.setFontSize(columnIndex === 2 ? 10 : 11);
-        doc.setTextColor(17, 24, 39);
-        const text = doc.splitTextToSize(cells[columnIndex], width - 4);
-        doc.text(text, currentX + 2, columnY + 7);
-        currentX += width;
-      });
-
-      const imageTop = columnY + tableHeight + 8;
-      const imageHeight = 118;
-      doc.rect(margin, imageTop, contentWidth, imageHeight);
-
-      if (employee.imageUrl) {
+      if (useDesigner) {
         try {
-          const renderedImage = await renderTransformedImage(
-            employee.imageUrl,
-            employee.imageTransform,
-            Math.round((contentWidth - 2) * 8),
-            Math.round((imageHeight - 2) * 8),
-            employee.imageCrop,
+          const { renderTemplateToCanvas } = await import("./lib/templateRenderer");
+          const frontCanvas = await renderTemplateToCanvas(
+            designerTemplate!,
+            employee,
+            "front",
+            Math.round(cardWidth * 4),
+            Math.round(cardHeight * 4),
           );
+          const frontImage = frontCanvas.toDataURL("image/png");
 
-          doc.addImage(
-            renderedImage,
-            "PNG",
-            margin + 1,
-            imageTop + 1,
-            contentWidth - 2,
-            imageHeight - 2,
-            undefined,
-            "FAST",
+          const cardX = (pageWidth - cardWidth) / 2;
+          const cardY = margin + 8;
+
+          doc.addImage(frontImage, "PNG", cardX, cardY, cardWidth, cardHeight, undefined, "FAST");
+
+          const hasBack = designerTemplate!.hasBackSide && (designerTemplate!.backLayers?.length ?? 0) > 0;
+
+          if (hasBack) {
+            const backCanvas = await renderTemplateToCanvas(
+              designerTemplate!,
+              employee,
+              "back",
+              Math.round(cardWidth * 4),
+              Math.round(cardHeight * 4),
+            );
+            const backImage = backCanvas.toDataURL("image/png");
+
+            doc.addPage();
+            doc.addImage(backImage, "PNG", cardX, cardY, cardWidth, cardHeight, undefined, "FAST");
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text("Back of card", pageWidth / 2, pageHeight - 8, { align: "center" });
+          }
+
+          doc.setFontSize(9);
+          doc.setTextColor(15, 118, 110);
+          doc.text(
+            `${employee.fullName || "Employee"} — ${employee.issueDate || ""}`,
+            margin + 2,
+            pageHeight - 8,
           );
-        } catch {
+        } catch (err) {
           doc.setFontSize(12);
           doc.setTextColor(102, 112, 133);
           doc.text(
-            "Photo could not be embedded in PDF preview.",
+            `Template render failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+            margin + 10,
+            margin + 40,
+          );
+        }
+      } else {
+        const baseTop = 12;
+
+        doc.setDrawColor(17, 24, 39);
+        doc.setLineWidth(0.4);
+        doc.rect(margin, margin, contentWidth, pageHeight - margin * 2);
+
+        const columnY = baseTop + 8;
+        const tableHeight = 18;
+        const columns = [64, 32, contentWidth - 96];
+        const cells = [
+          employee.fullName || "Employee Name",
+          employee.idNumber || "EMP-001",
+          `${employee.department || "Department"} • ${employee.role || "Role"}`,
+        ];
+
+        let currentX = margin;
+        columns.forEach((width, columnIndex) => {
+          doc.rect(currentX, columnY, width, tableHeight);
+          doc.setFontSize(columnIndex === 2 ? 10 : 11);
+          doc.setTextColor(17, 24, 39);
+          const text = doc.splitTextToSize(cells[columnIndex], width - 4);
+          doc.text(text, currentX + 2, columnY + 7);
+          currentX += width;
+        });
+
+        const imageTop = columnY + tableHeight + 8;
+        const imageHeight = 118;
+        doc.rect(margin, imageTop, contentWidth, imageHeight);
+
+        if (employee.imageUrl) {
+          try {
+            const renderedImage = await renderTransformedImage(
+              employee.imageUrl,
+              employee.imageTransform,
+              Math.round((contentWidth - 2) * 8),
+              Math.round((imageHeight - 2) * 8),
+              employee.imageCrop,
+            );
+
+            doc.addImage(
+              renderedImage,
+              "PNG",
+              margin + 1,
+              imageTop + 1,
+              contentWidth - 2,
+              imageHeight - 2,
+              undefined,
+              "FAST",
+            );
+          } catch {
+            doc.setFontSize(12);
+            doc.setTextColor(102, 112, 133);
+            doc.text(
+              "Photo could not be embedded in PDF preview.",
+              margin + 10,
+              imageTop + 58,
+            );
+          }
+        } else {
+          doc.setFontSize(12);
+          doc.setTextColor(102, 112, 133);
+          doc.text(
+            "Photo placeholder - upload an image to embed it here.",
             margin + 10,
             imageTop + 58,
           );
         }
-      } else {
-        doc.setFontSize(12);
-        doc.setTextColor(102, 112, 133);
-        doc.text(
-          "Photo placeholder - upload an image to embed it here.",
-          margin + 10,
-          imageTop + 58,
-        );
-      }
 
-      doc.setFontSize(9);
-      doc.setTextColor(15, 118, 110);
-      doc.text(
-        `Issue Date: ${employee.issueDate}`,
-        margin + 2,
-        imageTop + imageHeight + 8,
-      );
-
-      if (index < employees.length - 1) {
-        doc.setFontSize(8);
-        doc.setTextColor(100, 116, 139);
+        doc.setFontSize(9);
+        doc.setTextColor(15, 118, 110);
         doc.text(
-          `Batch ${index + 1} of ${employees.length}`,
-          pageWidth / 2,
-          pageHeight - 8,
-          {
-            align: "center",
-          },
+          `Issue Date: ${employee.issueDate}`,
+          margin + 2,
+          imageTop + imageHeight + 8,
         );
       }
 
@@ -717,76 +780,143 @@ function AppInner() {
     await nextFrame();
 
     const children: Array<Paragraph | Table> = [];
+    const useDesigner = designerTemplate && designerTemplate.layers.length > 0;
 
     for (const [index, employee] of employees.entries()) {
-      children.push(
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            new TableRow({
-              children: [
-                new TableCell({
-                  width: { size: 35, type: WidthType.PERCENTAGE },
-                  children: [
-                    new Paragraph(employee.fullName || "Employee Name"),
-                  ],
-                }),
-                new TableCell({
-                  width: { size: 18, type: WidthType.PERCENTAGE },
-                  children: [new Paragraph(employee.idNumber || "EMP-001")],
-                }),
-                new TableCell({
-                  width: { size: 47, type: WidthType.PERCENTAGE },
-                  children: [
-                    new Paragraph(
-                      `${employee.department || "Department"} • ${employee.role || "Role"}`,
-                    ),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        }),
-      );
-
-      if (employee.imageUrl) {
+      if (useDesigner) {
         try {
-          const renderedImage = await renderTransformedImage(
-            employee.imageUrl,
-            employee.imageTransform,
-            1400,
-            980,
-            employee.imageCrop,
+          const { renderTemplateToCanvas } = await import("./lib/templateRenderer");
+          const imgWidth = 600;
+          const imgHeight = Math.round(imgWidth * (designerTemplate!.canvasHeight / designerTemplate!.canvasWidth));
+
+          const frontCanvas = await renderTemplateToCanvas(
+            designerTemplate!,
+            employee,
+            "front",
+            imgWidth * 2,
+            imgHeight * 2,
           );
+          const frontImage = frontCanvas.toDataURL("image/png");
 
           children.push(
             new Paragraph({
               children: [
                 new ImageRun({
-                  data: dataUrlToBytes(renderedImage) as any,
-                  transformation: { width: 600, height: 420 },
+                  data: dataUrlToBytes(frontImage) as any,
+                  transformation: { width: imgWidth, height: imgHeight },
                 } as any),
               ],
             }),
           );
-        } catch {
+
+          const hasBack = designerTemplate!.hasBackSide && (designerTemplate!.backLayers?.length ?? 0) > 0;
+
+          if (hasBack) {
+            const backCanvas = await renderTemplateToCanvas(
+              designerTemplate!,
+              employee,
+              "back",
+              imgWidth * 2,
+              imgHeight * 2,
+            );
+            const backImage = backCanvas.toDataURL("image/png");
+
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Back of card", size: 16, bold: true }),
+                ],
+              }),
+            );
+
+            children.push(
+              new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: dataUrlToBytes(backImage) as any,
+                    transformation: { width: imgWidth, height: imgHeight },
+                  } as any),
+                ],
+              }),
+            );
+          }
+        } catch (err) {
           children.push(
-            new Paragraph("Photo could not be embedded in DOCX export."),
+            new Paragraph(
+              `Template render failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+            ),
           );
         }
       } else {
         children.push(
-          new Paragraph(
-            "Photo placeholder - upload an image to embed it here.",
-          ),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 35, type: WidthType.PERCENTAGE },
+                    children: [
+                      new Paragraph(employee.fullName || "Employee Name"),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 18, type: WidthType.PERCENTAGE },
+                    children: [new Paragraph(employee.idNumber || "EMP-001")],
+                  }),
+                  new TableCell({
+                    width: { size: 47, type: WidthType.PERCENTAGE },
+                    children: [
+                      new Paragraph(
+                        `${employee.department || "Department"} • ${employee.role || "Role"}`,
+                      ),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
         );
+
+        if (employee.imageUrl) {
+          try {
+            const renderedImage = await renderTransformedImage(
+              employee.imageUrl,
+              employee.imageTransform,
+              1400,
+              980,
+              employee.imageCrop,
+            );
+
+            children.push(
+              new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: dataUrlToBytes(renderedImage) as any,
+                    transformation: { width: 600, height: 420 },
+                  } as any),
+                ],
+              }),
+            );
+          } catch {
+            children.push(
+              new Paragraph("Photo could not be embedded in DOCX export."),
+            );
+          }
+        } else {
+          children.push(
+            new Paragraph(
+              "Photo placeholder - upload an image to embed it here.",
+            ),
+          );
+        }
       }
 
       children.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: `Issue Date: ${employee.issueDate}`,
+              text: `${employee.fullName || "Employee"} — ${employee.issueDate}`,
               size: 16,
             }),
           ],
@@ -967,25 +1097,34 @@ function AppInner() {
           <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
             {activeTab === "employees" && (
               <>
-                <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
-                  <DataEntry
-                    data={selectedEmployee}
-                    onChange={updateSelectedEmployee}
-                  />
-                </div>
+                {selectedEmployee ? (
+                  <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
+                    <DataEntry
+                      data={selectedEmployee}
+                      onChange={updateSelectedEmployee}
+                      designerTemplate={designerTemplate}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-[var(--surface)] p-8 text-center">
+                    <Users size={32} className="mb-3 text-[var(--muted)]" />
+                    <p className="font-semibold text-[var(--text)]">No employees yet</p>
+                    <p className="mt-1 text-sm text-[var(--muted)]">
+                      Add an employee or import from CSV to get started.
+                    </p>
+                  </div>
+                )}
 
                 <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <p className="eyebrow">Batch list</p>
                       <p className="text-sm text-[var(--muted)]">
-                        Select a row to edit a single employee, or keep adding
-                        rows for a batch export.
+                        {employees.length > 0
+                          ? "Select a row to edit a single employee, or keep adding rows for a batch export."
+                          : "Add employees manually or import from a CSV/XLSX file."}
                       </p>
                     </div>
-                    <button className="mini-button" onClick={resetSampleBatch}>
-                      Reset sample
-                    </button>
                   </div>
                   <p className="mb-3 text-xs text-[var(--muted)]">
                     CSV headers supported: fullName, department, role, idNumber,
@@ -993,28 +1132,34 @@ function AppInner() {
                     imageCropX, imageCropY, imageCropWidth, imageCropHeight.
                   </p>
 
-                  <div className="max-h-[260px] overflow-y-auto rounded-2xl border border-[var(--border)]">
-                    {employees.map((employee, index) => (
-                      <button
-                        key={employee.id}
-                        className={`w-full border-b border-[var(--border)] px-3 py-3 text-left transition last:border-b-0 ${index === selectedIndex ? "bg-[var(--accent-soft)]" : "bg-transparent hover:bg-black/5"}`}
-                        onClick={() => setSelectedIndex(index)}
-                        type="button">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-[var(--text)]">
-                              {employee.fullName || "Untitled employee"}
-                            </p>
-                            <p className="text-xs text-[var(--muted)]">
-                              {employee.idNumber} ·{" "}
-                              {employee.department || "No department"}
-                            </p>
+                  {employees.length > 0 ? (
+                    <div className="max-h-[260px] overflow-y-auto rounded-2xl border border-[var(--border)]">
+                      {employees.map((employee, index) => (
+                        <button
+                          key={employee.id}
+                          className={`w-full border-b border-[var(--border)] px-3 py-3 text-left transition last:border-b-0 ${index === selectedIndex ? "bg-[var(--accent-soft)]" : "bg-transparent hover:bg-black/5"}`}
+                          onClick={() => setSelectedIndex(index)}
+                          type="button">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="font-semibold text-[var(--text)]">
+                                {employee.fullName || "Untitled employee"}
+                              </p>
+                              <p className="text-xs text-[var(--muted)]">
+                                {employee.idNumber}
+                                {employee.department ? ` · ${employee.department}` : ""}
+                              </p>
+                            </div>
+                            <span className="cell-label">{index + 1}</span>
                           </div>
-                          <span className="cell-label">{index + 1}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--bg)] p-6 text-center text-sm text-[var(--muted)]">
+                      No employees in batch. Click "Add row" or import data.
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">

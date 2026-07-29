@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-26
+> - last-verified-against-code: 2026-07-29
 > - staleness-policy: append at the end of each significant development phase
 
 > **Overview:** High-level summary of development milestones and phases.
@@ -103,3 +103,43 @@
 - Fixed critical blank-page crash in TemplateDesigner: `undo`/`redo` `useCallback` deps referenced `setActiveLayers` before its `const` declaration, hitting the temporal dead zone and throwing a `ReferenceError` during render. Reordered hook definitions so `setActiveLayers` is defined before `undo`/`redo`.
 - Removed duplicate `activeLayers`/`setActiveLayers`/`currentLayers` variables that were left after the reorder.
 - Updated all ai-system docs: dev-history (this entry), lessons-learned (TDZ lesson), task-queue (fix item), repo-map freshness
+
+## v0.7 — Dynamic DataEntry & Template-Based Exports
+
+**Date:** 2026-07-28
+
+**Summary:**
+- Made employee DataEntry dynamic: accepts `designerTemplate` prop, scans text layers for `{{variable}}` placeholders, and renders input fields for non-standard variables automatically
+- Added `extraFields: Record<string, string>` to `UserData`/`EmployeeRecord` types for storing custom template field values
+- Created `templateRenderer.ts` — canvas-based renderer for designer templates that renders text/shape/image/barcode layers (with gradient and glassmorphism support) to offscreen canvas for PDF/DOCX embedding
+- Updated PDF export to use `templateRenderer.ts`: renders front and back of card as embedded images per employee, with fallback to legacy layout
+- Updated DOCX export to use `templateRenderer.ts`: embeds front and back card images, with legacy fallback
+- Updated CSV/XLSX import: extra template fields detected and mapped to `extraFields` on employee records during import wizard confirmation
+- Updated IDCard text layer resolution to handle `{{extraField}}` variables via `data.extraFields`
+- All ai-system docs refreshed: system-architecture (templateRenderer, export pipeline), project-context (dynamic DataEntry, template-based exports), task-queue (new tasks), project-plan (completed items), dev-history (this entry)
+
+## v0.8 — Clean Employee Defaults & Template-Driven DataEntry
+
+**Date:** 2026-07-28
+
+**Summary:**
+- Removed hardcoded `SAMPLE_EMPLOYEES` from App.tsx — app now starts with an empty employee batch instead of pre-populated sample data
+- `createEmployeeRecord` no longer seeds default values ("New Employee N", "EMP-NNN"); all text fields default to empty strings
+- `duplicateEmployeeRecord` no longer appends suffixes to duplicated employee names/IDs
+- DataEntry now dynamically shows only fields referenced in the active designer template's text layers (via `{{variable}}` placeholders) — both standard fields (fullName, department, role, idNumber, issueDate) and custom extra fields
+- When no designer template is active, DataEntry falls back to showing all standard fields for backward compatibility
+- Added empty-state UI for batch list and employee entry panel when no employees exist
+- Updated all ai-system docs and README
+
+## v0.9 — Layer-Based DataEntry, Multi-Save Library & Undo/Redo Fix
+
+**Date:** 2026-07-29
+
+**Summary:**
+- Rewrote DataEntry to generate employee inputs based on ALL text and image layers in the template (not just `{{variable}}` placeholders) — each text layer gets a text input, each image layer gets an image upload, shape/barcode layers are excluded. Inputs are prefilled with template default content.
+- Added `getLayerEmployeeValue()` to `templateRenderer.ts` — resolves per-layer employee values from `extraFields` (keyed `_tl_<layerId>` / `_il_<layerId>`), falling back to template default, then to legacy `data.imageUrl` for images.
+- Updated IDCard.tsx and templateRenderer.ts rendering to use per-layer employee values for text and image layers.
+- Updated `App.tsx` `addEmployee()` to prefill new employees with template layer default values.
+- Fixed undo/redo in TemplateDesigner: drag/resize/rotate only push history when actual changes occur (clicks without movement no longer record undo actions).
+- Added "Save As New" button in TemplateLibrary — saves current template with a new ID so users can maintain multiple distinct templates. Auto-save debounced to 2s to prevent overwrites during editing.
+- Updated all ai-system docs and README.

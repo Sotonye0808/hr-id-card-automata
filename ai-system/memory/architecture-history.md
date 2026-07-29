@@ -68,3 +68,30 @@ Tightened up responsive behavior across all components. Made TemplateDesigner si
 - Added `custom-scrollbar` utility class globally
 
 **Supersedes:** Previous single z-50 convention for all overlays
+
+---
+
+## Entry 4 — Dynamic Data Wiring, Multi-Template Save & Undo/Redo Fixes
+
+**Date:** 2026-07-28
+
+**Description:**
+Made the employee DataEntry fully aware of template content: image layers in the template trigger profile media inputs, text layer variables map to dynamic input fields, and default values from template text are pre-filled in new employee records. The TemplateLibrary now supports "Save as New" to create template copies with new IDs, enabling true multi-template management. Undo/redo in TemplateDesigner now only records meaningful changes (actual moves/resizes/rotations), not trivial grab-and-release interactions. Auto-save is debounced to avoid excessive writes.
+
+**Key Decisions:**
+- `hasImageLayers()` helper in templateRenderer.ts to detect image layers
+- `extractTemplateDefaults()` to extract field defaults from template text context
+- `createEmployeeRecord()` extended with optional `fieldDefaults` parameter
+- Debounced (500ms) auto-save in App.tsx — avoids toast and localStorage spam during rapid canvas edits
+- History push only on actual change — compare start vs end values before snapshotting
+- "Save as New" generates new ID via `crypto.randomUUID()` — true multi-template instead of overwrite
+
+**Files Changed:**
+- `src/lib/templateRenderer.ts` — added `extractTemplateDefaults()`, `hasImageLayers()`, `TemplateFieldDefault` interface
+- `src/lib/employeeStore.ts` — added `TemplateFieldDefault` interface, extended `createEmployeeRecord` with fieldDefaults parameter
+- `src/components/DataEntry.tsx` — conditionally show image upload/transform/crop only when template has image layers
+- `src/components/TemplateDesigner.tsx` — undo/redo only pushes history on actual position/size/rotation change
+- `src/components/TemplateLibrary.tsx` — added "Save as New" button that creates template copy with new ID
+- `src/App.tsx` — debounced auto-save, pass template field defaults to employee creation
+
+**Supersedes:** Previous undo/redo pushed history on every pointer-up including no-op grabs

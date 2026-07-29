@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-26
+> - last-verified-against-code: 2026-07-28
 > - staleness-policy: re-verify if design tokens change
 
 > **Overview:** Documented UI patterns, design tokens, and conventions used in the HR ID Card Automata.

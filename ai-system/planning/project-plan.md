@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-26
+> - last-verified-against-code: 2026-07-29
 > - staleness-policy: update after each sprint
 
 > **Overview:** High-level feature checklist and development roadmap.
@@ -31,10 +31,21 @@
 - [x] Responsive mobile layout with overlay preview
 - [x] Responsive canvas auto-scaling with zoom controls
 - [x] Front/back dual-sided template support
+- [x] Dynamic DataEntry based on template text layer variables
+- [x] Canvas-based template renderer for exports
+- [x] Front/back card sides in PDF/DOCX exports
+- [x] Template-aware CSV import with extra field mapping
 
 ### In Progress
 - [ ] Import wizard polish (validation edge cases)
 - [ ] Export pipeline stabilization (progress reporting, error handling)
+
+### Recently Completed
+- [x] Clean employee defaults — empty batch on start, no seeded defaults
+- [x] Template-driven DataEntry — fields shown based on template layers (text/text, image/image upload), prefilled with template defaults
+- [x] Layer-based employee data binding — per-layer values stored via extraFields (`_tl_<id>` / `_il_<id>`)
+- [x] Undo/redo only records actual changes (no no-op history entries)
+- [x] Multiple template saves — "Save As New" in TemplateLibrary creates new template IDs
 
 ### Planned
 - [ ] ActivityBoard component wiring (batch processor, audit journal)

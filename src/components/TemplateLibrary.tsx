@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Save, Upload, Download, Trash2, Edit3, X, Check } from "lucide-react";
+import { Save, Upload, Download, Trash2, Edit3, X, Check, Copy } from "lucide-react";
 import { useToast } from "./Toast";
 import type { DesignerTemplate, TemplateMeta } from "../types";
 import {
@@ -37,19 +37,39 @@ export default function TemplateLibrary({
 
   const refresh = () => setTemplates(listTemplates());
 
-  const handleSave = () => {
+  const handleSave = (asNew: boolean) => {
     const now = new Date().toISOString();
+    const id = asNew ? (crypto.randomUUID?.() ?? `template-${Date.now()}`) : currentTemplate.id;
     const updated: DesignerTemplate = {
       ...currentTemplate,
+      id,
       name: saveName,
+      createdAt: asNew ? now : (currentTemplate.createdAt || now),
       updatedAt: now,
     };
-    if (!updated.createdAt) updated.createdAt = now;
     saveTemplate(updated);
     setActiveTemplateId(updated.id);
     setActiveId(updated.id);
+    onLoadTemplate(updated);
     refresh();
-    toast("Template saved", "success");
+    toast(asNew ? "Template saved as new" : "Template saved", "success");
+  };
+
+  const handleSaveAsNew = () => {
+    const now = new Date().toISOString();
+    const newId = crypto.randomUUID?.() ?? `template-${Date.now()}`;
+    const newTemplate: DesignerTemplate = {
+      ...currentTemplate,
+      id: newId,
+      name: saveName,
+      createdAt: now,
+      updatedAt: now,
+    };
+    saveTemplate(newTemplate);
+    setActiveTemplateId(newId);
+    setActiveId(newId);
+    refresh();
+    toast("Template saved as new", "success");
   };
 
   const handleLoad = (meta: TemplateMeta) => {
@@ -114,22 +134,25 @@ export default function TemplateLibrary({
           </button>
         </div>
 
-        <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-4">
-          <p className="mb-2 text-xs font-bold text-[var(--muted)]">
-            Save Current Template
-          </p>
-          <div className="flex gap-2">
-            <input
-              className="field-input flex-1 py-2 text-sm"
-              value={saveName}
-              onChange={(e) => setSaveName(e.target.value)}
-              placeholder="Template name"
-            />
-            <button className="primary-button" onClick={handleSave}>
-              <Save size={14} /> Save
-            </button>
+          <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-4">
+            <p className="mb-2 text-xs font-bold text-[var(--muted)]">
+              Save Current Template
+            </p>
+            <div className="flex gap-2">
+              <input
+                className="field-input flex-1 py-2 text-sm"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                placeholder="Template name"
+              />
+              <button className="primary-button" onClick={handleSave}>
+                <Save size={14} /> Save
+              </button>
+              <button className="secondary-button" onClick={handleSaveAsNew} title="Save as new template">
+                <Copy size={14} /> Save As New
+              </button>
+            </div>
           </div>
-        </div>
 
         <div className="mb-4 flex gap-2">
           <button

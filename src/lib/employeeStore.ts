@@ -8,6 +8,7 @@ import {
     EmployeeImageCrop,
     EmployeeImageTransform,
     EmployeeRecord,
+    UserData,
 } from "../types";
 
 export interface PersistedBatchState {
@@ -49,21 +50,33 @@ export function createEmployeeId() {
     return `employee-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+export interface TemplateFieldDefault {
+  fieldName: string;
+  defaultValue: string;
+}
+
 export function createEmployeeRecord(
-    seed: Partial<EmployeeRecord>,
+    seed: Partial<EmployeeRecord> | Partial<UserData>,
     index: number,
+    fieldDefaults?: TemplateFieldDefault[],
 ): EmployeeRecord {
-    const id = seed.id ?? createEmployeeId();
+    const id = (seed as Partial<EmployeeRecord>).id ?? createEmployeeId();
+    const defaults: Record<string, string> = {};
+    if (fieldDefaults) {
+      for (const fd of fieldDefaults) {
+        defaults[fd.fieldName] = fd.defaultValue;
+      }
+    }
 
     return {
         id,
-        employeeId: seed.employeeId ?? seed.idNumber ?? id,
-        fullName: seed.fullName ?? `New Employee ${index + 1}`,
-        department: seed.department ?? "",
-        role: seed.role ?? "",
-        idNumber: seed.idNumber ?? `EMP-${String(index + 1).padStart(3, "0")}`,
-        imageUrl: seed.imageUrl ?? null,
-        issueDate: seed.issueDate ?? today(),
+        employeeId: (seed as Partial<EmployeeRecord>).employeeId ?? (seed as Partial<UserData>).idNumber ?? id,
+        fullName: seed.fullName ?? defaults.fullName ?? "",
+        department: seed.department ?? defaults.department ?? "",
+        role: seed.role ?? defaults.role ?? "",
+        idNumber: seed.idNumber ?? defaults.idNumber ?? "",
+        imageUrl: seed.imageUrl ?? defaults.imageUrl ?? null,
+        issueDate: seed.issueDate ?? defaults.issueDate ?? today(),
         imageTransform: {
             ...createDefaultImageTransform(),
             ...(seed.imageTransform ?? {}),
@@ -72,6 +85,7 @@ export function createEmployeeRecord(
             ...createDefaultImageCrop(),
             ...(seed.imageCrop ?? {}),
         },
+        extraFields: { ...defaults, ...(seed.extraFields ?? {}) },
     };
 }
 
@@ -82,9 +96,9 @@ export function duplicateEmployeeRecord(
     return {
         ...seed,
         id: createEmployeeId(),
-        employeeId: `${seed.employeeId}-${String(index + 1).padStart(2, "0")}`,
-        fullName: `${seed.fullName} ${index + 1}`.trim(),
-        idNumber: `${seed.idNumber}-${String(index + 1).padStart(2, "0")}`,
+        employeeId: seed.employeeId,
+        fullName: seed.fullName,
+        idNumber: seed.idNumber,
         imageTransform: {
             ...seed.imageTransform,
         },
