@@ -59,6 +59,22 @@ export function resolveText(template: string, data: UserData): string {
     .replace(/\{\{(\w+)\}\}/g, (_, name) => data.extraFields?.[name] ?? "");
 }
 
+export function getLayerEmployeeValue(layer: TemplateLayer, data: UserData): string | null {
+  if (layer.type === "text") {
+    const key = `_tl_${layer.id}`;
+    const override = data.extraFields?.[key];
+    if (override !== undefined) return override;
+    return (layer.props as TextLayerProps).text;
+  }
+  if (layer.type === "image") {
+    const key = `_il_${layer.id}`;
+    const override = data.extraFields?.[key];
+    if (override) return override;
+    return (layer.props as ImageLayerProps).src ?? null;
+  }
+  return null;
+}
+
 function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
   const chars = text.split("");
   let line = "";
@@ -181,7 +197,8 @@ export async function renderTemplateToCanvas(
 
       case "text": {
         const p = layer.props as TextLayerProps;
-        const text = resolveText(p.text, data);
+        const layerValue = getLayerEmployeeValue(layer, data);
+        const text = layerValue !== null ? resolveText(layerValue, data) : "";
 
         ctx.fillStyle = p.color;
         ctx.font = `${p.fontWeight} ${Math.round(p.fontSize * scaleY)}px ${p.fontFamily}`;
@@ -199,10 +216,13 @@ export async function renderTemplateToCanvas(
 
       case "image": {
         const p = layer.props as ImageLayerProps;
-        let imageSrc = p.src;
+        let imageSrc = getLayerEmployeeValue(layer, data);
 
-        if (data.imageUrl) {
+        if (!imageSrc && data.imageUrl) {
           imageSrc = data.imageUrl;
+        }
+        if (!imageSrc) {
+          imageSrc = p.src;
         }
 
         if (imageSrc) {

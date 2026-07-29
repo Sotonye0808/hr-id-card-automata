@@ -150,22 +150,15 @@ function AppInner() {
     injectMetaTags();
   }, []);
 
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const templateSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDesignerTemplateChange = (tpl: DesignerTemplate) => {
     setDesignerTemplate(tpl);
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
+    if (templateSaveTimerRef.current) clearTimeout(templateSaveTimerRef.current);
+    templateSaveTimerRef.current = setTimeout(() => {
       saveTemplate(tpl);
       setActiveTemplateId(tpl.id);
-    }, 500);
-  };
-
-  const handleDesignerTemplateSave = (tpl: DesignerTemplate) => {
-    setDesignerTemplate(tpl);
-    saveTemplate(tpl);
-    setActiveTemplateId(tpl.id);
-    toast("Template saved", "success");
+    }, 2000);
   };
 
   const handleCookieAccept = () => {
@@ -259,9 +252,29 @@ function AppInner() {
 
   const addEmployee = () => {
     const nextIndex = employees.length;
+    const seed: Partial<EmployeeRecord> = {};
+    if (designerTemplate) {
+      const extraFields: Record<string, string> = {};
+      const allLayers = [...designerTemplate.layers, ...(designerTemplate.backLayers ?? [])];
+      for (const layer of allLayers) {
+        if (layer.type === "text") {
+          const key = `_tl_${layer.id}`;
+          extraFields[key] = (layer.props as import("./types").TextLayerProps).text;
+        } else if (layer.type === "image") {
+          const src = (layer.props as import("./types").ImageLayerProps).src;
+          if (src) {
+            const key = `_il_${layer.id}`;
+            extraFields[key] = src;
+          }
+        }
+      }
+      if (Object.keys(extraFields).length > 0) {
+        seed.extraFields = extraFields;
+      }
+    }
     setEmployees((current) => [
       ...current,
-      createEmployeeRecord({}, current.length, templateFieldDefaults),
+      createEmployeeRecord(seed, current.length),
     ]);
     setSelectedIndex(nextIndex);
     setActiveTab("employees");

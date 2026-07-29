@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-28
+> - last-verified-against-code: 2026-07-29
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
 > **Overview:** High-level architecture of the HR ID Card Automata application — a fully client-side SPA for generating, customizing, and batch-exporting employee ID cards.
@@ -68,7 +68,7 @@ Central state management via React `useState`. Manages:
 ### Components
 | Component | Responsibility | Props |
 |-----------|---------------|-------|
-| `DataEntry` | Employee form fields + image upload + transform controls — shows only fields referenced in active designer template text layers (`{{variable}}` placeholders); profile media and transform controls only shown when template has image layers; falls back to all standard fields when no template | `data, onChange, designerTemplate?` |
+| `DataEntry` | Employee form fields + image upload + transform controls — iterates over template text layers (→ text inputs) and image layers (→ image uploads), prefilled with template defaults; also shows `{{variable}}`-referenced standard fields; falls back to all standard fields when no template. Shape/barcode layers excluded. | `data, onChange, designerTemplate?` |
 | `IDCard` | Live card rendering — supports legacy CardConfig and new DesignerTemplate | `config, data, designerTemplate?` |
 | `TemplateEditor` | Combined editor: design tab (fonts/colors), layout tab (sliders), designer tab (canvas editor) | `config, onChange, onReset, designerTemplate?, onDesignerTemplateChange?` |
 | `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), undo/redo history (50 steps, only tracks meaningful changes — skips grab without move), icon-based resize/rotate handles (larger for touch), layer panel, property inspector per layer type (including gradient, glassmorphism, border controls), front/back side toggle, responsive auto-zoom | `template, onChange` |
@@ -137,6 +137,6 @@ Template Library (save/load) → localStorage (named templates list + active tem
 | Auto-scaling canvas | ResizeObserver-driven zoom to fit canvas within viewport on all screen sizes |
 | Backward-compat migration | `migrateCardConfigToDesignerTemplate()` converts old CardConfig to new DesignerTemplate format |
 | Icon-based resize/rotate handles | Replaced colored dots with lucide-react icons (`Move`, `RotateCcw`) in 28px touch targets for better usability |
-| Undo/redo via ref-based history | `historyRef` stores up to 50 snapshots of layers; `undo`/`redo` callbacks restore snapshots only on actual changes (drag move, resize, rotation change, add/delete) — skips trivial interactions like grab without move |
+| Undo/redo via ref-based history | `historyRef` stores up to 50 snapshots of layers; `undo`/`redo` callbacks restore snapshots on pointer-up, add/delete/move — only records history when actual change occurred (ignores clicks without movement) |
 | Gradient + glassmorphism as first-class props | `GradientConfig` and `GlassmorphismConfig` embedded in `ShapeLayerProps` and `ImageLayerProps`; rendered via inline `background` and `backdropFilter` styles |
 | Toast notification system | `ToastProvider` context + `useToast()` hook; auto-dismiss after 3.5s; success/error/info variants with `motion` animations |

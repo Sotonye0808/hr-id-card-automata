@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Database, ImageOff } from "lucide-react";
 import { CardConfig, UserData, DesignerTemplate, TemplateLayer, TextLayerProps, ImageLayerProps, ShapeLayerProps } from "../types";
 import { renderTransformedImage } from "../lib/employeeStore";
+import { getLayerEmployeeValue } from "../lib/templateRenderer";
 
 interface IDCardProps {
   config: CardConfig;
@@ -236,7 +237,9 @@ function LayerRenderer({ layer, data, renderedImageUrl }: { layer: TemplateLayer
   switch (layer.type) {
     case "text": {
       const p = layer.props as TextLayerProps;
-      const resolved = p.text
+      const layerValue = getLayerEmployeeValue(layer, data);
+      const text = layerValue ?? p.text;
+      const resolved = text
         .replace(/\{\{fullName\}\}/g, data.fullName)
         .replace(/\{\{department\}\}/g, data.department)
         .replace(/\{\{role\}\}/g, data.role)
@@ -261,7 +264,8 @@ function LayerRenderer({ layer, data, renderedImageUrl }: { layer: TemplateLayer
     }
     case "image": {
       const p = layer.props as ImageLayerProps;
-      const src = renderedImageUrl || p.src;
+      const layerSrc = getLayerEmployeeValue(layer, data);
+      const src = renderedImageUrl || layerSrc || p.src;
       const imgStyle: React.CSSProperties = {};
       if (p.glassmorphism?.enabled) {
         imgStyle.backdropFilter = `blur(${p.glassmorphism.blur}px)`;

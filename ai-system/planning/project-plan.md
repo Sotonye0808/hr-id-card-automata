@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-28
+> - last-verified-against-code: 2026-07-29
 > - staleness-policy: update after each sprint
 
 > **Overview:** High-level feature checklist and development roadmap.
@@ -42,11 +42,10 @@
 
 ### Recently Completed
 - [x] Clean employee defaults — empty batch on start, no seeded defaults
-- [x] Template-driven DataEntry — fields shown only when referenced in template
-- [x] Undo/redo — only tracks meaningful changes (skip grab without move)
-- [x] Multi-template save support — "Save as New" in TemplateLibrary creates copies
-- [x] Image-layer-aware DataEntry — profile media and transform controls shown only when template has image layers
-- [x] Template-default-aware employee creation — `createEmployeeRecord` accepts field defaults from template text layers
+- [x] Template-driven DataEntry — fields shown based on template layers (text/text, image/image upload), prefilled with template defaults
+- [x] Layer-based employee data binding — per-layer values stored via extraFields (`_tl_<id>` / `_il_<id>`)
+- [x] Undo/redo only records actual changes (no no-op history entries)
+- [x] Multiple template saves — "Save As New" in TemplateLibrary creates new template IDs
 
 ### Planned
 - [ ] ActivityBoard component wiring (batch processor, audit journal)

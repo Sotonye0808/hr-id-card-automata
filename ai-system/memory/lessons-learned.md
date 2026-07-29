@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-28
+> - last-verified-against-code: 2026-07-29
 > - staleness-policy: append each time a lesson is identified
 
 > **Overview:** Lessons learned during development. Add entries as new insights arise.
@@ -59,8 +59,14 @@ Always define dependencies (e.g., `setActiveLayers`) before the callbacks that r
 
 For PDF/DOCX exports that need to render visual templates, the most reliable approach without external dependencies (html2canvas) is to render layers onto an offscreen `<canvas>` element using native Canvas 2D API, then embed the resulting data URL (PNG) via `jsPDF.addImage()` or `docx` `ImageRun`. Text rendering on canvas requires explicit `ctx.font` setup. Use `ctx.save()`/`ctx.restore()` around each layer for isolated transforms (rotation, opacity). Handle barcodes as styled placeholder text since actual barcode generation would require an additional library. Handle gradients via `createLinearGradient`/`createRadialGradient` and image objectFit via manual aspect-ratio calculations.
 
-## Lesson 9 — Undo/Redo Must Only Track Meaningful Changes
+## Lesson 9 — Undo/Redo Should Gate on Actual Change, Not Interaction
 
-**Date:** 2026-07-28
+**Date:** 2026-07-29
 
-When implementing undo/redo for drag/resize/rotate operations, pushing history on `pointerup` captures every interaction — including simple clicks that select a layer without moving it. This pollutes the undo stack with "no-op" entries, making it harder to undo significant changes. Always compare the layer's current position/size/rotation against the start values before pushing to history. This ensures only actual modifications create undo steps, keeping the history stack clean and useful.
+Pointer events fire `pointerdown` → `pointerup` even on simple clicks without movement. If `pushHistory` fires on every pointer-up unconditionally, the undo stack fills with no-op entries that dilute meaningful undo actions. Always track whether a drag/resize/rotate actually changed the layer state (e.g., compare final position/size/rotation to initial values via a `didMove`/`didResize`/`didRotate` flag) before pushing to history.
+
+## Lesson 10 — Layer-Based Employee Data Binding Over Placeholder-Scanning
+
+**Date:** 2026-07-29
+
+Scanning text layer content for `{{variable}}` placeholders is fragile — templates without variables produce no input fields at all. A more robust approach is to iterate over template layers directly: each text layer → text input, each image layer → image upload, shape/barcode → skip. Store per-layer employee overrides in `extraFields` with prefixed keys (`_tl_<layerId>` for text, `_il_<layerId>` for images). This ensures every editable layer always gets a corresponding input, and the template's default content serves as the initial prefill.

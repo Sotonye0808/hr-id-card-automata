@@ -335,9 +335,11 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
 
   useEffect(() => {
     if (!dragging) return;
+    let didMove = false;
     const handlePointerMove = (e: PointerEvent) => {
       const dx = Math.round((e.clientX - dragging.startX) / SNAP) * SNAP;
       const dy = Math.round((e.clientY - dragging.startY) / SNAP) * SNAP;
+      if (dx !== 0 || dy !== 0) didMove = true;
       updateLayer(dragging.layerId, {
         x: dragging.startLayerX + dx,
         y: dragging.startLayerY + dy,
@@ -345,9 +347,8 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
     };
     const handlePointerUp = () => {
       setDragging(null);
-      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
-      const layer = layers.find((l) => l.id === dragging.layerId);
-      if (layer && (layer.x !== dragging.startLayerX || layer.y !== dragging.startLayerY)) {
+      if (didMove) {
+        const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
         pushHistory(layers);
       }
     };
@@ -364,6 +365,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
 
   useEffect(() => {
     if (!resizing) return;
+    let didResize = false;
     const handlePointerMove = (e: PointerEvent) => {
       const dx = Math.round((e.clientX - resizing.startX) / SNAP) * SNAP;
       const dy = Math.round((e.clientY - resizing.startY) / SNAP) * SNAP;
@@ -377,13 +379,13 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       if (resizing.handle.includes("n")) {
         newH = Math.max(20, resizing.startH - dy);
       }
+      if (newW !== resizing.startW || newH !== resizing.startH) didResize = true;
       updateLayer(resizing.layerId, { width: newW, height: newH });
     };
     const handlePointerUp = () => {
       setResizing(null);
-      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
-      const layer = layers.find((l) => l.id === resizing.layerId);
-      if (layer && (layer.width !== resizing.startW || layer.height !== resizing.startH)) {
+      if (didResize) {
+        const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
         pushHistory(layers);
       }
     };
@@ -399,16 +401,19 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
 
   useEffect(() => {
     if (!rotating) return;
+    let didRotate = false;
     const handlePointerMove = (e: PointerEvent) => {
       const angle = Math.atan2(e.clientY - rotating.centerY, e.clientX - rotating.centerX) * (180 / Math.PI);
       const newRotation = Math.round((angle - rotating.startAngle) / 5) * 5;
+      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
+      const layer = layers.find((l) => l.id === rotating.layerId);
+      if (layer && newRotation !== layer.rotation) didRotate = true;
       updateLayer(rotating.layerId, { rotation: newRotation });
     };
     const handlePointerUp = () => {
       setRotating(null);
-      const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
-      const layer = layers.find((l) => l.id === rotating.layerId);
-      if (layer && layer.rotation !== 0) {
+      if (didRotate) {
+        const layers = activeSide === "front" ? template.layers : (template.backLayers ?? []);
         pushHistory(layers);
       }
     };
