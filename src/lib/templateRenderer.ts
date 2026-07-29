@@ -1,5 +1,10 @@
 import type { DesignerTemplate, TemplateLayer, TextLayerProps, ImageLayerProps, ShapeLayerProps, BarcodeLayerProps, UserData } from "../types";
 
+export interface TemplateFieldDefault {
+  fieldName: string;
+  defaultValue: string;
+}
+
 export function extractTemplateFields(template: DesignerTemplate): string[] {
   const fieldSet = new Set<string>();
   const allLayers = [...template.layers, ...(template.backLayers ?? [])];
@@ -16,6 +21,32 @@ export function extractTemplateFields(template: DesignerTemplate): string[] {
   }
 
   return Array.from(fieldSet);
+}
+
+export function extractTemplateDefaults(template: DesignerTemplate): TemplateFieldDefault[] {
+  const result: TemplateFieldDefault[] = [];
+  const allLayers = [...template.layers, ...(template.backLayers ?? [])];
+  const regex = /\{\{(\w+)\}\}/g;
+
+  for (const layer of allLayers) {
+    if (layer.type === "text") {
+      const p = layer.props as TextLayerProps;
+      regex.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(p.text)) !== null) {
+        const fieldName = match[1];
+        const before = p.text.substring(0, match.index).replace(/\{\{\w+\}\}/g, "").trim();
+        result.push({ fieldName, defaultValue: before || "" });
+      }
+    }
+  }
+
+  return result;
+}
+
+export function hasImageLayers(template: DesignerTemplate): boolean {
+  const allLayers = [...template.layers, ...(template.backLayers ?? [])];
+  return allLayers.some((l) => l.type === "image");
 }
 
 export function resolveText(template: string, data: UserData): string {

@@ -37,19 +37,22 @@ export default function TemplateLibrary({
 
   const refresh = () => setTemplates(listTemplates());
 
-  const handleSave = () => {
+  const handleSave = (asNew: boolean) => {
     const now = new Date().toISOString();
+    const id = asNew ? (crypto.randomUUID?.() ?? `template-${Date.now()}`) : currentTemplate.id;
     const updated: DesignerTemplate = {
       ...currentTemplate,
+      id,
       name: saveName,
+      createdAt: asNew ? now : (currentTemplate.createdAt || now),
       updatedAt: now,
     };
-    if (!updated.createdAt) updated.createdAt = now;
     saveTemplate(updated);
     setActiveTemplateId(updated.id);
     setActiveId(updated.id);
+    onLoadTemplate(updated);
     refresh();
-    toast("Template saved", "success");
+    toast(asNew ? "Template saved as new" : "Template saved", "success");
   };
 
   const handleSaveAsNew = () => {

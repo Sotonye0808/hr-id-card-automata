@@ -1,7 +1,7 @@
 # Project AI Context
 
 > **Metadata**
-> - last-updated-by: execute-feature
+> - last-updated-by: update-ai-system
 > - last-verified-against-code: 2026-07-28
 > - staleness-policy: re-verify before trusting if project structure has changed
 
@@ -48,4 +48,4 @@ Start with: `ai-system/protocols/entry-protocol.md`
 
 ## Active Development Focus
 
-Dynamic template-driven data entry, canvas-based template rendering for PDF/DOCX exports with front/back card support, and template-aware CSV import.
+Dynamic template-driven data entry with image-layer-aware inputs, multi-template management via "Save as New", debounced auto-save, and clean undo/redo that only tracks meaningful changes.

@@ -71,8 +71,8 @@ Central state management via React `useState`. Manages:
 | `DataEntry` | Employee form fields + image upload + transform controls — iterates over template text layers (→ text inputs) and image layers (→ image uploads), prefilled with template defaults; also shows `{{variable}}`-referenced standard fields; falls back to all standard fields when no template. Shape/barcode layers excluded. | `data, onChange, designerTemplate?` |
 | `IDCard` | Live card rendering — supports legacy CardConfig and new DesignerTemplate | `config, data, designerTemplate?` |
 | `TemplateEditor` | Combined editor: design tab (fonts/colors), layout tab (sliders), designer tab (canvas editor) | `config, onChange, onReset, designerTemplate?, onDesignerTemplateChange?` |
-| `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), undo/redo history (50 steps), icon-based resize/rotate handles (larger for touch), layer panel, property inspector per layer type (including gradient, glassmorphism, border controls), front/back side toggle, responsive auto-zoom | `template, onChange` |
-| `TemplateLibrary` | Save/load/rename/delete templates, export/import JSON files, toast feedback | `currentTemplate, onLoadTemplate, onClose` |
+| `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), undo/redo history (50 steps, only tracks meaningful changes — skips grab without move), icon-based resize/rotate handles (larger for touch), layer panel, property inspector per layer type (including gradient, glassmorphism, border controls), front/back side toggle, responsive auto-zoom | `template, onChange` |
+| `TemplateLibrary` | Save/load/rename/delete templates, "Save as New" for multi-template copies, export/import JSON files, toast feedback | `currentTemplate, onLoadTemplate, onClose` |
 | `CookieConsent` | GDPR-compliant banner with Accept/Dismiss, persists consent flag | `onAccept, onDismiss` |
 | `Toast` | Toast notification context with animated success/error/info toasts, auto-dismiss | children (context provider) |
 | `ImportWizard` | Two-step modal: field mapping → row selection | `headers, rawRows, onConfirm, onCancel` |
@@ -83,7 +83,7 @@ Central state management via React `useState`. Manages:
 |--------|---------------|
 | `employeeStore.ts` | Employee CRUD, CSV/XLSX import, image render pipeline, IndexedDB persistence |
 | `templateStore.ts` | Template CRUD (localStorage), JSON import/export, legacy CardConfig migration, consent gate |
-| `templateRenderer.ts` | Canvas-based template rendering for PDF/DOCX exports — extracts template fields, resolves `{{variable}}` text placeholders, renders layers (text/shape/image/barcode) to offscreen canvas with gradient/glassmorphism support |
+| `templateRenderer.ts` | Canvas-based template rendering for PDF/DOCX exports — extracts template fields and defaults, detects image layers, resolves `{{variable}}` text placeholders, renders layers (text/shape/image/barcode) to offscreen canvas with gradient/glassmorphism support |
 | `templateImporter.ts` | Import images/DOCX/PDF as tracing backgrounds for template design |
 | `Toast.tsx` | Toast notification context — `ToastProvider` wraps App, `useToast()` hook for triggering toasts |
 | `seo.ts` | Dynamic injection of Open Graph, Twitter Card, and JSON-LD structured data |

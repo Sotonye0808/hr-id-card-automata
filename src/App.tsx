@@ -56,6 +56,7 @@ import {
   savePersistedBatch,
   detectFieldMappings,
 } from "./lib/employeeStore";
+import { extractTemplateDefaults, hasImageLayers } from "./lib/templateRenderer";
 import {
   getConsented,
   loadTemplate,
@@ -244,6 +245,10 @@ function AppInner() {
       ),
     );
   };
+
+  const templateFieldDefaults = useMemo(() => {
+    return designerTemplate ? extractTemplateDefaults(designerTemplate) : [];
+  }, [designerTemplate]);
 
   const addEmployee = () => {
     const nextIndex = employees.length;

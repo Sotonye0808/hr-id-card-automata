@@ -41,7 +41,7 @@ HR ID Card Automata is a privacy-first, offline-capable web application that ena
 
 Phase: Active Development
 
-Active sprint focus: Dynamic template-driven data entry — employee details panel dynamically shows fields from template text layer variables, canvas-based template rendering for PDF/DOCX exports with front/back card support, template-aware CSV import that maps extra fields.
+Active sprint focus: Dynamic template-driven data entry — employee details panel dynamically shows fields from template text layer variables, profile media inputs only when template has image layers, multi-template management with "Save as New", debounced auto-save, and clean undo/redo that only tracks meaningful changes.
 
 ---
 
@@ -81,10 +81,13 @@ Active sprint focus: Dynamic template-driven data entry — employee details pan
 - Dynamic SEO meta tag injection (Open Graph, Twitter Cards, JSON-LD)
 - Dark/light theme with local persistence
 - Backward compatibility with legacy CardConfig template format
-- Dynamic DataEntry — employee form dynamically renders input fields based on `{{variable}}` placeholders found in template text layers
+- Dynamic DataEntry — employee form dynamically renders input fields based on `{{variable}}` placeholders found in template text layers; profile media upload and transform controls only shown when template has image layers (shapes require no input)
+- Template-default-aware employee creation — `createEmployeeRecord` accepts field defaults extracted from template text context
 - Canvas-based template renderer (`templateRenderer.ts`) for PDF/DOCX export — renders layers (text/shape/image/barcode) with gradient/glassmorphism support to offscreen canvas for embedding in exports
 - Front/back card sides in PDF and DOCX exports — automatically includes back of card page when template has `hasBackSide`
 - Template-aware CSV import — extra template fields detected and mapped to `extraFields` on employee records
+- Multi-template library — "Save as New" creates copies with new IDs; debounced auto-save prevents excessive writes
+- Undo/redo only tracks meaningful changes — grab without move, resize without change, or rotation without change do not create history entries
 
 ---
 

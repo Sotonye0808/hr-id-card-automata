@@ -14,7 +14,7 @@ A privacy-first, offline-capable web application for designing, customizing, and
 - **Border Controls** — Customize border width, color, and style (solid/dashed/dotted) for image and shape layers.
 - **Layer Panel** — Toggle visibility, lock/unlock, reorder (z-index), reset rotation, and delete layers. Each layer has a dedicated property inspector (font, color, size, position, rotation, opacity, image source, gradients, borders, glassmorphism).
 - **Toast Notifications** — Subtle feedback toasts for save, load, import, export, and other actions.
-- **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, and import from JSON files.
+- **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, import from JSON files, and **"Save as New"** to create template copies with unique IDs for true multi-template management.
 - **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
 - **Layer-Based Employee Data Entry** — Employee form generates inputs based on template layers: each text layer → text input, each image layer → image upload, each prefilled with the template's default content. Also shows `{{variable}}`-referenced standard fields. Shape and barcode layers are excluded from data entry.
 - **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings including extra template fields.
@@ -73,7 +73,7 @@ src/
 ├── types.ts                   # TypeScript types (CardConfig, DesignerTemplate, TemplateLayer, etc.)
 ├── index.css                  # Global styles, CSS variables, sheet themes
 ├── components/
-│   ├── DataEntry.tsx           # Employee form fields + image upload
+│   ├── DataEntry.tsx           # Template-driven employee form (shows fields from template text layers + image upload when template has image layers)
 │   ├── IDCard.tsx              # Live preview (legacy + designer template modes)
 │   ├── TemplateEditor.tsx      # Combined editor (design/layout tabs + designer tab)
 │   ├── TemplateDesigner.tsx    # WYSIWYG canvas editor with undo/redo, icon handles, property panels
