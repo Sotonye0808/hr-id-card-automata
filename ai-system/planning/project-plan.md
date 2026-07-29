@@ -40,6 +40,10 @@
 - [ ] Import wizard polish (validation edge cases)
 - [ ] Export pipeline stabilization (progress reporting, error handling)
 
+### Recently Completed
+- [x] Clean employee defaults — empty batch on start, no seeded defaults
+- [x] Template-driven DataEntry — fields shown only when referenced in template
+
 ### Planned
 - [ ] ActivityBoard component wiring (batch processor, audit journal)
 - [ ] Image drag-and-drop upload support

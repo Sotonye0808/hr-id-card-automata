@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-25
+> - last-verified-against-code: 2026-07-28
 > - staleness-policy: append each time a significant decision is made
 
 > **Overview:** Log of significant project decisions. Add entries as decisions are made.

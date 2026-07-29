@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-26
+> - last-verified-against-code: 2026-07-28
 > - staleness-policy: append at the end of each significant development phase
 
 > **Overview:** High-level summary of development milestones and phases.
@@ -117,3 +117,16 @@
 - Updated CSV/XLSX import: extra template fields detected and mapped to `extraFields` on employee records during import wizard confirmation
 - Updated IDCard text layer resolution to handle `{{extraField}}` variables via `data.extraFields`
 - All ai-system docs refreshed: system-architecture (templateRenderer, export pipeline), project-context (dynamic DataEntry, template-based exports), task-queue (new tasks), project-plan (completed items), dev-history (this entry)
+
+## v0.8 — Clean Employee Defaults & Template-Driven DataEntry
+
+**Date:** 2026-07-28
+
+**Summary:**
+- Removed hardcoded `SAMPLE_EMPLOYEES` from App.tsx — app now starts with an empty employee batch instead of pre-populated sample data
+- `createEmployeeRecord` no longer seeds default values ("New Employee N", "EMP-NNN"); all text fields default to empty strings
+- `duplicateEmployeeRecord` no longer appends suffixes to duplicated employee names/IDs
+- DataEntry now dynamically shows only fields referenced in the active designer template's text layers (via `{{variable}}` placeholders) — both standard fields (fullName, department, role, idNumber, issueDate) and custom extra fields
+- When no designer template is active, DataEntry falls back to showing all standard fields for backward compatibility
+- Added empty-state UI for batch list and employee entry panel when no employees exist
+- Updated all ai-system docs and README

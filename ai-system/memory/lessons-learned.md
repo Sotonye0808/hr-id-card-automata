@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-26
+> - last-verified-against-code: 2026-07-28
 > - staleness-policy: append each time a lesson is identified
 
 > **Overview:** Lessons learned during development. Add entries as new insights arise.

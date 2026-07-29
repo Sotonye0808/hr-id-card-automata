@@ -88,41 +88,7 @@ const DEFAULT_TEMPLATE: CardConfig = {
   },
 };
 
-const SAMPLE_EMPLOYEES: EmployeeRecord[] = [
-  createEmployeeRecord(
-    {
-      fullName: "Abraham Bamidele",
-      department: "Communications",
-      role: "Lead Graphics Designer (Senior Officer 3)",
-      idNumber: "COMMS021",
-      imageUrl: null,
-      issueDate: new Date().toISOString().split("T")[0],
-    },
-    0,
-  ),
-  createEmployeeRecord(
-    {
-      fullName: "Esther Adaigbe",
-      department: "Finance",
-      role: "Team Lead Supervisor 2",
-      idNumber: "FIN0831",
-      imageUrl: null,
-      issueDate: new Date().toISOString().split("T")[0],
-    },
-    1,
-  ),
-  createEmployeeRecord(
-    {
-      fullName: "Deborah",
-      department: "Creative Services",
-      role: "Copywriting & creative lead. Senior officer 1",
-      idNumber: "FIN0831",
-      imageUrl: null,
-      issueDate: new Date().toISOString().split("T")[0],
-    },
-    2,
-  ),
-];
+
 
 function nextFrame() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -145,7 +111,7 @@ function AppInner() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("employees");
   const [template, setTemplate] = useState<CardConfig>(DEFAULT_TEMPLATE);
   const [employees, setEmployees] =
-    useState<EmployeeRecord[]>(SAMPLE_EMPLOYEES);
+    useState<EmployeeRecord[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [progress, setProgress] = useState<ExportProgress>({
     phase: "Ready",
@@ -264,7 +230,7 @@ function AppInner() {
     });
   }, [employees, isHydrated, selectedIndex]);
 
-  const selectedEmployee = employees[selectedIndex] ?? employees[0];
+  const selectedEmployee = employees.length > 0 ? (employees[selectedIndex] ?? employees[0]) : null;
   const queuedCount = employees.length;
 
   const updateSelectedEmployee = (next: UserData) => {
@@ -307,12 +273,6 @@ function AppInner() {
       current.filter((_, index) => index !== selectedIndex),
     );
     setSelectedIndex((current) => Math.max(0, current - 1));
-  };
-
-  const resetSampleBatch = () => {
-    setEmployees(SAMPLE_EMPLOYEES);
-    setSelectedIndex(0);
-    setActiveTab("employees");
   };
 
   const openCsvPicker = () => {
@@ -1108,26 +1068,34 @@ function AppInner() {
           <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
             {activeTab === "employees" && (
               <>
-                <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
-                  <DataEntry
-                    data={selectedEmployee}
-                    onChange={updateSelectedEmployee}
-                    designerTemplate={designerTemplate}
-                  />
-                </div>
+                {selectedEmployee ? (
+                  <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
+                    <DataEntry
+                      data={selectedEmployee}
+                      onChange={updateSelectedEmployee}
+                      designerTemplate={designerTemplate}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-[var(--border)] bg-[var(--surface)] p-8 text-center">
+                    <Users size={32} className="mb-3 text-[var(--muted)]" />
+                    <p className="font-semibold text-[var(--text)]">No employees yet</p>
+                    <p className="mt-1 text-sm text-[var(--muted)]">
+                      Add an employee or import from CSV to get started.
+                    </p>
+                  </div>
+                )}
 
                 <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <p className="eyebrow">Batch list</p>
                       <p className="text-sm text-[var(--muted)]">
-                        Select a row to edit a single employee, or keep adding
-                        rows for a batch export.
+                        {employees.length > 0
+                          ? "Select a row to edit a single employee, or keep adding rows for a batch export."
+                          : "Add employees manually or import from a CSV/XLSX file."}
                       </p>
                     </div>
-                    <button className="mini-button" onClick={resetSampleBatch}>
-                      Reset sample
-                    </button>
                   </div>
                   <p className="mb-3 text-xs text-[var(--muted)]">
                     CSV headers supported: fullName, department, role, idNumber,
@@ -1135,28 +1103,34 @@ function AppInner() {
                     imageCropX, imageCropY, imageCropWidth, imageCropHeight.
                   </p>
 
-                  <div className="max-h-[260px] overflow-y-auto rounded-2xl border border-[var(--border)]">
-                    {employees.map((employee, index) => (
-                      <button
-                        key={employee.id}
-                        className={`w-full border-b border-[var(--border)] px-3 py-3 text-left transition last:border-b-0 ${index === selectedIndex ? "bg-[var(--accent-soft)]" : "bg-transparent hover:bg-black/5"}`}
-                        onClick={() => setSelectedIndex(index)}
-                        type="button">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-[var(--text)]">
-                              {employee.fullName || "Untitled employee"}
-                            </p>
-                            <p className="text-xs text-[var(--muted)]">
-                              {employee.idNumber} ·{" "}
-                              {employee.department || "No department"}
-                            </p>
+                  {employees.length > 0 ? (
+                    <div className="max-h-[260px] overflow-y-auto rounded-2xl border border-[var(--border)]">
+                      {employees.map((employee, index) => (
+                        <button
+                          key={employee.id}
+                          className={`w-full border-b border-[var(--border)] px-3 py-3 text-left transition last:border-b-0 ${index === selectedIndex ? "bg-[var(--accent-soft)]" : "bg-transparent hover:bg-black/5"}`}
+                          onClick={() => setSelectedIndex(index)}
+                          type="button">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="font-semibold text-[var(--text)]">
+                                {employee.fullName || "Untitled employee"}
+                              </p>
+                              <p className="text-xs text-[var(--muted)]">
+                                {employee.idNumber}
+                                {employee.department ? ` · ${employee.department}` : ""}
+                              </p>
+                            </div>
+                            <span className="cell-label">{index + 1}</span>
                           </div>
-                          <span className="cell-label">{index + 1}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--bg)] p-6 text-center text-sm text-[var(--muted)]">
+                      No employees in batch. Click "Add row" or import data.
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-3">

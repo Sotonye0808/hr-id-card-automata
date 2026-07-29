@@ -56,3 +56,5 @@
 | P2 | S | Add export progress error states | Pending |
 | P2 | M | Implement image drag-and-drop upload | Pending |
 | P3 | L | Add chunked export for large employee batches | Pending |
+| P1 | M | **Clean employee defaults** — removed SAMPLE_EMPLOYEES, empty initial batch, no seeded defaults on createEmployeeRecord | Complete |
+| P1 | M | **Template-driven DataEntry** — only show fields referenced in active designer template text layers; fallback to all standard fields when no template | Complete |

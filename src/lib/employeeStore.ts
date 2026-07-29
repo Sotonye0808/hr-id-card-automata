@@ -59,10 +59,10 @@ export function createEmployeeRecord(
     return {
         id,
         employeeId: (seed as Partial<EmployeeRecord>).employeeId ?? (seed as Partial<UserData>).idNumber ?? id,
-        fullName: seed.fullName ?? `New Employee ${index + 1}`,
+        fullName: seed.fullName ?? "",
         department: seed.department ?? "",
         role: seed.role ?? "",
-        idNumber: seed.idNumber ?? `EMP-${String(index + 1).padStart(3, "0")}`,
+        idNumber: seed.idNumber ?? "",
         imageUrl: seed.imageUrl ?? null,
         issueDate: seed.issueDate ?? today(),
         imageTransform: {
@@ -84,9 +84,9 @@ export function duplicateEmployeeRecord(
     return {
         ...seed,
         id: createEmployeeId(),
-        employeeId: `${seed.employeeId}-${String(index + 1).padStart(2, "0")}`,
-        fullName: `${seed.fullName} ${index + 1}`.trim(),
-        idNumber: `${seed.idNumber}-${String(index + 1).padStart(2, "0")}`,
+        employeeId: seed.employeeId,
+        fullName: seed.fullName,
+        idNumber: seed.idNumber,
         imageTransform: {
             ...seed.imageTransform,
         },
