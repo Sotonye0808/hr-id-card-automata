@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   UserCircle,
   Briefcase,
@@ -14,6 +14,7 @@ import {
   Type,
 } from "lucide-react";
 import { UserData, DesignerTemplate, TemplateLayer, TextLayerProps, ImageLayerProps } from "../types";
+import { hasImageLayers } from "../lib/templateRenderer";
 
 interface DataEntryProps {
   data: UserData;
@@ -46,9 +47,26 @@ function getImageLayerValue(layer: TemplateLayer, data: UserData): string | null
 
 export default function DataEntry({ data, onChange, designerTemplate }: DataEntryProps) {
   const hasDesigner = designerTemplate && designerTemplate.layers.length > 0;
+  const templateHasImages = hasDesigner ? hasImageLayers(designerTemplate) : false;
   const inputLayers = hasDesigner ? getLayersForInputs(designerTemplate!) : [];
   const textLayers = inputLayers.filter((l) => l.type === "text");
   const imageLayers = inputLayers.filter((l) => l.type === "image");
+
+  const [failedImages, setFailedImages] = useState<ReadonlySet<string>>(new Set());
+
+  const markImageFailed = (key: string) => {
+    setFailedImages((current) => (current.has(key) ? current : new Set(current).add(key)));
+  };
+
+  const markImageResolved = (key: string) => {
+    setFailedImages((current) => (current.has(key) ? new Set([...current].filter((k) => k !== key)) : current));
+  };
+
+  const resolveLayerImage = (layer: TemplateLayer): string | null => {
+    const value = getImageLayerValue(layer, data);
+    if (!value || failedImages.has(`_il_${layer.id}`)) return null;
+    return value;
+  };
 
   const usedTemplateFields = new Set<string>();
   for (const layer of textLayers) {
@@ -70,6 +88,7 @@ export default function DataEntry({ data, onChange, designerTemplate }: DataEntr
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
+        markImageResolved("profile");
         onChange({ ...data, imageUrl: reader.result as string });
       };
       reader.readAsDataURL(file);
@@ -82,6 +101,7 @@ export default function DataEntry({ data, onChange, designerTemplate }: DataEntr
       const reader = new FileReader();
       reader.onloadend = () => {
         const key = `_il_${layerId}`;
+        markImageResolved(key);
         onChange({
           ...data,
           extraFields: { ...(data.extraFields ?? {}), [key]: reader.result as string },
@@ -232,7 +252,7 @@ export default function DataEntry({ data, onChange, designerTemplate }: DataEntr
         )}
 
         {imageLayers.map((layer) => {
-          const imgValue = getImageLayerValue(layer, data);
+          const imgValue = resolveLayerImage(layer);
           return (
             <div key={layer.id} className="space-y-3">
               <label className="text-[10px] font-bold text-[var(--muted)] uppercase flex items-center gap-2">
@@ -246,6 +266,7 @@ export default function DataEntry({ data, onChange, designerTemplate }: DataEntr
                       <img
                         src={imgValue}
                         alt={layer.name}
+                        onError={() => markImageFailed(`_il_${layer.id}`)}
                         className="max-h-full rounded-lg shadow-lg"
                       />
                       <button
@@ -253,6 +274,7 @@ export default function DataEntry({ data, onChange, designerTemplate }: DataEntr
                           const key = `_il_${layer.id}`;
                           const next = { ...(data.extraFields ?? {}) };
                           delete next[key];
+                          markImageResolved(key);
                           onChange({ ...data, extraFields: next });
                         }}
                         title={`Remove ${layer.name}`}
@@ -297,16 +319,20 @@ export default function DataEntry({ data, onChange, designerTemplate }: DataEntr
             </label>
             <div className="relative group">
               <div
-                className={`w-full aspect-square md:aspect-video rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-3 ${data.imageUrl ? "border-[var(--accent)]/50 bg-[var(--accent-soft)]" : "border-[var(--border)] bg-[var(--bg)] hover:border-[var(--accent)]/40"}`}>
-                {data.imageUrl ? (
+                className={`w-full aspect-square md:aspect-video rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-3 ${data.imageUrl && !failedImages.has("profile") ? "border-[var(--accent)]/50 bg-[var(--accent-soft)]" : "border-[var(--border)] bg-[var(--bg)] hover:border-[var(--accent)]/40"}`}>
+                {data.imageUrl && !failedImages.has("profile") ? (
                   <div className="relative w-full h-full flex items-center justify-center p-4">
                     <img
                       src={data.imageUrl}
                       alt="Preview"
+                      onError={() => markImageFailed("profile")}
                       className="max-h-full rounded-lg shadow-lg"
                     />
                     <button
-                      onClick={() => onChange({ ...data, imageUrl: null })}
+                      onClick={() => {
+                        markImageResolved("profile");
+                        onChange({ ...data, imageUrl: null });
+                      }}
                       title="Remove uploaded image"
                       aria-label="Remove uploaded image"
                       className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-all border border-red-500/20">

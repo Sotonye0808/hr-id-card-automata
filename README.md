@@ -16,7 +16,7 @@ A privacy-first, offline-capable web application for designing, customizing, and
 - **Toast Notifications** — Subtle feedback toasts for save, load, import, export, and other actions.
 - **Template Library** — Save named templates to localStorage, load, rename, delete, export as JSON, import from JSON files, and **"Save as New"** to create template copies with unique IDs for true multi-template management.
 - **Import Templates** — Upload PNG/JPG images as tracing backgrounds to derive layout. Supports DOCX and PDF import (as background overlay).
-- **Layer-Based Employee Data Entry** — Employee form generates inputs based on template layers: each text layer → text input, each image layer → image upload, each prefilled with the template's default content. Also shows `{{variable}}`-referenced standard fields. Shape and barcode layers are excluded from data entry.
+- **Layer-Based Employee Data Entry** — Employee form generates inputs based on template layers: each text layer → text input, each image layer → image upload, each prefilled with the template's default content. Also shows `{{variable}}`-referenced standard fields. Shape and barcode layers are excluded from data entry. Images are stored as self-contained data URLs, so templates and batches transfer across devices — and if an image reference can't be loaded (e.g. a device-local path from an imported template), the preview degrades gracefully to an upload prompt instead of crashing.
 - **Employee Data Import** — Import employee lists from CSV, XLSX, or paste from clipboard. Auto-detects field mappings including extra template fields.
 - **Template-Based Batch Export** — PDF and DOCX exports render the designer template (front and back) per employee using a canvas-based renderer. Falls back to legacy layout when no designer template exists.
 - **Front/Back Card Export** — When templates have a back side, PDF and DOCX exports automatically include the back of each card.
@@ -73,7 +73,7 @@ src/
 ├── types.ts                   # TypeScript types (CardConfig, DesignerTemplate, TemplateLayer, etc.)
 ├── index.css                  # Global styles, CSS variables, sheet themes
 ├── components/
-│   ├── DataEntry.tsx           # Template-driven employee form (shows fields from template text layers + image upload when template has image layers)
+│   ├── DataEntry.tsx           # Template-driven employee form (fields from template text/image layers + graceful image handling)
 │   ├── IDCard.tsx              # Live preview (legacy + designer template modes)
 │   ├── TemplateEditor.tsx      # Combined editor (design/layout tabs + designer tab)
 │   ├── TemplateDesigner.tsx    # WYSIWYG canvas editor with undo/redo, icon handles, property panels

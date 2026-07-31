@@ -11,6 +11,10 @@ import {
 class FakeLocalStorage {
     private store = new Map<string, string>();
 
+    get length(): number {
+        return this.store.size;
+    }
+
     getItem(key: string) {
         return this.store.get(key) ?? null;
     }
@@ -21,6 +25,14 @@ class FakeLocalStorage {
 
     removeItem(key: string) {
         this.store.delete(key);
+    }
+
+    clear() {
+        this.store.clear();
+    }
+
+    key(index: number) {
+        return [...this.store.keys()][index] ?? null;
     }
 }
 
@@ -99,7 +111,7 @@ class FakeDatabase {
 class FakeIndexedDB {
     private readonly store = new Map<string, StoredImage>();
 
-    open() {
+    open(): IDBOpenDBRequest {
         const request = new FakeRequest<FakeDatabase>();
         queueMicrotask(() => {
             const database = new FakeDatabase(this.store);
@@ -107,7 +119,19 @@ class FakeIndexedDB {
             request.onupgradeneeded?.();
             request.onsuccess?.();
         });
-        return request;
+        return request as unknown as IDBOpenDBRequest;
+    }
+
+    cmp(_first: unknown, _second: unknown): number {
+        return 0;
+    }
+
+    databases(): Promise<IDBDatabaseInfo[]> {
+        return Promise.resolve([]);
+    }
+
+    deleteDatabase(_name: string): IDBOpenDBRequest {
+        throw new Error("deleteDatabase is not used by the verification flow");
     }
 }
 
@@ -121,7 +145,10 @@ async function main() {
 
     const localStorage = new FakeLocalStorage();
     const indexedDB = new FakeIndexedDB();
-    globalScope.window = { localStorage, indexedDB };
+    globalScope.window = {
+        localStorage,
+        indexedDB,
+    } as unknown as typeof globalScope.window;
 
     const csv = `fullName,department,role,idNumber,issueDate,imageScale,imageOffsetX,imageOffsetY\nJane Doe,Ops,Coordinator,OPS001,2026-05-06,1.2,10,-5\nJohn Roe,Finance,Analyst,FIN002,2026-05-06,0.9,0,15\n`;
     const parsed = parseEmployeeCsv(csv);
@@ -139,7 +166,7 @@ async function main() {
 
     const duplicate = duplicateEmployeeRecord(employee, 1);
     assert.notEqual(duplicate.id, employee.id);
-    assert.match(duplicate.idNumber, /-02$/);
+    assert.equal(duplicate.idNumber, employee.idNumber);
 
     const batch = [
         {

@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: update-ai-system
-> - last-verified-against-code: 2026-07-26
+> - last-verified-against-code: 2026-07-31
 > - staleness-policy: auto-regenerable — update when module relationships change
 
 > **Overview:** Module relationships and dependency flow within the HR ID Card Automata codebase.
@@ -13,9 +13,10 @@
 main.tsx
   └── App.tsx
         ├── components/DataEntry.tsx
-        │     └── lib/templateRenderer.ts (extractTemplateFields, hasImageLayers)
+        │     └── lib/templateRenderer.ts (hasImageLayers, layer value resolution)
         ├── components/IDCard.tsx
-        │     └── lib/employeeStore.ts (renderTransformedImage)
+        │     ├── lib/employeeStore.ts (renderTransformedImage)
+        │     └── lib/templateRenderer.ts (getLayerEmployeeValue)
         ├── components/TemplateEditor.tsx
         │     ├── components/TemplateDesigner.tsx
         │     │     └── lib/templateImporter.ts (importFromImage/Docx/Pdf)
@@ -31,7 +32,7 @@ main.tsx
         │     ├── localStorage
         │     └── IndexedDB
         ├── lib/templateStore.ts (getConsented, loadTemplate, saveTemplate, etc.)
-        ├── lib/templateRenderer.ts (extractTemplateDefaults, hasImageLayers)
+        ├── lib/templateRenderer.ts (extractTemplateDefaults, hasImageLayers, renderTemplateToCanvas)
         └── lib/seo.ts (injectMetaTags)
 
 External Dependencies:

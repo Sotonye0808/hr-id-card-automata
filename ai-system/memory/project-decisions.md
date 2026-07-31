@@ -1,8 +1,8 @@
 # Project Decisions
 
 > **Metadata**
-> - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-28
+> - last-updated-by: update-ai-system
+> - last-verified-against-code: 2026-07-31
 > - staleness-policy: append each time a significant decision is made
 
 > **Overview:** Log of significant project decisions. Add entries as decisions are made.
@@ -39,3 +39,15 @@ Rationale: Simpler than adding a `side` field to each layer (which would require
 `DesignerTemplate` state is now managed in `App.tsx` and passed down to `TemplateEditor` via `designerTemplate`/`onDesignerTemplateChange` props, instead of having `TemplateEditor` own its own local state. This ensures the `IDCard` preview (rendered in App.tsx) always reflects the latest designer changes without duplication or sync problems.
 
 Rationale: The `IDCard` preview in `App.tsx` needs access to the current designer template. Previously, `TemplateEditor` had its own local state that the App couldn't see, causing the preview to show stale data.
+
+---
+
+## Decision 4 — Template Image Refs Are Self-Contained; Unloadable Refs Degrade Gracefully
+
+**Date:** 2026-07-31
+
+Template image layers and employee image uploads are stored as data URLs (blobs) captured via `FileReader.readAsDataURL`, so exported template JSON and persisted batches embed the actual image bytes and remain portable across devices. This satisfies the requirement that template saves must not break when loaded on another device.
+
+As an assumption guard, `DataEntry` image previews attach an `onError` handler: any reference that fails to load (e.g. a device-local file path baked into a template exported from another machine) is cleared and the upload dropzone is shown instead, so the user can simply input an image on their device. The canvas export renderer already wraps image loading in try/catch and draws an "Image error"/"No image" placeholder rather than crashing.
+
+Rationale: Keeps the common case (blob-backed templates) unchanged while guaranteeing no crash path for the rare, hand-edited or cross-device local-path case.

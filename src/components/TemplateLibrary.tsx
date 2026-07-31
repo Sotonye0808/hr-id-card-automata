@@ -145,7 +145,7 @@ export default function TemplateLibrary({
                 onChange={(e) => setSaveName(e.target.value)}
                 placeholder="Template name"
               />
-              <button className="primary-button" onClick={handleSave}>
+              <button className="primary-button" onClick={() => handleSave(false)}>
                 <Save size={14} /> Save
               </button>
               <button className="secondary-button" onClick={handleSaveAsNew} title="Save as new template">

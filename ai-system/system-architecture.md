@@ -1,8 +1,8 @@
 # System Architecture
 
 > **Metadata**
-> - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-29
+> - last-updated-by: update-ai-system
+> - last-verified-against-code: 2026-07-31
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
 > **Overview:** High-level architecture of the HR ID Card Automata application — a fully client-side SPA for generating, customizing, and batch-exporting employee ID cards.
@@ -68,7 +68,7 @@ Central state management via React `useState`. Manages:
 ### Components
 | Component | Responsibility | Props |
 |-----------|---------------|-------|
-| `DataEntry` | Employee form fields + image upload + transform controls — iterates over template text layers (→ text inputs) and image layers (→ image uploads), prefilled with template defaults; also shows `{{variable}}`-referenced standard fields; falls back to all standard fields when no template. Shape/barcode layers excluded. | `data, onChange, designerTemplate?` |
+| `DataEntry` | Employee form fields + image upload + transform controls — iterates over template text layers (→ text inputs) and image layers (→ image uploads), prefilled with template defaults; also shows `{{variable}}`-referenced standard fields; falls back to all standard fields when no template. Shape/barcode layers excluded. Image previews degrade gracefully: refs that fail to load (e.g. device-local paths from a template saved on another device) clear via `onError` so the upload dropzone reappears instead of crashing. | `data, onChange, designerTemplate?` |
 | `IDCard` | Live card rendering — supports legacy CardConfig and new DesignerTemplate | `config, data, designerTemplate?` |
 | `TemplateEditor` | Combined editor: design tab (fonts/colors), layout tab (sliders), designer tab (canvas editor) | `config, onChange, onReset, designerTemplate?, onDesignerTemplateChange?` |
 | `TemplateDesigner` | WYSIWYG canvas editor with drag/resize/rotate (via unified pointer events for mouse + touch), undo/redo history (50 steps, only tracks meaningful changes — skips grab without move), icon-based resize/rotate handles (larger for touch), layer panel, property inspector per layer type (including gradient, glassmorphism, border controls), front/back side toggle, responsive auto-zoom | `template, onChange` |
