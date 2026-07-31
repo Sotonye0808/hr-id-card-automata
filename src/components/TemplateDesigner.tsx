@@ -78,7 +78,7 @@ export default function TemplateDesigner({ template, onChange }: TemplateDesigne
       if (activeSide === "front") {
         onChange({ ...template, layers });
       } else {
-        onChange({ ...template, backLayers: layers });
+        onChange({ ...template, backLayers: layers, hasBackSide: true });
       }
     },
     [template, activeSide, onChange],

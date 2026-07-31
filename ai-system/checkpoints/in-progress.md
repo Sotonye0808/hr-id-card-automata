@@ -1,7 +1,7 @@
 # In-Progress
 
 > **Metadata**
-> - last-updated-by: fix-build
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-31
 > - staleness-policy: overwrite each session — singular in-progress marker
 
@@ -11,4 +11,4 @@
 
 ## Current Task
 
-*None — session complete. Fix-build work verified: lint, build, and verify all green.*
+*None — session complete. Back-side capture in preview/exports and template library Save-overwrites-selection verified: lint, build, and verify all green; ai-system docs and README updated.*

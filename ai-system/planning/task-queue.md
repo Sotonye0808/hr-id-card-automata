@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-28
+> - last-verified-against-code: 2026-07-31
 > - staleness-policy: update as tasks are completed or added
 
 > **Overview:** Immediate actionable tasks, ordered by priority.
@@ -58,3 +58,5 @@
 | P3 | L | Add chunked export for large employee batches | Pending |
 | P1 | M | **Clean employee defaults** — removed SAMPLE_EMPLOYEES, empty initial batch, no seeded defaults on createEmployeeRecord | Complete |
 | P1 | M | **Template-driven DataEntry** — only show fields referenced in active designer template text layers; fallback to all standard fields when no template | Complete |
+| P0 | M | **Back-side capture in preview + exports** — TemplateDesigner now sets `hasBackSide: true` on back-side edits; preview flip and PDF/DOCX back pages gate on `backLayers.length` (data-driven) instead of the flag, so templates saved without the flag still show/export the back; back-side rendering uses `backLayers ?? []` and never falls back to front layers | Complete |
+| P0 | S | **TemplateLibrary Save-overwrites-selection** — tapping an item selects it (highlight), Save overwrites the selected template (keeps id/name/createdAt), Save As New creates a copy | Complete |

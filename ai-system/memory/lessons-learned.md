@@ -88,3 +88,9 @@ When rendering sibling conditional blocks (`{cond && (...)}`), every `{` must ha
 **Date:** 2026-07-31
 
 Template image layers and employee uploads are stored as self-contained data URLs (via `FileReader.readAsDataURL`), which means exported template JSON embeds the image blob and works on any device. Device-local file paths (e.g. `C:\...`, `/Users/...`) do not survive a JSON export/import across devices. Guard against that by rendering images through an `onError` fallback that clears the broken reference and shows the upload dropzone — the user should be able to re-input an image on their device rather than hitting a crash or a permanently broken image.
+
+## Lesson 14 — Gate Feature Detection on Actual Data, Not a Companion Flag
+
+**Date:** 2026-07-31
+
+The card back never appeared in preview or exports because every consumer gated on `template.hasBackSide && (template.backLayers?.length ?? 0) > 0`, but nothing ever set `hasBackSide` to `true` when back layers were edited — the designer updated `backLayers` only. When a flag and its underlying data can drift, derive feature presence from the data itself (`backLayers.length > 0`) and set the flag whenever the data changes; also harden consumer checks to fall back to the data so templates created before the flag was wired still work.

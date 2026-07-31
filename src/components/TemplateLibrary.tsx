@@ -33,43 +33,57 @@ export default function TemplateLibrary({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [activeId, setActiveId] = useState<string | null>(getActiveTemplateId());
+  const [selectedId, setSelectedId] = useState<string | null>(() => getActiveTemplateId());
   const importRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => setTemplates(listTemplates());
 
   const handleSave = (asNew: boolean) => {
     const now = new Date().toISOString();
-    const id = asNew ? (crypto.randomUUID?.() ?? `template-${Date.now()}`) : currentTemplate.id;
+
+    if (asNew) {
+      const newId = crypto.randomUUID?.() ?? `template-${Date.now()}`;
+      const updated: DesignerTemplate = {
+        ...currentTemplate,
+        id: newId,
+        name: saveName.trim() || currentTemplate.name || "My Template",
+        createdAt: now,
+        updatedAt: now,
+      };
+      saveTemplate(updated);
+      setActiveTemplateId(newId);
+      setActiveId(newId);
+      setSelectedId(newId);
+      onLoadTemplate(updated);
+      refresh();
+      toast("Template saved as new", "success");
+      return;
+    }
+
+    const existing = templates.find((t) => t.id === selectedId);
+    const targetId = existing ? existing.id : currentTemplate.id;
     const updated: DesignerTemplate = {
       ...currentTemplate,
-      id,
-      name: saveName,
-      createdAt: asNew ? now : (currentTemplate.createdAt || now),
+      id: targetId,
+      name: existing ? existing.name : (saveName.trim() || currentTemplate.name || "My Template"),
+      createdAt: existing ? existing.createdAt : (currentTemplate.createdAt || now),
       updatedAt: now,
     };
     saveTemplate(updated);
-    setActiveTemplateId(updated.id);
-    setActiveId(updated.id);
+    setActiveTemplateId(targetId);
+    setActiveId(targetId);
+    setSelectedId(targetId);
     onLoadTemplate(updated);
     refresh();
-    toast(asNew ? "Template saved as new" : "Template saved", "success");
+    toast("Template saved", "success");
   };
 
   const handleSaveAsNew = () => {
-    const now = new Date().toISOString();
-    const newId = crypto.randomUUID?.() ?? `template-${Date.now()}`;
-    const newTemplate: DesignerTemplate = {
-      ...currentTemplate,
-      id: newId,
-      name: saveName,
-      createdAt: now,
-      updatedAt: now,
-    };
-    saveTemplate(newTemplate);
-    setActiveTemplateId(newId);
-    setActiveId(newId);
-    refresh();
-    toast("Template saved as new", "success");
+    handleSave(true);
+  };
+
+  const handleSelectTemplate = (meta: TemplateMeta) => {
+    setSelectedId(meta.id);
   };
 
   const handleLoad = (meta: TemplateMeta) => {
@@ -78,6 +92,7 @@ export default function TemplateLibrary({
       onLoadTemplate(tpl);
       setActiveTemplateId(meta.id);
       setActiveId(meta.id);
+      setSelectedId(meta.id);
       toast("Template loaded", "info");
     }
   };
@@ -88,6 +103,9 @@ export default function TemplateLibrary({
     if (activeId === id) {
       setActiveId(null);
       setActiveTemplateId(null);
+    }
+    if (selectedId === id) {
+      setSelectedId(null);
     }
     refresh();
     toast("Template deleted", "info");
@@ -138,6 +156,9 @@ export default function TemplateLibrary({
             <p className="mb-2 text-xs font-bold text-[var(--muted)]">
               Save Current Template
             </p>
+            <p className="mb-2 text-[10px] text-[var(--muted)]">
+              Tap a template below to select it — Save overwrites the selected template. Save As New creates a copy.
+            </p>
             <div className="flex gap-2">
               <input
                 className="field-input flex-1 py-2 text-sm"
@@ -179,7 +200,8 @@ export default function TemplateLibrary({
               {templates.map((meta) => (
                 <div
                   key={meta.id}
-                  className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${activeId === meta.id ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--border)] bg-[var(--bg)]"}`}>
+                  onClick={() => handleSelectTemplate(meta)}
+                  className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${selectedId === meta.id ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--border)] bg-[var(--bg)] hover:border-[var(--accent)]/40"}`}>
                   <div className="min-w-0 flex-1">
                     {editingId === meta.id ? (
                       <div className="flex gap-1">
