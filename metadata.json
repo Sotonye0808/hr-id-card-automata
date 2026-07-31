@@ -1,6 +1,6 @@
 {
   "name": "hr-id-card-automata",
-  "description": "Progressive Web App to generate HR ID cards from employee data. Local-first, template-driven, exportable to PDF and DOCX. Features a drag-and-drop template designer with layer-based editing, touch controls, rotation support, undo/redo (meaningful changes only), glassmorphism/gradient design tools, toast notifications, multi-template library with Save as New, debounced auto-save, cookie consent, and SEO optimization.",
+  "description": "Progressive Web App to generate HR ID cards from employee data. Local-first, template-driven, exportable to PDF and DOCX. Features a drag-and-drop template designer with layer-based editing, touch controls, rotation support, undo/redo (meaningful changes only), glassmorphism/gradient design tools, toast notifications, multi-template library (Save overwrites the selected template, Save as New for copies), debounced auto-save, cookie consent, and SEO optimization.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "Drag-and-drop visual template designer with text, image, shape, and barcode layers",
@@ -12,7 +12,7 @@
     "Touch-enabled controls for drag, resize, and rotate via unified pointer events",
     "Front/back dual-sided template support with side toggle",
     "Responsive canvas with auto-scaling zoom and mobile-friendly layout",
-    "Template library with save, load, rename, delete, export/import JSON, and 'Save as New' for multi-template",
+    "Template library with save, load, rename, delete, export/import JSON; tapping an item selects it and Save overwrites the selected template; 'Save As New' creates a copy",
     "Debounced auto-save (500ms) to avoid excessive writes during canvas edits",
     "Toast notification system for save, load, import, and export actions",
     "Import templates from image files (PNG/JPG) as tracing backgrounds",
@@ -22,6 +22,7 @@
     "Rotation property in layout panel for element positioning",
     "Dark/light theme with local persistence",
     "Template-driven DataEntry — inputs shown per template text layer variables, image upload only when template has image layers",
-    "Template-default-aware employee creation — field defaults extracted from template text context"
+    "Template-default-aware employee creation — field defaults extracted from template text context",
+    "Back side captured in live preview and PDF/DOCX exports — data-driven detection off backLayers"
   ]
 }

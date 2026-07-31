@@ -1,7 +1,7 @@
 # Repair System
 
 > **Metadata**
-> - last-updated-by: fix-build
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-31
 > - staleness-policy: append entries as new error patterns are discovered
 
@@ -23,6 +23,7 @@
 | `npm run lint` fails on `scripts/verify.ts` | Fake `localStorage`/`indexedDB` classes did not satisfy `Storage`/`IDBFactory` | Add `length`/`clear`/`key` to `FakeLocalStorage` and `cmp`/`databases`/`deleteDatabase`/typed `open()` to `FakeIndexedDB`; cast the window stub | Fixed 2026-07-31 |
 | `npm run verify` fails: `assert.match(duplicate.idNumber, /-02$/)` | Stale assertion — `duplicateEmployeeRecord` intentionally preserves the source `idNumber` | Assert the duplicate keeps the source `idNumber` while receiving a fresh `id` | Fixed 2026-07-31 |
 | Template/employee image layer renders a broken image after loading a template on a different device | `src` stored a device-local file path (not a self-contained data URL) | DataEntry image previews now `onError`-clear unloadable refs so the upload dropzone reappears; canvas renderers already draw an "Image error"/"No image" placeholder instead of crashing | Mitigated 2026-07-31 |
+| Card back never appears in preview or PDF/DOCX exports | `TemplateDesigner` updated `backLayers` but never set `hasBackSide: true`, while consumers gated on `hasBackSide && backLayers.length` | Set `hasBackSide: true` on back-side edits and derive presence from data: use `(backLayers?.length ?? 0) > 0` in `IDCard.tsx` and both `App.tsx` export paths; back-side rendering resolves `backLayers ?? []` instead of falling back to front layers | Fixed 2026-07-31 |
 
 ---
 

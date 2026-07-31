@@ -155,3 +155,14 @@
 - Fixed `TemplateLibrary.tsx` `onClick={handleSave}` type error; brought `scripts/verify.ts` fake storage/IndexedDB stubs up to the DOM types and corrected a stale duplicate-record assertion.
 - `npm run lint`, `npm run build`, and `npm run verify` all green.
 - Updated all ai-system docs and README.
+
+## v0.11 — Back-Side Capture in Preview/Exports & Library Save Semantics
+
+**Date:** 2026-07-31
+
+**Summary:**
+- Fixed the card back never appearing in preview or PDF/DOCX exports: `TemplateDesigner.setActiveLayers` was updating `backLayers` without setting `hasBackSide: true`, so the preview flip button and export back-page logic (both gated on `hasBackSide && backLayers.length`) treated every template as single-sided. The designer now sets `hasBackSide: true` on any back-side change.
+- Hardened back detection to be data-driven — `(backLayers?.length ?? 0) > 0` — in `IDCard.tsx` and both export paths in `App.tsx`, so templates saved before the flag existed (or with `hasBackSide` unset) still show and export their back.
+- Fixed back-side layer fallback in `IDCard.tsx` and `templateRenderer.ts`: rendering side "back" now uses `template.backLayers ?? []` instead of accidentally falling back to front layers.
+- Reworked `TemplateLibrary` save semantics: tapping a template item selects it (highlight), the **Save** button overwrites the selected template (preserving its id/name/createdAt) and falls back to the current template + name field when nothing is selected, and **Save As New** creates a new template entry — matching the classic Open/Save/Save-As workflow.
+- Updated all ai-system docs and README.

@@ -1,7 +1,7 @@
 # Project AI Context
 
 > **Metadata**
-> - last-updated-by: update-ai-system
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-31
 > - staleness-policy: re-verify before trusting if project structure has changed
 
@@ -48,4 +48,4 @@ Start with: `ai-system/protocols/entry-protocol.md`
 
 ## Active Development Focus
 
-Build stability and template-driven data entry. Latest work fixed the blank-page crash when adding an employee row, added graceful cross-device image handling (unloadable image refs degrade to an upload prompt instead of crashing), and restored green `npm run lint`/`build`/`verify`.
+Build stability and template-driven data entry. Latest work made the card back render in preview and PDF/DOCX exports (data-driven off `backLayers`), made the template library **Save** button overwrite the selected template (Save As New for copies), and kept `npm run lint`/`build`/`verify` green.

@@ -1,7 +1,7 @@
 # Session Log
 
 > **Metadata**
-> - last-updated-by: fix-build
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-31
 > - staleness-policy: append at end of each session
 
@@ -48,3 +48,26 @@
 - ai-system/checkpoints/session-log.md
 - ai-system/checkpoints/in-progress.md
 - ai-system docs (update-ai-system.md pass)
+
+---
+
+## Session 3 — Capture Card Back in Preview/Exports + Library Save-Overwrites-Selection (execute-feature.md)
+
+**Date:** 2026-07-31
+
+**Summary:**
+- Diagnosed why the card back was never shown in preview or exports: `TemplateDesigner.setActiveLayers` updated `backLayers` but never set `hasBackSide: true`, so `IDCard` and the PDF/DOCX exports (which gated on `hasBackSide && backLayers.length`) treated the template as single-sided.
+- Fixed `TemplateDesigner` to set `hasBackSide: true` whenever back layers change.
+- Hardened back detection everywhere to be data-driven: `(backLayers?.length ?? 0) > 0` in `IDCard.tsx` and both `App.tsx` export paths, so templates saved without the flag still export their back.
+- Fixed back-side layer fallback in `IDCard.tsx` and `templateRenderer.ts`: `side === "back"` now resolves to `template.backLayers ?? []` instead of falling back to front layers.
+- Reworked `TemplateLibrary`: tapping an item now selects it (highlight), the **Save** button overwrites the selected template (keeping its id/name/createdAt) and falls back to saving the current template by name when nothing is selected, and **Save As New** creates a new entry. Added a hint line clarifying the behavior.
+- Verified: `npm run lint`, `npm run build`, and `npm run verify` all pass.
+
+**Files touched:**
+- src/components/TemplateDesigner.tsx
+- src/components/IDCard.tsx
+- src/App.tsx
+- src/lib/templateRenderer.ts
+- src/components/TemplateLibrary.tsx
+- ai-system docs (update-ai-system.md pass)
+- README.md

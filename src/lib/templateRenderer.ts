@@ -123,7 +123,7 @@ export async function renderTemplateToCanvas(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Cannot get canvas context");
 
-  const layers = side === "back" && template.backLayers ? template.backLayers : template.layers;
+  const layers = side === "back" ? (template.backLayers ?? []) : template.layers;
   const sorted = [...layers].sort((a, b) => a.zIndex - b.zIndex);
 
   const scaleX = canvasWidth / template.canvasWidth;
