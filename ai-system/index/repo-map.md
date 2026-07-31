@@ -1,8 +1,8 @@
 # Repo Map
 
 > **Metadata**
-> - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-28
+> - last-updated-by: update-ai-system
+> - last-verified-against-code: 2026-07-31
 > - staleness-policy: auto-regenerable — update when project structure changes
 
 > **Overview:** Directory structure with purpose of each folder and key files.
@@ -26,10 +26,11 @@ hr-id-card-automata/
 │   ├── lib/
 │   │   ├── employeeStore.ts    # Data layer (parse, persist, image pipeline)
 │   │   ├── templateStore.ts    # Template CRUD (localStorage), JSON import/export, legacy migration
+│   │   ├── templateRenderer.ts # Canvas-based designer template rendering for preview/exports + layer value resolution
 │   │   ├── templateImporter.ts # Import images/DOCX/PDF as tracing backgrounds
 │   │   └── seo.ts              # Dynamic SEO meta tag injection
 │   └── components/
-│       ├── DataEntry.tsx       # Employee data form + image upload
+│       ├── DataEntry.tsx       # Template-driven employee form + image upload (graceful on broken image refs)
 │       ├── IDCard.tsx          # Live card preview (legacy + designer template modes)
 │       ├── TemplateEditor.tsx  # Combined editor (design/layout tabs + designer tab)
 │       ├── TemplateDesigner.tsx # WYSIWYG canvas editor with drag/resize/layer panel

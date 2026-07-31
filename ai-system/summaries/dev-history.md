@@ -1,8 +1,8 @@
 # Development History
 
 > **Metadata**
-> - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-29
+> - last-updated-by: update-ai-system
+> - last-verified-against-code: 2026-07-31
 > - staleness-policy: append at the end of each significant development phase
 
 > **Overview:** High-level summary of development milestones and phases.
@@ -142,4 +142,16 @@
 - Updated `App.tsx` `addEmployee()` to prefill new employees with template layer default values.
 - Fixed undo/redo in TemplateDesigner: drag/resize/rotate only push history when actual changes occur (clicks without movement no longer record undo actions).
 - Added "Save As New" button in TemplateLibrary — saves current template with a new ID so users can maintain multiple distinct templates. Auto-save debounced to 2s to prevent overwrites during editing.
+- Updated all ai-system docs and README.
+
+## v0.10 — Fix Build & Blank-Page Crash
+
+**Date:** 2026-07-31
+
+**Summary:**
+- Fixed blank page on "Add row": `DataEntry.tsx` referenced an undeclared `templateHasImages`, throwing a render-time `ReferenceError` that unmounted the React tree. Derived it from the existing `hasImageLayers(designerTemplate)` helper.
+- Verified the Vercel build error (`)}` instead of `</div>` in DataEntry) was already patched in `6744242`; `vite build` now succeeds.
+- Made image previews degrade gracefully across devices: `<img onError>` clears unloadable refs (e.g. a device-local path baked into a template saved elsewhere) so the upload dropzone reappears — no crash, user simply inputs an image on their device. Template image blobs remain self-contained data URLs, so exported JSON stays portable.
+- Fixed `TemplateLibrary.tsx` `onClick={handleSave}` type error; brought `scripts/verify.ts` fake storage/IndexedDB stubs up to the DOM types and corrected a stale duplicate-record assertion.
+- `npm run lint`, `npm run build`, and `npm run verify` all green.
 - Updated all ai-system docs and README.

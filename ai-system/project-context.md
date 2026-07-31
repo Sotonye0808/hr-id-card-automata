@@ -1,8 +1,8 @@
 # Project Context
 
 > **Metadata**
-> - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-28
+> - last-updated-by: update-ai-system
+> - last-verified-against-code: 2026-07-31
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
 > **Overview:** Why this project exists, who it serves, and what constraints govern development. Agents should read this to understand the "why" behind the work.
@@ -41,7 +41,7 @@ HR ID Card Automata is a privacy-first, offline-capable web application that ena
 
 Phase: Active Development
 
-Active sprint focus: Dynamic template-driven data entry — employee details panel dynamically shows fields from template text layer variables, profile media inputs only when template has image layers, multi-template management with "Save as New", debounced auto-save, and clean undo/redo that only tracks meaningful changes.
+Active sprint focus: Stabilizing the build and the template-driven data-entry flow. Latest work fixed the blank-page crash when adding an employee row (undeclared `templateHasImages` in DataEntry), added graceful cross-device image handling (unloadable image refs clear to an upload prompt instead of crashing), and brought `npm run lint`/`npm run build`/`npm run verify` back to green.
 
 ---
 
@@ -88,6 +88,7 @@ Active sprint focus: Dynamic template-driven data entry — employee details pan
 - Template-aware CSV import — extra template fields detected and mapped to `extraFields` on employee records
 - Multi-template library — "Save as New" creates copies with new IDs; debounced auto-save prevents excessive writes
 - Undo/redo only tracks meaningful changes — grab without move, resize without change, or rotation without change do not create history entries
+- Graceful cross-device image handling — template/employee image refs that fail to load (device-local paths) clear via `onError` to an upload prompt; blobs are stored as self-contained data URLs so templates remain portable
 
 ---
 
