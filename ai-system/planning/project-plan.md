@@ -1,7 +1,7 @@
 # Project Plan
 
 > **Metadata**
-> - last-updated-by: update-ai-system
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-31
 > - staleness-policy: update after each sprint
 
@@ -49,6 +49,8 @@
 - [x] Fix blank page on "Add row" — `templateHasImages` was undeclared in DataEntry; now derived from `hasImageLayers`
 - [x] Graceful cross-device image handling — unloadable image refs (device-local paths) clear via `onError` and show the upload dropzone instead of crashing
 - [x] Build/lint/test health — `npm run lint`, `npm run build`, `npm run verify` all green
+- [x] Back side captured in preview and PDF/DOCX exports — `hasBackSide` set on back edits; detection data-driven off `backLayers`
+- [x] TemplateLibrary Save overwrites selected template; Save As New creates copies
 
 ### Planned
 - [ ] ActivityBoard component wiring (batch processor, audit journal)

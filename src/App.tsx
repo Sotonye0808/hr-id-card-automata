@@ -635,7 +635,7 @@ function AppInner() {
 
           doc.addImage(frontImage, "PNG", cardX, cardY, cardWidth, cardHeight, undefined, "FAST");
 
-          const hasBack = designerTemplate!.hasBackSide && (designerTemplate!.backLayers?.length ?? 0) > 0;
+          const hasBack = (designerTemplate!.backLayers?.length ?? 0) > 0;
 
           if (hasBack) {
             const backCanvas = await renderTemplateToCanvas(
@@ -809,7 +809,7 @@ function AppInner() {
             }),
           );
 
-          const hasBack = designerTemplate!.hasBackSide && (designerTemplate!.backLayers?.length ?? 0) > 0;
+          const hasBack = (designerTemplate!.backLayers?.length ?? 0) > 0;
 
           if (hasBack) {
             const backCanvas = await renderTemplateToCanvas(

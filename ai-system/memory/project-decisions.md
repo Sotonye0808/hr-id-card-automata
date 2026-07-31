@@ -1,7 +1,7 @@
 # Project Decisions
 
 > **Metadata**
-> - last-updated-by: update-ai-system
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-31
 > - staleness-policy: append each time a significant decision is made
 
@@ -51,3 +51,13 @@ Template image layers and employee image uploads are stored as data URLs (blobs)
 As an assumption guard, `DataEntry` image previews attach an `onError` handler: any reference that fails to load (e.g. a device-local file path baked into a template exported from another machine) is cleared and the upload dropzone is shown instead, so the user can simply input an image on their device. The canvas export renderer already wraps image loading in try/catch and draws an "Image error"/"No image" placeholder rather than crashing.
 
 Rationale: Keeps the common case (blob-backed templates) unchanged while guaranteeing no crash path for the rare, hand-edited or cross-device local-path case.
+
+---
+
+## Decision 5 — Library "Save" Overwrites the Selected Template; "Save As New" Creates a Copy
+
+**Date:** 2026-07-31
+
+The TemplateLibrary follows a classic Open/Save/Save-As workflow: tapping a library item selects it (highlight), pressing **Save** overwrites that selected template with the current designer state — preserving the selected template's id, name, and `createdAt` while stamping a fresh `updatedAt` — and **Save As New** persists a copy under a new id/name. When nothing in the list is selected, Save falls back to writing the current designer template under its own id with the name field.
+
+Rationale: Users repeatedly overwrote the wrong template because Save always wrote to the designer's current id, and multi-template management was only possible via "Save As New". Tying Save to the visible selection makes "save to it and overwrite" explicit and keeps "save as new" as the dedicated path for creating new entries.

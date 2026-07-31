@@ -80,7 +80,7 @@ export default function IDCard({ config, data, designerTemplate }: IDCardProps) 
     data.imageUrl,
   ]);
 
-  const hasBack = designerTemplate?.hasBackSide && (designerTemplate.backLayers?.length ?? 0) > 0;
+  const hasBack = (designerTemplate?.backLayers?.length ?? 0) > 0;
 
   if (designerTemplate && designerTemplate.layers.length > 0) {
     return (
@@ -195,7 +195,7 @@ export default function IDCard({ config, data, designerTemplate }: IDCardProps) 
 }
 
 function DesignerIDCard({ template, data, renderedImageUrl, side }: { template: DesignerTemplate; data: UserData; renderedImageUrl: string | null; side?: "front" | "back" }) {
-  const layers = side === "back" && template.backLayers ? template.backLayers : template.layers;
+  const layers = side === "back" ? (template.backLayers ?? []) : template.layers;
   const sortedLayers = [...layers].sort((a, b) => a.zIndex - b.zIndex);
 
   return (

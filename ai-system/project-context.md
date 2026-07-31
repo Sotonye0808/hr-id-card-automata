@@ -1,7 +1,7 @@
 # Project Context
 
 > **Metadata**
-> - last-updated-by: update-ai-system
+> - last-updated-by: execute-feature
 > - last-verified-against-code: 2026-07-31
 > - staleness-policy: re-verify if >10 sessions old or after major scope changes
 
@@ -41,7 +41,7 @@ HR ID Card Automata is a privacy-first, offline-capable web application that ena
 
 Phase: Active Development
 
-Active sprint focus: Stabilizing the build and the template-driven data-entry flow. Latest work fixed the blank-page crash when adding an employee row (undeclared `templateHasImages` in DataEntry), added graceful cross-device image handling (unloadable image refs clear to an upload prompt instead of crashing), and brought `npm run lint`/`npm run build`/`npm run verify` back to green.
+Active sprint focus: Stabilizing the build and the template-driven data-entry flow. Latest work fixed the blank-page crash when adding an employee row (undeclared `templateHasImages` in DataEntry), added graceful cross-device image handling (unloadable image refs clear to an upload prompt instead of crashing), made the card back render in preview and PDF/DOCX exports (`hasBackSide` now set on back edits, detection data-driven off `backLayers`), and made the template library Save button overwrite the selected template (Save As New for copies). `npm run lint`/`npm run build`/`npm run verify` are green.
 
 ---
 
@@ -84,9 +84,9 @@ Active sprint focus: Stabilizing the build and the template-driven data-entry fl
 - Dynamic DataEntry — employee form dynamically renders input fields based on `{{variable}}` placeholders found in template text layers; profile media upload and transform controls only shown when template has image layers (shapes require no input)
 - Template-default-aware employee creation — `createEmployeeRecord` accepts field defaults extracted from template text context
 - Canvas-based template renderer (`templateRenderer.ts`) for PDF/DOCX export — renders layers (text/shape/image/barcode) with gradient/glassmorphism support to offscreen canvas for embedding in exports
-- Front/back card sides in PDF and DOCX exports — automatically includes back of card page when template has `hasBackSide`
+- Front/back card sides in PDF and DOCX exports — includes back of card automatically when the template has back layers (data-driven detection, not flag-gated)
 - Template-aware CSV import — extra template fields detected and mapped to `extraFields` on employee records
-- Multi-template library — "Save as New" creates copies with new IDs; debounced auto-save prevents excessive writes
+- Multi-template library — "Save as New" creates copies with new IDs; Save overwrites the selected template; debounced auto-save prevents excessive writes
 - Undo/redo only tracks meaningful changes — grab without move, resize without change, or rotation without change do not create history entries
 - Graceful cross-device image handling — template/employee image refs that fail to load (device-local paths) clear via `onError` to an upload prompt; blobs are stored as self-contained data URLs so templates remain portable
 
