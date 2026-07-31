@@ -1,8 +1,8 @@
 # Lessons Learned
 
 > **Metadata**
-> - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-29
+> - last-updated-by: update-ai-system
+> - last-verified-against-code: 2026-07-31
 > - staleness-policy: append each time a lesson is identified
 
 > **Overview:** Lessons learned during development. Add entries as new insights arise.
@@ -70,3 +70,21 @@ Pointer events fire `pointerdown` → `pointerup` even on simple clicks without 
 **Date:** 2026-07-29
 
 Scanning text layer content for `{{variable}}` placeholders is fragile — templates without variables produce no input fields at all. A more robust approach is to iterate over template layers directly: each text layer → text input, each image layer → image upload, shape/barcode → skip. Store per-layer employee overrides in `extraFields` with prefixed keys (`_tl_<layerId>` for text, `_il_<layerId>` for images). This ensures every editable layer always gets a corresponding input, and the template's default content serves as the initial prefill.
+
+## Lesson 11 — Undeclared Identifiers in Render Expressions Blank the Whole Page
+
+**Date:** 2026-07-31
+
+Any identifier used inside a JSX render expression must be derived from props/state or defined in the component body. A typo like referencing `templateHasImages` without declaring it becomes a `ReferenceError` that React does not recover from — the entire tree unmounts and the page goes blank. This symptom is easy to misdiagnose as a layout/state bug, but the real fix is the missing declaration. When the page blanks on an interaction that triggers a re-render, check render-body expressions for undeclared identifiers first. TypeScript (`tsc --noEmit`) catches these at build time (`TS2304: Cannot find name`), so run the lint script before shipping.
+
+## Lesson 12 — JSX Conditional Blocks Must Stay Balanced
+
+**Date:** 2026-07-31
+
+When rendering sibling conditional blocks (`{cond && (...)}`), every `{` must have a matching `}`, and every opened element a matching close tag. Replacing a closing `</div>` with `)}` (or vice versa) is the kind of subtle mismatch that Vite/esbuild flags at the *first* unbalanced token — the reported line is where parsing breaks, not necessarily where the mistake lives. esbuild errors like `The character "}" is not valid inside a JSX element` followed by `Unexpected end of file before a closing "div" tag` indicate this class of bug.
+
+## Lesson 13 — Keep Template Image Refs Self-Contained for Portability
+
+**Date:** 2026-07-31
+
+Template image layers and employee uploads are stored as self-contained data URLs (via `FileReader.readAsDataURL`), which means exported template JSON embeds the image blob and works on any device. Device-local file paths (e.g. `C:\...`, `/Users/...`) do not survive a JSON export/import across devices. Guard against that by rendering images through an `onError` fallback that clears the broken reference and shows the upload dropzone — the user should be able to re-input an image on their device rather than hitting a crash or a permanently broken image.

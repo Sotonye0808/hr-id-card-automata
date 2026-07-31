@@ -1,8 +1,8 @@
 # Project Plan
 
 > **Metadata**
-> - last-updated-by: execute-feature
-> - last-verified-against-code: 2026-07-29
+> - last-updated-by: update-ai-system
+> - last-verified-against-code: 2026-07-31
 > - staleness-policy: update after each sprint
 
 > **Overview:** High-level feature checklist and development roadmap.
@@ -46,6 +46,9 @@
 - [x] Layer-based employee data binding — per-layer values stored via extraFields (`_tl_<id>` / `_il_<id>`)
 - [x] Undo/redo only records actual changes (no no-op history entries)
 - [x] Multiple template saves — "Save As New" in TemplateLibrary creates new template IDs
+- [x] Fix blank page on "Add row" — `templateHasImages` was undeclared in DataEntry; now derived from `hasImageLayers`
+- [x] Graceful cross-device image handling — unloadable image refs (device-local paths) clear via `onError` and show the upload dropzone instead of crashing
+- [x] Build/lint/test health — `npm run lint`, `npm run build`, `npm run verify` all green
 
 ### Planned
 - [ ] ActivityBoard component wiring (batch processor, audit journal)

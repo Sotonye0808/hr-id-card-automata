@@ -2,7 +2,7 @@
 
 > **Metadata**
 > - last-updated-by: update-ai-system
-> - last-verified-against-code: 2026-07-28
+> - last-verified-against-code: 2026-07-31
 > - staleness-policy: re-verify before trusting if project structure has changed
 
 > **Overview:** Local-first, single-page PWA built with React 19 + Vite + TypeScript + Tailwind CSS v4 that helps HR teams turn employee records and photos into printable, batch-exportable ID cards. Fully client-side — data persisted to localStorage and IndexedDB, exports generated in-browser via jsPDF and docx.
@@ -48,4 +48,4 @@ Start with: `ai-system/protocols/entry-protocol.md`
 
 ## Active Development Focus
 
-Dynamic template-driven data entry with image-layer-aware inputs, multi-template management via "Save as New", debounced auto-save, and clean undo/redo that only tracks meaningful changes.
+Build stability and template-driven data entry. Latest work fixed the blank-page crash when adding an employee row, added graceful cross-device image handling (unloadable image refs degrade to an upload prompt instead of crashing), and restored green `npm run lint`/`build`/`verify`.
